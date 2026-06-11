@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="a" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#12b76a"/>
+      <stop offset="100%" stop-color="#61DAFB"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#61DAFB" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="c" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#12b76a" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#12b76a" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond -->
+  <rect width="100" height="100" rx="22" fill="#041612"/>
+
+  <!-- Hexagone externe -->
+  <polygon points="94,50 72,88 28,88 6,50 28,12 72,12"
+    fill="none" stroke="url(#a)" stroke-width="2.2"/>
+
+  <!-- Zone sous courbe -->
+  <polygon points="18,84 18,76 34,61 50,49 66,37 79,24 79,84"
+    fill="url(#c)"/>
+
+  <!-- Courbe commission -->
+  <polyline points="18,76 34,61 50,49 66,37 79,24"
+    fill="none" stroke="url(#a)" stroke-width="2.8"
+    stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Points de données -->
+  <circle cx="18" cy="76" r="3.2" fill="#12b76a"/>
+  <circle cx="34" cy="61" r="3.2" fill="#12b76a"/>
+  <circle cx="50" cy="49" r="3.2" fill="#12b76a"/>
+  <circle cx="66" cy="37" r="3.2" fill="#12b76a"/>
+
+  <!-- Goutte carburant au pic -->
+  <path d="M79,14 C79,14 72,22 72,27 C72,31.4 75.1,35 79,35 C82.9,35 86,31.4 86,27 C86,22 79,14 79,14Z"
+    fill="url(#b)"/>
+  <path d="M76,17.5 C76,17.5 74.5,22 74.5,25.5"
+    fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round"/>
+</svg>

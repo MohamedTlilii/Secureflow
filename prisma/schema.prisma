@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("agent")
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  fiches SolutionExpress[]
+}
+
+model SolutionExpress {
+  id                     String    @id @default(cuid())
+  sourceText             String    @default("")
+  sourceUrl              String    @default("")
+  entreprise             String    @default("")
+  typeCommerce           String    @default("autre")
+  ancienneAdresse        String    @default("")
+  typeClient             String    @default("b2b")
+  prenom                 String    @default("")
+  nom                    String    @default("")
+  telephone              String    @default("")
+  email                  String    @default("")
+  sexe                   String    @default("inconnu")
+  adresse                String    @default("")
+  ville                  String    @default("")
+  region                 String    @default("")
+  leadType               String    @default("autre")
+  qualificationSysteme   String    @default("inconnu")
+  produits               Json      @default("[]")
+  fournisseurs           Json      @default("{}")
+  status                 String    @default("new")
+  motifAnnulation        String    @default("")
+  urgencyScore           Int       @default(0)
+  summary                String    @default("")
+  notes                  Json      @default("[]")
+  montantContrat         Float     @default(0)
+  commissionFixe         Float     @default(0)
+  commissionExtra        Float     @default(0)
+  commissionTotale       Float     @default(0)
+  commissionPayee        Boolean   @default(false)
+  dateVente              DateTime?
+  datePaiementCommission DateTime?
+  createdBy              String
+  user                   User      @relation(fields: [createdBy], references: [id])
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([status])
+  @@index([ville])
+  @@index([createdAt(sort: Desc)])
+  @@index([createdBy])
+}
+
+model Settings {
+  id                   String   @id @default("global")
+  villes               Json     @default("[]")
+  typeCommerce         Json     @default("[]")
+  typeLead             Json     @default("[]")
+  qualificationSysteme Json     @default("[]")
+  services             Json     @default("[]")
+  motifsAnnulation     Json     @default("[]")
+  objectifAnnuel       Json     @default("{}")
+  updatedAt            DateTime @updatedAt
+}
+
+model Essence {
+  id             String    @id @default(cuid())
+  annee          Int
+  mois           Int
+  joursOuvres    Int
+  montantParJour Float     @default(5)
+  montantAttendu Float
+  recu           Boolean   @default(false)
+  dateReception  DateTime?
+  note           String    @default("")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([annee, mois])
+  @@index([annee])
+}
