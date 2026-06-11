@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter,
+  Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter, Eye,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
-import type { SolutionExpress, DbStats, Settings } from '@/types';
-import { STATUS_LABEL, STATUS_COLOR } from '@/types';
+import type { SolutionExpress, DbStats, Settings, StatusFiche } from '@/types';
+import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS } from '@/types';
+import UltraFiche from '@/components/solution-express/UltraFiche';
 
 /* ─── Cosmos ─── */
 const PART_COLORS = ['#06b6d4','#3b6cf8','#a78bfa','#12b76a','#f59e0b'];
@@ -43,8 +44,9 @@ export default function DatabasePage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
+  const [selected, setSelected] = useState<SolutionExpress | null>(null);
   const [filters, setFilters] = useState({
-    prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'',
+    prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'',
   });
   const [mounted, setMounted] = useState(false);
   const starsRef = useRef<Star[]>([]);
@@ -122,13 +124,14 @@ export default function DatabasePage() {
     (item.telephone  ||'').includes(filters.telephone) &&
     (item.entreprise ||'').toLowerCase().includes(filters.entreprise.toLowerCase()) &&
     (!filters.ville      || item.ville      === filters.ville) &&
-    (!filters.typeClient || item.typeClient === filters.typeClient)
+    (!filters.typeClient || item.typeClient === filters.typeClient) &&
+    (!filters.status     || item.status     === filters.status)
   ).sort((a,b) => new Date(b.dateVente ?? b.createdAt ?? 0).getTime() - new Date(a.dateVente ?? a.createdAt ?? 0).getTime()),
   [fichesByAnnee, filters]);
 
   const hasFilters = Object.values(filters).some(Boolean);
 
-  const clearFilters = () => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'' });
+  const clearFilters = () => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'' });
 
   /* ── Delete ── */
   const handleDelete = async (item: SolutionExpress) => {
@@ -369,12 +372,16 @@ export default function DatabasePage() {
                       </select>
                     </th>
                     {/* Statut */}
-                    <th style={{ ...thSt, minWidth:110 }}>
+                    <th style={{ ...thSt, minWidth:140 }}>
                       <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>STATUT</div>
+                      <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.status} onChange={e => setF('status', e.target.value)}>
+                        <option value="">Tous</option>
+                        {VALID_STATUTS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                      </select>
                     </th>
                     {/* Actions */}
-                    <th style={{ ...thSt, textAlign:'center', minWidth:60 }}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ACTION</div>
+                    <th style={{ ...thSt, textAlign:'center', minWidth:80 }}>
+                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ACTIONS</div>
                     </th>
                   </tr>
                 </thead>
@@ -430,13 +437,22 @@ export default function DatabasePage() {
                         </span>
                       </td>
                       <td style={{ ...tdSt, textAlign:'center' }}>
-                        <button onClick={() => handleDelete(item)}
-                          style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', margin:'0 auto' }}
-                          onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(240,68,56,0.12)'; t.style.borderColor='rgba(240,68,56,0.4)'; t.style.transform='scale(1.1)'; }}
-                          onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
-                          title="Supprimer">
-                          <Trash2 size={13} color="#ef4444"/>
-                        </button>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                          <button onClick={() => setSelected(item)}
+                            style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
+                            onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(6,182,212,0.12)'; t.style.borderColor='rgba(6,182,212,0.4)'; t.style.transform='scale(1.1)'; }}
+                            onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
+                            title="Voir">
+                            <Eye size={13} color="#06b6d4"/>
+                          </button>
+                          <button onClick={() => handleDelete(item)}
+                            style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
+                            onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(240,68,56,0.12)'; t.style.borderColor='rgba(240,68,56,0.4)'; t.style.transform='scale(1.1)'; }}
+                            onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
+                            title="Supprimer">
+                            <Trash2 size={13} color="#ef4444"/>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )) : (
@@ -475,6 +491,21 @@ export default function DatabasePage() {
         </div>
 
       </div>
+
+      {selected && settings && (
+        <UltraFiche
+          fiche={selected}
+          settings={settings}
+          readOnly
+          onClose={() => setSelected(null)}
+          onEdit={() => {}}
+          onDelete={() => setSelected(null)}
+          onChangeStatus={() => {}}
+          onTogglePaiement={() => {}}
+          onAddNote={async () => {}}
+          onDeleteNote={async () => {}}
+        />
+      )}
     </div>
   );
 }
