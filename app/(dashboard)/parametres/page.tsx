@@ -37,10 +37,10 @@ function slugify(s: string) {
 const TABS = [
   { id:'villes',           label:'Villes',              Icon:MapPin,      color:'#38bdf8' },
   { id:'typeCommerce',     label:'Commerce',            Icon:Building2,   color:'#f79009' },
-  { id:'typeLead',         label:'Lead',                Icon:TrendingUp,  color:'#a764f8' },
+  { id:'typeLead',         label:'Lead',                Icon:Zap,         color:'#a764f8' },
   { id:'qualification',    label:'Qualification',       Icon:Star,        color:'#f04438' },
   { id:'services',         label:'Services',            Icon:Shield,      color:'#6366f1' },
-  { id:'objectifAnnuel',   label:'Objectif annuel',     Icon:TrendingUp,  color:'#12b76a' },
+  { id:'objectifAnnuel',   label:'Objectif annuel',     Icon:TrendingUp, color:'#12b76a' },
   { id:'motifsAnnulation', label:"Motifs d'annulation", Icon:AlertCircle, color:'#ef4444' },
 ];
 
@@ -217,7 +217,7 @@ function ObjectifSection({ objectifs, onAdd, onRemove }: {
         {entries.map(([yr, mt]) => (
           <div key={yr} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.18)' }}>
             <div style={{ fontSize:15, fontWeight:800, color:'#12b76a', minWidth:48 }}>{yr}</div>
-            <div style={{ flex:1, height:5, borderRadius:3, background:'rgba(255,255,255,0.07)' }} />
+            <div style={{ flex:1 }} />
             <div style={{ fontSize:14, fontWeight:800, color:'#fff' }}>{mt.toLocaleString()} TND</div>
             <button onClick={() => onRemove(yr)}
               style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, display:'flex', alignItems:'center', transition:'color 0.15s' }}

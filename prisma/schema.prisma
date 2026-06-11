@@ -35,7 +35,6 @@ model SolutionExpress {
   sexe                   String    @default("inconnu")
   adresse                String    @default("")
   ville                  String    @default("")
-  region                 String    @default("")
   leadType               String    @default("autre")
   qualificationSysteme   String    @default("inconnu")
   produits               Json      @default("[]")

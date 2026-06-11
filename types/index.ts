@@ -59,7 +59,6 @@ export interface SolutionExpress {
   sexe: 'homme' | 'femme' | 'inconnu';
   adresse: string;
   ville: string;
-  region: string;
   leadType: string;
   qualificationSysteme: string;
   produits: string[];

@@ -14,7 +14,7 @@ export type FormState = {
   prenom: string;             nom: string;
   sexe: 'homme' | 'femme' | 'inconnu';
   telephone: string;          email: string;
-  adresse: string;            ville: string;        region: string;
+  adresse: string;            ville: string;
   leadType: string;           qualificationSysteme: string;
   produits: string[];
   fournisseurs: Record<string, { actuel: string; propose: string }>;
@@ -33,7 +33,7 @@ export const EMPTY_FORM: FormState = {
   typeClient: 'b2b',
   prenom: '', nom: '', sexe: 'inconnu',
   telephone: '', email: '',
-  adresse: '', ville: '', region: '',
+  adresse: '', ville: '',
   leadType: 'nouvelle_entreprise', qualificationSysteme: 'pas_de_systeme',
   produits: [], fournisseurs: {},
   status: 'new', urgencyScore: 0, summary: '',
@@ -196,10 +196,6 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                     <option value="">— Sélectionner —</option>
                     {settings.villes.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label style={lbl}>Région</label>
-                  <input value={form.region} onChange={e => set('region', e.target.value)} style={inp} />
                 </div>
               </div>
               <div>

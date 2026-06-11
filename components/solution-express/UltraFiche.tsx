@@ -218,7 +218,6 @@ export default function UltraFiche({
             <InfoBlock title="Localisation" icon={<MapPin size={13} />}>
               <InfoRow label="Adresse">{fiche.adresse || '—'}</InfoRow>
               <InfoRow label="Ville">{fiche.ville || '—'}</InfoRow>
-              <InfoRow label="Région">{fiche.region || '—'}</InfoRow>
               {fiche.ancienneAdresse && <InfoRow label="Anc. adresse">{fiche.ancienneAdresse}</InfoRow>}
             </InfoBlock>
 
