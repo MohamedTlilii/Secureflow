@@ -334,9 +334,9 @@ export default function EssencePage() {
               {/* Stats cards */}
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:16}}>
                 {[
-                  {label:'En attente',    value:stats.totalManquant, color:'#f59e0b', Icon:TrendingUp,  decimals:0},
-                  {label:'Total reçu',    value:stats.totalRecu,     color:'#12b76a', Icon:CheckCircle, decimals:0},
-                  {label:'Total annuel',  value:stats.totalAttendu,  color:'#6366f1', Icon:AlertCircle, decimals:0},
+                  {label:'En attente',    value:stats.totalManquant, color:'#f59e0b', Icon:TrendingUp,  decimals:0, suffix:' TND'},
+                  {label:'Total reçu',    value:stats.totalRecu,     color:'#12b76a', Icon:CheckCircle, decimals:0, suffix:' TND'},
+                  {label:'Total annuel',  value:stats.totalAttendu,  color:'#6366f1', Icon:AlertCircle, decimals:0, suffix:' TND'},
                 ].map((s,i)=>(
                   <div key={i} style={{background:`${s.color}12`,borderRadius:12,padding:'12px 16px',border:`1px solid ${s.color}25`,animation:`fadeSlideUp 0.4s ${i*0.06}s ease both`}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
@@ -346,7 +346,7 @@ export default function EssencePage() {
                       </div>
                     </div>
                     <div style={{fontSize:24,fontWeight:900,lineHeight:1}}>
-                      <AnimatedNumber value={s.value} decimals={s.decimals} color={s.color}/>
+                      <AnimatedNumber value={s.value} decimals={s.decimals} color={s.color} suffix={s.suffix}/>
                     </div>
                   </div>
                 ))}
