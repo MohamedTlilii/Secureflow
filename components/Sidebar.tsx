@@ -223,12 +223,6 @@ export default function Sidebar() {
               </div>
             </div>
           </div>
-          <button type="button" onClick={handleLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', gap:12, padding:'8px 12px', borderRadius:10, background:'transparent', border:'1px solid transparent', color:'rgba(139,154,184,0.6)', cursor:'pointer', fontSize:12.5, fontWeight:500, transition:'all 0.18s', overflow:'hidden' }}
-            onMouseEnter={e => { e.currentTarget.style.background='rgba(239,68,68,0.08)'; e.currentTarget.style.color='#ef4444'; e.currentTarget.style.borderColor='rgba(239,68,68,0.2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='rgba(139,154,184,0.6)'; e.currentTarget.style.borderColor='transparent'; }}>
-            <LogOut size={15} style={{ flexShrink:0 }}/>
-            <span style={{ opacity: expanded ? 1 : 0, transition:'opacity 0.22s ease 0.05s', whiteSpace:'nowrap' }}>Déconnexion</span>
-          </button>
         </div>
 
         <style>{`@keyframes profileSlideUp{from{opacity:0;transform:translateY(10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
