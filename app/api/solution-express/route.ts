@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const extra = Number.isFinite(parseFloat(String(data.commissionExtra))) ? parseFloat(String(data.commissionExtra)) : 0;
     data.commissionTotale = fixe + extra;
 
-    const fiche = await prisma.solutionExpress.create({ data });
+    const fiche = await prisma.solutionExpress.create({ data: data as any });
     return NextResponse.json(fiche, { status: 201 });
   } catch (err) {
     console.error(err);

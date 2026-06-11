@@ -26,7 +26,7 @@ const LEAD_PALETTE = [
   '#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e',
 ];
 
-const ICON_MAP: Record<string, React.ComponentType<{size?:number;color?:string}>> = {
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
   wifi: Wifi, smartphone: Smartphone, tv: Tv, camera: Camera, receipt: Receipt,
   phone: Phone, monitor: Monitor, printer: Printer, creditcard: CreditCard,
   zap: Zap, globe: Globe, headphones: Headphones, lock: Lock, home: Home,

@@ -23,7 +23,7 @@ const PIPE_COLOR: Record<StatusFiche, string> = {
 
 const PIPELINE: StatusFiche[] = ['new', 'contacted', 'proposal', 'installation_en_cours', 'installe'];
 
-const ICON_MAP: Record<string, React.ComponentType<{size?:number;color?:string}>> = {
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
   wifi: Wifi, smartphone: Smartphone, tv: Tv, camera: Camera, receipt: Receipt,
   phone: Phone, monitor: Monitor, printer: Printer, creditcard: CreditCard,
   zap: Zap, globe: Globe, headphones: Headphones, lock: Lock, home: Home,
