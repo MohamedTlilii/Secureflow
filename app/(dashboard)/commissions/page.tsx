@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -18,7 +18,7 @@ import { DEFAULT_SETTINGS, MOIS_FULL } from '@/types';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const fmtDate  = (d?: string | null) =>
-  d ? new Date(d).toLocaleDateString('fr-CA',{year:'numeric',month:'short',day:'numeric'}) : '—';
+  d ? new Date(d).toLocaleDateString('fr-FR',{year:'numeric',month:'short',day:'numeric'}) : '—';
 const fmtMoney = (v: number) => `${(v||0).toFixed(2)} TND`;
 
 /* ─── constantes ──────────────────────────────────────────── */
@@ -70,7 +70,7 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
   const daysInMonth = new Date(cur.year, cur.month+1, 0).getDate();
   const firstDay    = new Date(cur.year, cur.month, 1).getDay();
   const offset      = firstDay===0?6:firstDay-1;
-  const monthName   = new Date(cur.year, cur.month).toLocaleDateString('fr-CA',{month:'long',year:'numeric'});
+  const monthName   = new Date(cur.year, cur.month).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
 
   const byDate = useMemo(() => {
     const map: Record<string, CalByDate> = {};
@@ -351,7 +351,7 @@ export default function CommissionsPage() {
                   </div>
                   {!isMobile&&(
                     <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
-                      {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+                      {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
                   <select value={annee} onChange={e=>{setAnnee(e.target.value);setFiltre('tout');}}
@@ -526,7 +526,7 @@ export default function CommissionsPage() {
                 <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <div style={{fontSize:12,fontWeight:700,color:'#c0c0e0',display:'flex',alignItems:'center',gap:6}}>
                     <Calendar size={12} color="#12b76a"/>
-                    {selDate.toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long'})}
+                    {selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
                   </div>
                   <button onClick={()=>{setSelDate(null);setSelVentes([]);}} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.4)',fontSize:18,lineHeight:1}}>×</button>
                 </div>
@@ -720,3 +720,4 @@ export default function CommissionsPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -306,7 +306,7 @@ export default function EssencePage() {
 
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
-                    {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+                    {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                   </div>
                   <select value={annee} onChange={e=>handleAnneeChange(e.target.value)}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
@@ -454,7 +454,7 @@ export default function EssencePage() {
                   </div>
                   {m.dateReception&&(
                     <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:3}}>
-                      Reçu le {new Date(m.dateReception).toLocaleDateString('fr-CA')}
+                      Reçu le {new Date(m.dateReception).toLocaleDateString('fr-FR')}
                     </div>
                   )}
                 </div>
@@ -518,3 +518,4 @@ export default function EssencePage() {
     </div>
   );
 }
+

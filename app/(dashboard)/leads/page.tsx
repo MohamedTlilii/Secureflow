@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -268,6 +268,12 @@ export default function SolutionExpressPage() {
     [...new Set(fiches.map(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear())))].sort((a, b) => Number(b) - Number(a)),
   [fiches]);
 
+  const usedServiceIds = useMemo(() => {
+    const s = new Set<string>();
+    fiches.forEach(f => (f.produits as string[]).forEach(id => s.add(id)));
+    return s;
+  }, [fiches]);
+
   const fichesByAnnee = useMemo(() =>
     annee === 'tout' ? fiches : fiches.filter(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear()) === annee),
   [fiches, annee]);
@@ -345,7 +351,7 @@ export default function SolutionExpressPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                   {!isMobile && (
                     <div style={{ fontSize:12, color:'rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.08)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
-                      {new Date().toLocaleDateString('fr-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                      {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </div>
                   )}
                   <select value={annee} onChange={e => setAnnee(e.target.value)}
@@ -446,7 +452,7 @@ export default function SolutionExpressPage() {
                 {/* Pills services */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
                   <span style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
-                  {settings.services.map(sv => (
+                  {settings.services.filter(sv => usedServiceIds.has(sv.id)).map(sv => (
                     <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
                       style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
                         border:`1px solid ${filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.12)'}`,
@@ -597,3 +603,4 @@ export default function SolutionExpressPage() {
     </div>
   );
 }
+

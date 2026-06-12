@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import {
@@ -64,7 +64,7 @@ export default function UltraFiche({
 
   const fmt = (iso?: string | null) => {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const handleAddNote = async () => {
@@ -448,3 +448,4 @@ const iconBtn = (color: string): React.CSSProperties => ({
   background: color + '15', border: `1px solid ${color}30`,
   color, cursor: 'pointer',
 });
+

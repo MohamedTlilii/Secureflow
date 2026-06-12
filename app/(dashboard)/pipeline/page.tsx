@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Target, ArrowRight, MapPin } from 'lucide-react';
@@ -242,7 +242,7 @@ export default function PipelinePage() {
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
                     <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
-                      {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+                      {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
                   {/* Pills commission */}
@@ -545,3 +545,4 @@ export default function PipelinePage() {
     </div>
   );
 }
+

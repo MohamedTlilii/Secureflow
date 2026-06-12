@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -38,9 +38,9 @@ export default function DatePicker({ value, onChange, placeholder = 'Sélectionn
     setOpen(false);
   };
 
-  const monthLabel = new Date(year, month).toLocaleDateString('fr-CA', { month: 'long', year: 'numeric' });
+  const monthLabel = new Date(year, month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   const display    = safe
-    ? new Date(safe + 'T12:00:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(safe + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
   return (
@@ -132,3 +132,4 @@ const navBtn: React.CSSProperties = {
   borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(255,255,255,0.04)', cursor: 'pointer', color: '#8b8b9e',
 };
+

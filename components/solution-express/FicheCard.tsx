@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useCallback } from 'react';
 import React from 'react';
@@ -73,7 +73,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
   const clientName = [fiche.prenom, fiche.nom].filter(Boolean).join(' ') || '—';
   const initials   = ([fiche.prenom?.[0], fiche.nom?.[0]].filter(Boolean).join('') || (fiche.entreprise?.[0] ?? '?')).toUpperCase();
   const displayName = fiche.typeClient === 'b2c' ? clientName : (fiche.entreprise || clientName);
-  const fmtDate    = (d?: string | null) => d ? new Date(d).toLocaleDateString('fr-CA', { day:'numeric', month:'short', year:'numeric' }) : null;
+  const fmtDate    = (d?: string | null) => d ? new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : null;
 
   const activeSvcs = settings.services.filter(sv => (fiche.produits as string[]).includes(sv.id));
 
@@ -278,3 +278,4 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
     </div>
   );
 }
+
