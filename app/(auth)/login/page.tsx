@@ -169,6 +169,7 @@ export default function LoginPage() {
     <div style={{ minHeight: '100vh', background: '#030a16', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative', overflow: 'hidden' }}>
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
         @keyframes starBlink  { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.8;transform:scale(1.4)} }
         @keyframes orb1       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(55px,-42px)scale(1.1)} }
         @keyframes orb2       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-48px,38px)scale(0.92)} }
@@ -189,6 +190,17 @@ export default function LoginPage() {
         @keyframes scanV      { 0%{transform:translateY(-20vh);opacity:0} 6%{opacity:0.8} 94%{opacity:0.8} 100%{transform:translateY(120vh);opacity:0} }
         @keyframes cornerGlow { 0%,100%{opacity:0.2} 50%{opacity:0.58} }
       `}</style>
+
+      {/* Signature */}
+      <div style={{ position:'fixed', bottom:28, right:36, zIndex:2, pointerEvents:'none', display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+        <span style={{ fontFamily:"'Dancing Script', cursive", fontSize:28, fontWeight:700, color:'rgba(18,183,106,0.45)', lineHeight:1, letterSpacing:1, textShadow:'0 0 18px rgba(18,183,106,0.25)' }}>
+          Mohamed Tlili
+        </span>
+        <svg width="130" height="10" viewBox="0 0 130 10">
+          <path d="M4,7 C30,2 70,9 126,5" fill="none" stroke="rgba(18,183,106,0.35)" strokeWidth="1.4" strokeLinecap="round"/>
+          <circle cx="126" cy="5" r="2" fill="rgba(18,183,106,0.4)"/>
+        </svg>
+      </div>
 
       {/* Coins HUD */}
       <div style={{ position: 'fixed', top: 20, left: 20,   width: 28, height: 28, borderTop:    '1.5px solid rgba(18,183,106,0.25)', borderLeft:  '1.5px solid rgba(18,183,106,0.25)', pointerEvents: 'none', zIndex: 0, animation: 'cornerGlow 4s ease-in-out infinite' }} />
