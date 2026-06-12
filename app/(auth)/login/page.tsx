@@ -351,7 +351,7 @@ export default function LoginPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: 18.5, fontWeight: 900, color: '#f0f4ff', letterSpacing: '-0.3px' }}>Connexion</div>
-                  <div style={{ fontSize: 11, color: 'rgba(18,183,106,0.55)', marginTop: 3, fontWeight: 500, letterSpacing: 0.4 }}>Commissions · Carburant · Pipeline</div>
+                  <div style={{ fontSize: 11, color: 'rgba(18,183,106,0.55)', marginTop: 3, fontWeight: 500, letterSpacing: 0.4 }}>Leads · Commissions · Carburant · Pipeline</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 20, background: 'rgba(18,183,106,0.07)', border: '1px solid rgba(18,183,106,0.2)' }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#12b76a', boxShadow: '0 0 8px #12b76a', animation: 'blink 1.9s ease-in-out infinite' }} />
@@ -372,7 +372,7 @@ export default function LoginPage() {
                     <input
                       style={iStyle('email', '#61DAFB')}
                       type="email"
-                      placeholder="contact@exemple.ca"
+                      placeholder="ton@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onFocus={() => setFocused('email')}
@@ -465,9 +465,9 @@ export default function LoginPage() {
         {/* Badges */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20, flexWrap: 'wrap', animation: 'fadeUp 0.52s 0.45s ease both' }}>
           {[
-            { label: 'Commissions', c: 'rgba(18,183,106,0.68)',  b: 'rgba(18,183,106,0.14)',  bg: 'rgba(18,183,106,0.04)'  },
-            { label: 'Carburant',   c: 'rgba(97,218,251,0.68)',  b: 'rgba(97,218,251,0.14)',  bg: 'rgba(97,218,251,0.04)'  },
-            { label: 'Pipeline ×6', c: 'rgba(167,139,250,0.68)', b: 'rgba(167,139,250,0.14)', bg: 'rgba(167,139,250,0.04)' },
+            { label: 'Leads',       c: 'rgba(18,183,106,0.68)',  b: 'rgba(18,183,106,0.14)',  bg: 'rgba(18,183,106,0.04)'  },
+            { label: 'Commissions', c: 'rgba(97,218,251,0.68)',  b: 'rgba(97,218,251,0.14)',  bg: 'rgba(97,218,251,0.04)'  },
+            { label: 'Pipeline',    c: 'rgba(167,139,250,0.68)', b: 'rgba(167,139,250,0.14)', bg: 'rgba(167,139,250,0.04)' },
           ].map((badge, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4.5px 12px', borderRadius: 20, border: `1px solid ${badge.b}`, background: badge.bg }}>
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: badge.c, boxShadow: `0 0 6px ${badge.c}` }} />

@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'SecureFlow CRM',
-  description: 'Gestion clients Solution Express — Mohamed Tlili',
+  description: 'Gestion leads — Mohamed Tlili',
   icons: {
     icon: '/favicon.svg',
   },

@@ -204,7 +204,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
 
 
         {/* ── Qualification ── */}
-        {fiche.qualificationSysteme && fiche.qualificationSysteme !== 'inconnu' && (
+        {fiche.qualificationSysteme && fiche.qualificationSysteme !== 'inconnu' && fiche.qualificationSysteme !== 'pas_de_systeme' && (
           <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginBottom:7, background:'rgba(255,255,255,0.04)', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
             🔒 {settings.qualificationSysteme.find(q=>q.key===fiche.qualificationSysteme)?.label ?? fiche.qualificationSysteme}
           </div>

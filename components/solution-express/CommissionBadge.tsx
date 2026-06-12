@@ -9,10 +9,25 @@ interface CommissionBadgeProps {
 }
 
 export default function CommissionBadge({ fiche, onToggle }: CommissionBadgeProps) {
-  const total = fiche.commissionTotale || 0;
-  const payee = fiche.commissionPayee;
+  const total   = fiche.commissionTotale || 0;
+  const payee   = fiche.commissionPayee;
+  const annulee = fiche.status === 'installation_annulee';
 
   if (!total && !fiche.commissionFixe && !fiche.commissionExtra) return null;
+
+  if (annulee) {
+    return (
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        background: 'rgba(190,18,60,0.08)', border: '1px solid rgba(190,18,60,0.25)',
+        borderRadius: 10, padding: '7px 13px', userSelect: 'none',
+      }}>
+        <Wallet size={13} color="#be123c" />
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#be123c' }}>{total.toFixed(2)} TND</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#be123c', opacity: 0.85 }}>✕ Annulée</span>
+      </div>
+    );
+  }
 
   const color  = payee ? '#12b76a' : '#f79009';
   const bgCss  = payee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.09)';

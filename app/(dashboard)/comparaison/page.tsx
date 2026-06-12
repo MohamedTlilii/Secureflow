@@ -127,7 +127,7 @@ export default function ComparaisonPage() {
   /* ── fetch ── */
   const fetchAll = useCallback(async () => {
     try {
-      const { data } = await api.get<SolutionExpress[]>('/api/solution-express');
+      const { data } = await api.get<SolutionExpress[]>('/api/leads');
       setFiches(Array.isArray(data)?data:[]);
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
@@ -191,10 +191,10 @@ export default function ComparaisonPage() {
 
   /* ── KPI list ── */
   const kpis = [
-    { label:'Commissions gagnées',     Icon:Wallet,      color:'#12b76a', curr:mCurr.gained,   prev:mPrev.gained   },
-    { label:'Commissions payées',      Icon:CheckCircle, color:'#3b6cf8', curr:mCurr.paid,     prev:mPrev.paid     },
-    { label:'En attente',              Icon:Target,      color:'#f79009', curr:mCurr.pending,  prev:mPrev.pending  },
-    { label:'Installations réalisées', Icon:BarChart2,   color:'#a764f8', curr:mCurr.installe, prev:mPrev.installe },
+    { label:'Commissions gagnées',     Icon:Wallet,      color:'#12b76a', curr:mCurr.gained,   prev:mPrev.gained,   suffix:' TND' },
+    { label:'Commissions payées',      Icon:CheckCircle, color:'#3b6cf8', curr:mCurr.paid,     prev:mPrev.paid,     suffix:' TND' },
+    { label:'En attente',              Icon:Target,      color:'#f79009', curr:mCurr.pending,  prev:mPrev.pending,  suffix:' TND' },
+    { label:'Installations réalisées', Icon:BarChart2,   color:'#a764f8', curr:mCurr.installe, prev:mPrev.installe, suffix:''     },
   ];
 
   /* ────────────────── RENDER ────────────────── */
@@ -315,7 +315,7 @@ export default function ComparaisonPage() {
                 4 KPI CARDS
                 ════════════════════════════════════════ */}
             <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:14,marginBottom:24}}>
-              {kpis.map(({label,Icon,color,curr,prev},i)=>(
+              {kpis.map(({label,Icon,color,curr,prev,suffix},i)=>(
                 <div key={i} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}45,${color}15)`,animation:`fadeSlideUp 0.4s ${0.05+i*0.05}s ease both`}}>
                   <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'14px 12px':'18px 20px',backdropFilter:'blur(20px)',height:'100%',display:'flex',flexDirection:'column',gap:10}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -326,7 +326,7 @@ export default function ComparaisonPage() {
                     </div>
                     <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',fontWeight:700,textTransform:'uppercase',letterSpacing:0.5}}>{label}</div>
                     <div style={{fontSize:isMobile?18:22,fontWeight:900,color,lineHeight:1}}>
-                      <AnimatedNumber value={curr} decimals={0} color={color}/>
+                      <AnimatedNumber value={curr} decimals={0} color={color} suffix={suffix}/>
                     </div>
                     <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'rgba(255,255,255,0.3)',fontWeight:600}}>
                       {prevYear} : <span style={{color:'rgba(255,255,255,0.45)',fontWeight:700}}>{prev.toFixed(0)}</span>
@@ -446,6 +446,7 @@ export default function ComparaisonPage() {
                           { label:'Total fiches',          value:m.total,                                              c:'#a78bfa' },
                           { label:'Installations',          value:m.installe,                                           c:'#12b76a' },
                           { label:'Installations annulées', value:m.annulee,                                            c:'#ef4444' },
+                          { label:'Taux d\'installation',   value:m.total>0?`${Math.round((m.installe/m.total)*100)}%`:'—', c:'#22c55e' },
                           { label:'Commission ↑ Max',       value:m.commMax>0?`${m.commMax.toFixed(0)} TND`:'—',       c:'#f79009' },
                           { label:'Commission ↓ Min',       value:m.commMin>0?`${m.commMin.toFixed(0)} TND`:'—',       c:'#fb7185' },
                           { label:'Taux de paiement',       value:`${m.payRate}%`,                                      c:'#38bdf8' },

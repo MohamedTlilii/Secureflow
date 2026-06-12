@@ -9,6 +9,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -91,12 +92,13 @@ function ScoreRing({ value, max, color, label }: { value:number; max:number; col
 ════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   const [seFiches,     setSeFiches]     = useState<SolutionExpress[]>([]);
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [anneeGlobal,  setAnneeGlobal]  = useState<string>(String(new Date().getFullYear()));
   const [dashMois,     setDashMois]     = useState<string>('tout');
-  const [commFiltre,   setCommFiltre]   = useState<'tout'|'payee'|'non_payee'>('tout');
+  const [commFiltre,   setCommFiltre]   = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
   const [loading,      setLoading]      = useState(true);
   const [mounted,      setMounted]      = useState(false);
   const starsRef = useRef<Star[]>([]);
@@ -120,7 +122,7 @@ export default function DashboardPage() {
   const fetchAll = useCallback(async () => {
     try {
       const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/solution-express'),
+        api.get<SolutionExpress[]>('/api/leads'),
         api.get<Settings>('/api/settings'),
       ]);
       setSeFiches(Array.isArray(f.data)?f.data:[]);
@@ -226,7 +228,8 @@ export default function DashboardPage() {
     }));
     return Object.entries(m).sort((a,b)=>b[1]-a[1]);
   },[fiches, findSvc]);
-  const serviceCounts = useMemo(() => Object.fromEntries(byProduit), [byProduit]);
+  const serviceCounts  = useMemo(() => Object.fromEntries(byProduit), [byProduit]);
+  const activeServices = useMemo(()=>settings.services.filter(svc=>(serviceCounts[svc.id]||0)>0),[settings.services,serviceCounts]);
 
   /* ── commissions ── */
   const {
@@ -235,7 +238,12 @@ export default function DashboardPage() {
     commMax, commMin,
   } = useMemo(() => {
     const hist     = fiches.filter(f=>(f.commissionTotale||0)>0||(f.commissionFixe||0)>0);
-    const fiches_  = hist.filter(c=>commFiltre==='tout'?true:commFiltre==='payee'?c.commissionPayee:!c.commissionPayee);
+    const fiches_  = hist.filter(c=>
+      commFiltre==='tout'    ? true :
+      commFiltre==='payee'   ? c.commissionPayee && c.status!=='installation_annulee' :
+      commFiltre==='annulee' ? c.status==='installation_annulee' :
+      !c.commissionPayee && c.status!=='installation_annulee'
+    );
     const actives  = fiches_.filter(c=>c.status!=='installation_annulee');
     const gained   = actives.reduce((s,c)=>s+(c.commissionTotale||0),0);
     const paid     = actives.filter(c=>c.commissionPayee).reduce((s,c)=>s+(c.commissionTotale||0),0);
@@ -256,6 +264,19 @@ export default function DashboardPage() {
 
   /* ── récents ── */
   const recent = useMemo(()=>[...fiches].sort((a,b)=>new Date(b.dateVente??b.createdAt).getTime()-new Date(a.dateVente??a.createdAt).getTime()).slice(0,6),[fiches]);
+
+  /* ── évolution mensuelle ── */
+  const fichesByYear = useMemo(()=>
+    anneeGlobal==='tout'?[]:seFiches.filter(f=>String(getDateObj(f).getFullYear())===anneeGlobal),
+  [seFiches,anneeGlobal]);
+  const monthlyData = useMemo(()=>{
+    if(anneeGlobal==='tout') return [];
+    return MOIS_FULL.map((mois,i)=>({
+      name: mois.slice(0,3),
+      leads: fichesByYear.filter(f=>getDateObj(f).getMonth()===i).length,
+      installes: fichesByYear.filter(f=>getDateObj(f).getMonth()===i&&f.status==='installe').length,
+    }));
+  },[fichesByYear,anneeGlobal]);
 
   /* ── pipeline chart ── */
   const pipelineData = useMemo(() => [
@@ -314,7 +335,7 @@ export default function DashboardPage() {
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
                     <div style={{fontSize:12,color:'#fff',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap',textTransform:'capitalize'}}>
-                      {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+                      {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
                   <select value={anneeGlobal} onChange={e=>{setAnneeGlobal(e.target.value);setDashMois('tout');}}
@@ -329,6 +350,10 @@ export default function DashboardPage() {
                       {MOIS_FULL.map((m,i)=><option key={i} value={String(i)}>{m}</option>)}
                     </select>
                   )}
+                  <button onClick={()=>router.push('/leads')}
+                    style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(18,183,106,0.4)',background:'rgba(18,183,106,0.12)',color:'#12b76a',cursor:'pointer',fontWeight:700,whiteSpace:'nowrap'}}>
+                    + Nouveau lead
+                  </button>
                 </div>
               </div>
 
@@ -362,10 +387,10 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {settings.services.length>0&&(
+              {activeServices.length>0&&(
                 <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-                  <div style={{display:'flex',gap:16,justifyContent:'center'}}>
-                    {settings.services.map(svc=>(
+                  <div style={{display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+                    {activeServices.map(svc=>(
                       <div key={svc.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
                         <div style={{width:44,height:44,borderRadius:'50%',border:`2.5px solid ${svc.color||'#8b8b9e'}`,background:`${svc.color||'#8b8b9e'}18`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                           <span style={{fontSize:15,fontWeight:800,color:svc.color||'#8b8b9e'}}>{serviceCounts[svc.id]||0}</span>
@@ -376,10 +401,10 @@ export default function DashboardPage() {
                   </div>
                   <div style={{height:100,marginTop:12}}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={settings.services.map(svc=>({name:svc.label,value:serviceCounts[svc.id]||0}))} barSize={16} margin={{top:14,right:0,left:0,bottom:0}}>
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={(props)=>{ const svc=settings.services[props.index]; return <text x={props.x} y={props.y+4} textAnchor="middle" fontSize={8} fill={svc?.color||'#8b8b9e'}>{props.payload.value}</text>; }}/>
-                        <Bar dataKey="value" radius={[4,4,0,0]} label={(props)=>{ const svc=settings.services[props.index]; return <text x={props.x+(props.width/2)} y={props.y-4} textAnchor="middle" fontSize={10} fontWeight={700} fill={svc?.color||'#8b8b9e'}>{props.value}</text>; }}>
-                          {settings.services.map((svc,i)=><Cell key={i} fill={svc.color||'#8b8b9e'}/>)}
+                      <BarChart data={activeServices.map(svc=>({name:svc.label,value:serviceCounts[svc.id]||0}))} barSize={16} margin={{top:14,right:0,left:0,bottom:0}}>
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={(props)=>{ const svc=activeServices[props.index]; return <text x={props.x} y={props.y+4} textAnchor="middle" fontSize={8} fill={svc?.color||'#8b8b9e'}>{props.payload.value}</text>; }}/>
+                        <Bar dataKey="value" radius={[4,4,0,0]} label={(props)=>{ const svc=activeServices[props.index]; return <text x={props.x+(props.width/2)} y={props.y-4} textAnchor="middle" fontSize={10} fontWeight={700} fill={svc?.color||'#8b8b9e'}>{props.value}</text>; }}>
+                          {activeServices.map((svc,i)=><Cell key={i} fill={svc.color||'#8b8b9e'}/>)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -461,19 +486,48 @@ export default function DashboardPage() {
             })}
           </div>
 
+          {/* ════════ ÉVOLUTION MENSUELLE ══════════════════════════ */}
+          {anneeGlobal!=='tout'&&(
+            <div style={{padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#3b6cf840,#12b76a20)',marginBottom:24,animation:'fadeSlideUp 0.4s 0.15s ease both'}}>
+              <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'20px 26px',backdropFilter:'blur(20px)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                  <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Évolution mensuelle {anneeGlobal}</div>
+                  <div style={{display:'flex',gap:14}}>
+                    <span style={{fontSize:11,color:'#3b6cf8',fontWeight:700}}>● Leads</span>
+                    <span style={{fontSize:11,color:'#12b76a',fontWeight:700}}>● Installés</span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={isMobile?120:160}>
+                  <BarChart data={monthlyData} barSize={isMobile?8:14} barGap={2} margin={{top:16,right:0,left:-20,bottom:0}}>
+                    <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.35)',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fill:'rgba(255,255,255,0.25)',fontSize:10}} axisLine={false} tickLine={false} allowDecimals={false}/>
+                    <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:12}} cursor={{fill:'rgba(255,255,255,0.03)'}} formatter={(v:unknown,n:string)=>[v as number,n==='leads'?'Leads':'Installés']}/>
+                    <Bar dataKey="leads" fill="#3b6cf8" radius={[3,3,0,0]}/>
+                    <Bar dataKey="installes" fill="#12b76a" radius={[3,3,0,0]}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
           {/* ════════ COMMISSIONS ═════════════════════════════════ */}
           <div style={{padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#12b76a40,#61DAFB20,#a78bfa10)',marginBottom:24,animation:'fadeSlideUp 0.4s 0.2s ease both'}}>
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'22px 26px',backdropFilter:'blur(20px)'}}>
-              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-                <div style={{width:38,height:38,borderRadius:11,background:'rgba(18,183,106,0.12)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Wallet size={18} color="#12b76a"/>
-                </div>
-                <div>
-                  <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Mes commissions</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>
-                    Solution Express · {anneeGlobal==='tout'?'historique complet':anneeGlobal}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <div style={{width:38,height:38,borderRadius:11,background:'rgba(18,183,106,0.12)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <Wallet size={18} color="#12b76a"/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Mes commissions</div>
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>
+                      Leads · {anneeGlobal==='tout'?'historique complet':anneeGlobal}
+                    </div>
                   </div>
                 </div>
+                <button onClick={()=>router.push('/commissions')} style={{display:'flex',alignItems:'center',gap:4,background:'rgba(18,183,106,0.08)',border:'1px solid rgba(18,183,106,0.2)',borderRadius:8,padding:'4px 10px',color:'#12b76a',fontSize:11,fontWeight:700,cursor:'pointer',flexShrink:0}}>
+                  Voir tout →
+                </button>
               </div>
 
               {/* Objectif annuel */}
@@ -511,7 +565,7 @@ export default function DashboardPage() {
                 {[
                   {label:'Maximum',     value:`${commMax.toFixed(2)} TND`, color:'#a764f8',bg:'rgba(167,100,248,0.06)',border:'rgba(167,100,248,0.15)',emoji:'↑'},
                   {label:'Minimum',     value:`${commMin.toFixed(2)} TND`, color:'#8b8b9e',bg:'rgba(139,139,158,0.06)',border:'rgba(139,139,158,0.15)',emoji:'↓'},
-                  {label:'Commissions', value:String(commActives.length),  color:'#12b76a',bg:'rgba(18,183,106,0.06)', border:'rgba(18,183,106,0.15)', emoji:'✅',sub:'Solution Express'},
+                  {label:'Commissions', value:String(commActives.length),  color:'#12b76a',bg:'rgba(18,183,106,0.06)', border:'rgba(18,183,106,0.15)', emoji:'✅',sub:'Leads'},
                   {label:'Annulées',    value:String(commAnnulees),        color:'#be123c',bg:'rgba(190,18,60,0.06)',  border:'rgba(190,18,60,0.15)',  emoji:'❌',sub:'installations'},
                 ].map((s,i)=>(
                   <div key={i} style={{background:s.bg,borderRadius:12,padding:'12px 14px',border:`1px solid ${s.border}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -528,9 +582,9 @@ export default function DashboardPage() {
               {/* Historique */}
               <div style={{background:'rgba(255,255,255,0.03)',borderRadius:14,overflow:'hidden',border:'1px solid rgba(255,255,255,0.07)'}}>
                 <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.07)',padding:'10px 16px',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-                  {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ Attente']] as const).map(([k,l])=>{
+                  {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ Attente'],['annulee','❌ Annulée']] as const).map(([k,l])=>{
                     const active = commFiltre===k;
-                    const ac = k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'#3b6cf8';
+                    const ac = k==='payee'?'#12b76a':k==='annulee'?'#be123c':k==='non_payee'?'#f79009':'#3b6cf8';
                     return (
                       <button key={k} onClick={()=>setCommFiltre(k)}
                         style={{padding:'4px 14px',borderRadius:20,fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s',
@@ -551,7 +605,7 @@ export default function DashboardPage() {
                     const annulee = c.status==='installation_annulee';
                     const paid    = !annulee&&!!c.commissionPayee;
                     const color   = annulee?'#be123c':paid?'#12b76a':'#f79009';
-                    const date    = new Date(c.dateVente??c.createdAt).toLocaleDateString('fr-CA');
+                    const date    = new Date(c.dateVente??c.createdAt).toLocaleDateString('fr-FR');
                     return (
                       <div key={c.id} className="dash-row"
                         style={{display:'flex',alignItems:'center',gap:isMobile?10:12,padding:isMobile?'10px 14px':'10px 16px',borderBottom:i<commFiches.length-1?'1px solid rgba(255,255,255,0.06)':'none',transition:'all 0.15s',background:annulee?'rgba(190,18,60,0.04)':'transparent'}}>
@@ -798,7 +852,9 @@ export default function DashboardPage() {
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'22px',backdropFilter:'blur(20px)'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
                 <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Leads récents</div>
-                <TrendingUp size={14} color="rgba(255,255,255,0.4)"/>
+                <button onClick={()=>router.push('/leads')} style={{display:'flex',alignItems:'center',gap:4,background:'rgba(18,183,106,0.08)',border:'1px solid rgba(18,183,106,0.2)',borderRadius:8,padding:'4px 10px',color:'#12b76a',fontSize:11,fontWeight:700,cursor:'pointer'}}>
+                  Voir tous →
+                </button>
               </div>
               {recent.length?(
                 <div style={{display:'flex',flexDirection:'column'}}>
@@ -816,7 +872,7 @@ export default function DashboardPage() {
                         </div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:annulee?'#be123c':'#c0c0e0'}}>{name}</div>
-                          <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:1}}>{f.ville||'—'} · {new Date(f.dateVente??f.createdAt).toLocaleDateString('fr-CA')}</div>
+                          <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:1}}>{f.ville||'—'} · {new Date(f.dateVente??f.createdAt).toLocaleDateString('fr-FR')}</div>
                           {annulee&&f.motifAnnulation&&<div style={{fontSize:10,color:'#be123c',marginTop:1}}>✕ {f.motifAnnulation}</div>}
                         </div>
                         <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'rgba(59,108,248,0.12)',color:f.typeClient==='b2b'?'#3b6cf8':'#12b76a',flexShrink:0}}>

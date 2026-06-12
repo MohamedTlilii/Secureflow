@@ -9,13 +9,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("agent")
-  avatar    String?
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  name       String
+  email      String    @unique
+  password   String
+  role       String    @default("agent")
+  avatar     String?
+  dateDebut  DateTime?
+  createdAt  DateTime  @default(now())
 
   fiches SolutionExpress[]
 }
@@ -71,6 +72,8 @@ model Settings {
   services             Json     @default("[]")
   motifsAnnulation     Json     @default("[]")
   objectifAnnuel       Json     @default("{}")
+  commissionFixeDefaut   Float    @default(0)
+  commissionExtraDefaut  Float    @default(0)
   updatedAt            DateTime @updatedAt
 }
 

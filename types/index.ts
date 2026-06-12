@@ -4,6 +4,7 @@ export interface User {
   email: string;
   role: string;
   avatar?: string | null;
+  dateDebut?: string | null;
   createdAt: string;
 }
 
@@ -102,6 +103,8 @@ export interface Settings {
   services: Service[];
   motifsAnnulation: string[];
   objectifAnnuel: Record<string, number>;
+  commissionFixeDefaut: number;
+  commissionExtraDefaut: number;
 }
 
 export interface EssenceMois {
@@ -178,4 +181,6 @@ export const DEFAULT_SETTINGS: Settings = {
   ],
   motifsAnnulation: ['Prix trop élevé', 'Délai trop long', 'Concurrent choisi', 'Client non disponible', 'Autre'],
   objectifAnnuel: { '2025': 2222, '2026': 5000 },
+  commissionFixeDefaut: 0,
+  commissionExtraDefaut: 0,
 };

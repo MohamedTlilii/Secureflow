@@ -70,7 +70,7 @@ export default function DatabasePage() {
   const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
-      const r = await api.get<SolutionExpress[]>('/api/solution-express');
+      const r = await api.get<SolutionExpress[]>('/api/leads');
       setLeads(Array.isArray(r.data) ? r.data : []);
     } catch { setLeads([]); }
     finally { setLoading(false); }
@@ -138,7 +138,7 @@ export default function DatabasePage() {
     const name = item.entreprise || `${item.prenom||''} ${item.nom||''}`.trim() || 'cette fiche';
     if (!window.confirm(`Supprimer "${name}" ?`)) return;
     try {
-      await api.delete(`/api/solution-express/${item.id}`);
+      await api.delete(`/api/leads/${item.id}`);
       setLeads(prev => prev.filter(l => l.id !== item.id));
       toast.success('Supprimé');
       fetchDbStats();
@@ -200,7 +200,7 @@ export default function DatabasePage() {
                       Base de Données
                     </h1>
                     <p style={{ margin:0, marginTop:3, fontSize:13, color:'rgba(255,255,255,0.55)' }}>
-                      Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{fichesByAnnee.length}</span> enregistrement{fichesByAnnee.length !== 1 ? 's' : ''}
+                      Leads · <span style={{ color:'#12b76a', fontWeight:700 }}>{fichesByAnnee.length}</span> enregistrement{fichesByAnnee.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export default function DatabasePage() {
               {/* Compteurs collections */}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap:8 }}>
                 {[
-                  { label:'Solution Express', value:dbStats.solutionExpress, color:'#12b76a', Icon:Building2, suffix:''      },
+                  { label:'Leads',            value:dbStats.solutionExpress, color:'#12b76a', Icon:Building2, suffix:''      },
                   { label:'Utilisateurs',     value:dbStats.users,           color:'#3b6cf8', Icon:DbIcon,    suffix:''      },
                   { label:`Essence reçu ${new Date().getFullYear()}`, value:dbStats.essenceRecu, color:'#f59e0b', Icon:HardDrive, suffix:' TND' },
                 ].map(({ label, value, color, Icon, suffix },i) => (
@@ -465,7 +465,7 @@ export default function DatabasePage() {
                           {hasFilters ? 'Aucun résultat' : 'Aucun enregistrement'}
                         </div>
                         <div style={{ fontSize:12 }}>
-                          {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des fiches dans Solution Express'}
+                          {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des leads via la page Leads'}
                         </div>
                       </td>
                     </tr>

@@ -108,7 +108,7 @@ export default function SolutionExpressPage() {
   const fetchAll = useCallback(async () => {
     try {
       const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/solution-express'),
+        api.get<SolutionExpress[]>('/api/leads'),
         api.get<Settings>('/api/settings'),
       ]);
       setFiches(Array.isArray(f.data) ? f.data : []);
@@ -128,7 +128,9 @@ export default function SolutionExpressPage() {
   const openAdd = () => {
     setEditing(null);
     const fournisseurs = Object.fromEntries(settings.services.map(s => [s.id, { actuel: '', propose: '' }]));
-    setForm({ ...EMPTY_FORM, fournisseurs });
+    const fixe  = settings.commissionFixeDefaut  || 0;
+    const extra = settings.commissionExtraDefaut || 0;
+    setForm({ ...EMPTY_FORM, fournisseurs, commissionFixe: fixe, commissionExtra: extra, commissionTotale: fixe + extra });
     setModal('add');
   };
 
@@ -155,11 +157,11 @@ export default function SolutionExpressPage() {
         datePaiementCommission: form.datePaiementCommission ? new Date(form.datePaiementCommission+'T12:00:00').toISOString() : null,
       };
       if (editing) {
-        await api.put(`/api/solution-express/${editing.id}`, payload);
+        await api.put(`/api/leads/${editing.id}`, payload);
         if (selected?.id === editing.id) setSelected(s => s ? { ...s, ...payload } : null);
         toast.success('Fiche modifiée');
       } else {
-        await api.post('/api/solution-express', payload);
+        await api.post('/api/leads', payload);
         toast.success('Fiche créée !');
       }
       setModal(null); fetchAll();
@@ -170,7 +172,7 @@ export default function SolutionExpressPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette fiche définitivement ?')) return;
     try {
-      await api.delete(`/api/solution-express/${id}`);
+      await api.delete(`/api/leads/${id}`);
       if (selected?.id === id) setSelected(null);
       toast.success('Fiche supprimée'); fetchAll();
     } catch { toast.error('Erreur suppression'); }
@@ -184,7 +186,7 @@ export default function SolutionExpressPage() {
     setFiches(prev => prev.map(f => f.id === fiche.id ? optimistic : f));
     if (selected?.id === fiche.id) setSelected(optimistic);
     try {
-      await api.put(`/api/solution-express/${fiche.id}`, { commissionPayee: next, datePaiementCommission: next ? new Date().toISOString() : null });
+      await api.put(`/api/leads/${fiche.id}`, { commissionPayee: next, datePaiementCommission: next ? new Date().toISOString() : null });
       fetchAll();
     } catch { toast.error('Erreur paiement'); fetchAll(); }
     finally { toggleRef.current.delete(fiche.id); }
@@ -192,7 +194,7 @@ export default function SolutionExpressPage() {
 
   const changeStatus = (fiche: SolutionExpress, newStatus: StatusFiche) => {
     if (newStatus === 'installation_annulee') { setMotifPending({ fiche }); setMotifChoice(''); return; }
-    api.put(`/api/solution-express/${fiche.id}`, { status: newStatus })
+    api.put(`/api/leads/${fiche.id}`, { status: newStatus })
       .then(() => {
         setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: newStatus } : f));
         if (selected?.id === fiche.id) setSelected(s => s ? { ...s, status: newStatus } : null);
@@ -204,7 +206,7 @@ export default function SolutionExpressPage() {
   const confirmAnnulation = async () => {
     if (!motifPending) return;
     try {
-      await api.put(`/api/solution-express/${motifPending.fiche.id}`, { status: 'installation_annulee', motifAnnulation: motifChoice });
+      await api.put(`/api/leads/${motifPending.fiche.id}`, { status: 'installation_annulee', motifAnnulation: motifChoice });
       setFiches(prev => prev.map(f => f.id === motifPending.fiche.id ? { ...f, status: 'installation_annulee', motifAnnulation: motifChoice } : f));
       if (selected?.id === motifPending.fiche.id) setSelected(s => s ? { ...s, status: 'installation_annulee', motifAnnulation: motifChoice } : null);
       toast.success('Annulation confirmée'); fetchAll();
@@ -215,7 +217,7 @@ export default function SolutionExpressPage() {
   const addNote = useCallback(async (fiche: SolutionExpress, note: string) => {
     const updated = [...(fiche.notes ?? []), note];
     try {
-      await api.put(`/api/solution-express/${fiche.id}`, { notes: updated });
+      await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
       if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
     } catch { toast.error('Erreur ajout note'); }
@@ -224,7 +226,7 @@ export default function SolutionExpressPage() {
   const deleteNote = useCallback(async (fiche: SolutionExpress, idx: number) => {
     const updated = (fiche.notes ?? []).filter((_, i) => i !== idx);
     try {
-      await api.put(`/api/solution-express/${fiche.id}`, { notes: updated });
+      await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
       if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
     } catch { toast.error('Erreur suppression note'); }
@@ -287,7 +289,7 @@ export default function SolutionExpressPage() {
   const totalInstalle = fichesByAnnee.filter(f => f.status === 'installe').length;
   const totalPipeline = fichesByAnnee.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
   const convRate      = totalFiches > 0 ? Math.round((totalInstalle / totalFiches) * 100) : 0;
-  const commTot       = fichesByAnnee.reduce((s, f) => s + (f.commissionTotale || 0), 0);
+  const commTot       = fichesByAnnee.filter(f => f.status !== 'installation_annulee').reduce((s, f) => s + (f.commissionTotale || 0), 0);
   const commAtt       = fichesByAnnee.filter(f => !f.commissionPayee && f.status !== 'installation_annulee').reduce((s, f) => s + (f.commissionTotale || 0), 0);
 
   const filtersActive  = Object.values(filters).some(Boolean) || !!search;
@@ -333,7 +335,7 @@ export default function SolutionExpressPage() {
                   </div>
                   <div>
                     <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-                      Solution Express
+                      Leads
                     </h1>
                     <p style={{ margin:0, marginTop:3, fontSize:13, color:'rgba(255,255,255,0.5)' }}>
                       CRM personnel · <span style={{ color:'#a78bfa', fontWeight:700 }}>{totalFiches}</span> fiche{totalFiches !== 1 ? 's' : ''}
@@ -428,8 +430,9 @@ export default function SolutionExpressPage() {
                   <Sel val={filters.typeClient}   onChange={v => setFilters(p => ({...p, typeClient:v}))}   opts={[{value:'b2b',label:'🏢 B2B'},{value:'b2c',label:'🏠 B2C'}]} placeholder="B2B / B2C"/>
                   <Sel val={filters.leadType}     onChange={v => setFilters(p => ({...p, leadType:v}))}     opts={settings.typeLead.map(t => ({value:t.key,label:t.label}))} placeholder="Type lead"/>
                   <Sel val={filters.ville}        onChange={v => setFilters(p => ({...p, ville:v}))}        opts={villesDispos.map(v => ({value:v,label:v}))} placeholder="Ville"/>
-                  <Sel val={filters.typeCommerce} onChange={v => setFilters(p => ({...p, typeCommerce:v}))} opts={settings.typeCommerce.map(t => ({value:t.key,label:t.label}))} placeholder="Commerce"/>
-                  <Sel val={filters.commission}   onChange={v => setFilters(p => ({...p, commission:v}))}   opts={[{value:'payee',label:'✓ Payée'},{value:'en_attente',label:'⏳ En attente'},{value:'avec',label:'Avec commission'},{value:'annulee',label:'✕ Annulée'}]} placeholder="Commission"/>
+                  <Sel val={filters.typeCommerce}  onChange={v => setFilters(p => ({...p, typeCommerce:v}))}  opts={settings.typeCommerce.map(t => ({value:t.key,label:t.label}))} placeholder="Commerce"/>
+                  <Sel val={filters.qualifSysteme} onChange={v => setFilters(p => ({...p, qualifSysteme:v}))} opts={settings.qualificationSysteme.map(t => ({value:t.key,label:t.label}))} placeholder="Système actuel"/>
+                  <Sel val={filters.commission}    onChange={v => setFilters(p => ({...p, commission:v}))}    opts={[{value:'payee',label:'✓ Payée'},{value:'en_attente',label:'⏳ En attente'},{value:'avec',label:'Avec commission'},{value:'annulee',label:'✕ Annulée'}]} placeholder="Commission"/>
                   <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)}
                     style={{ padding:'7px 12px', borderRadius:9, fontSize:12, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', cursor:'pointer' }}>
                     <option value="date_desc">Plus récent</option>

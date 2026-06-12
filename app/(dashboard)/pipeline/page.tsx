@@ -81,6 +81,7 @@ export default function PipelinePage() {
   const [settings,    setSettings]    = useState<Settings>(DEFAULT_SETTINGS);
   const [annee,       setAnnee]       = useState<string>(String(new Date().getFullYear()));
   const [mois,        setMois]        = useState<string>('tout');
+  const [filtreComm,  setFiltreComm]  = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
   const [loading,     setLoading]     = useState(true);
   const [dragId,      setDragId]      = useState<string|null>(null);
   const [over,        setOver]        = useState<string|null>(null);
@@ -110,7 +111,7 @@ export default function PipelinePage() {
   const fetchAll = useCallback(async () => {
     try {
       const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/solution-express'),
+        api.get<SolutionExpress[]>('/api/leads'),
         api.get<Settings>('/api/settings'),
       ]);
       setItems(Array.isArray(f.data) ? f.data : []);
@@ -138,8 +139,11 @@ export default function PipelinePage() {
   const filtered = useMemo(() => {
     let r = annee === 'tout' ? items : items.filter(f => getYear(f) === annee);
     if (annee !== 'tout' && mois !== 'tout') r = r.filter(f => getMonth(f) === Number(mois));
+    if (filtreComm === 'payee')     r = r.filter(f => f.commissionPayee);
+    if (filtreComm === 'non_payee') r = r.filter(f => !f.commissionPayee && f.status !== 'installation_annulee');
+    if (filtreComm === 'annulee')   r = r.filter(f => f.status === 'installation_annulee');
     return r;
-  }, [items, annee, mois]);
+  }, [items, annee, mois, filtreComm]);
 
   const annees = useMemo(() =>
     [...new Set(items.map(getYear))].sort().reverse(),
@@ -160,11 +164,12 @@ export default function PipelinePage() {
     filtered.forEach(f=>(f.produits as string[]).forEach(p=>{ map[p]=(map[p]||0)+1; }));
     return map;
   }, [filtered]);
+  const activeServices = useMemo(()=>settings.services.filter(svc=>(serviceCounts[svc.id]||0)>0),[settings.services,serviceCounts]);
 
   /* ── drag & drop ── */
   const updateStatus = async (id: string, status: StatusFiche, motifAnnulation?: string) => {
     try {
-      await api.put(`/api/solution-express/${id}`, { status, ...(motifAnnulation&&{motifAnnulation}) });
+      await api.put(`/api/leads/${id}`, { status, ...(motifAnnulation&&{motifAnnulation}) });
       setItems(prev=>prev.map(i=>i.id===id?{...i,status,...(motifAnnulation&&{motifAnnulation})}:i));
       toast.success(`→ ${STAGES.find(s=>s.key===status)?.label}`);
     } catch { toast.error('Erreur mise à jour'); }
@@ -240,6 +245,18 @@ export default function PipelinePage() {
                       {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
+                  {/* Pills commission */}
+                  <div style={{display:'flex',gap:3,background:'rgba(0,0,0,0.2)',borderRadius:10,padding:3}}>
+                    {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳'],['annulee','✕ Annulée']] as const).map(([k,l])=>(
+                      <button key={k} onClick={()=>setFiltreComm(k)}
+                        style={{padding:'5px 10px',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',border:'none',transition:'all 0.2s',whiteSpace:'nowrap',
+                          background:filtreComm===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':k==='annulee'?'#be123c':'rgba(167,139,250,0.6)'):'transparent',
+                          color:filtreComm===k?'#fff':'rgba(255,255,255,0.5)',
+                          boxShadow:filtreComm===k?'0 2px 8px rgba(0,0,0,0.2)':'none'}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
                   <select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
                     <option value="tout">Toutes les années</option>
@@ -298,9 +315,9 @@ export default function PipelinePage() {
                       <ScoreRing value={installe}  max={total||1} color="#22c55e" label="Installé"/>
                       <ScoreRing value={annulees}  max={total||1} color="#be123c" label="Annulée"/>
                     </div>
-                    {settings.services.length>0&&(
+                    {activeServices.length>0&&(
                       <div style={{display:'flex',gap:14}}>
-                        {settings.services.map(svc=>(
+                        {activeServices.map(svc=>(
                           <div key={svc.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
                             <div style={{width:40,height:40,borderRadius:'50%',border:`2.5px solid ${svc.color||'#8b8b9e'}`,background:`${svc.color||'#8b8b9e'}15`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                               <span style={{fontSize:14,fontWeight:800,color:svc.color||'#8b8b9e'}}>{serviceCounts[svc.id]||0}</span>

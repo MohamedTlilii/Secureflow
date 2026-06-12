@@ -223,9 +223,11 @@ export default function UltraFiche({
 
             {/* Système */}
             <InfoBlock title="Système" icon={<Shield size={13} />}>
-              <InfoRow label="Qualification">
-                {settings.qualificationSysteme.find(q => q.key === fiche.qualificationSysteme)?.label ?? fiche.qualificationSysteme ?? '—'}
-              </InfoRow>
+              {fiche.qualificationSysteme && fiche.qualificationSysteme !== 'inconnu' && fiche.qualificationSysteme !== 'pas_de_systeme' && (
+                <InfoRow label="Qualification">
+                  {settings.qualificationSysteme.find(q => q.key === fiche.qualificationSysteme)?.label ?? fiche.qualificationSysteme}
+                </InfoRow>
+              )}
               <InfoRow label="Lead">
                 {settings.typeLead.find(t => t.key === fiche.leadType)?.label ?? fiche.leadType ?? '—'}
               </InfoRow>

@@ -12,6 +12,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
+import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings } from '@/types';
 import { DEFAULT_SETTINGS, MOIS_FULL } from '@/types';
 
@@ -77,10 +78,10 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
       const d   = new Date(c.dateVente ?? c.createdAt);
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       if (!map[key]) map[key] = { total:0, payee:0, attente:0, annulee:0, items:[] };
-      map[key].total += c.commissionTotale||0;
+      if (c.status !== 'installation_annulee') map[key].total += c.commissionTotale||0;
       if (c.status === 'installation_annulee') map[key].annulee += 1;
-      if (c.commissionPayee) map[key].payee  += c.commissionTotale||0;
-      else                   map[key].attente += c.commissionTotale||0;
+      if (c.commissionPayee)                        map[key].payee  += c.commissionTotale||0;
+      else if (c.status !== 'installation_annulee') map[key].attente += c.commissionTotale||0;
       map[key].items.push(c);
     });
     return map;
@@ -169,11 +170,12 @@ export default function CommissionsPage() {
   const [fiches,       setFiches]       = useState<SolutionExpress[]>([]);
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [annee,        setAnnee]        = useState<string>(String(new Date().getFullYear()));
-  const [filtre,       setFiltre]       = useState<'tout'|'payee'|'non_payee'>('tout');
+  const [filtre,       setFiltre]       = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
   const [calMois,      setCalMois]      = useState({ year:new Date().getFullYear(), month:new Date().getMonth() });
   const [selDate,      setSelDate]      = useState<Date|null>(null);
   const [selVentes,    setSelVentes]    = useState<SolutionExpress[]>([]);
   const [resumeFiche,  setResumeFiche]  = useState<SolutionExpress|null>(null);
+  const [ultraFiche,   setUltraFiche]   = useState<SolutionExpress|null>(null);
   const [loading,      setLoading]      = useState(true);
   const [mounted,      setMounted]      = useState(false);
 
@@ -198,7 +200,7 @@ export default function CommissionsPage() {
   const fetchAll = useCallback(async () => {
     try {
       const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/solution-express'),
+        api.get<SolutionExpress[]>('/api/leads'),
         api.get<Settings>('/api/settings'),
       ]);
       setFiches(Array.isArray(f.data) ? f.data : []);
@@ -225,12 +227,12 @@ export default function CommissionsPage() {
   /* ── toggle paiement ── */
   const togglePaiement = async (f: SolutionExpress) => {
     try {
-      await api.put(`/api/solution-express/${f.id}`, {
+      await api.put(`/api/leads/${f.id}`, {
         commissionPayee: !f.commissionPayee,
         datePaiementCommission: !f.commissionPayee ? new Date().toISOString() : null,
       });
       toast.success(!f.commissionPayee?'✓ Commission payée !':'Marquée non payée');
-      const res = await api.get<SolutionExpress[]>('/api/solution-express');
+      const res = await api.get<SolutionExpress[]>('/api/leads');
       const fresh = Array.isArray(res.data) ? res.data : [];
       setFiches(fresh);
       if (selVentes.length) {
@@ -252,7 +254,8 @@ export default function CommissionsPage() {
 
   const filtered = byAnnee.filter(c=>{
     if (filtre==='payee')     return c.commissionPayee;
-    if (filtre==='non_payee') return !c.commissionPayee;
+    if (filtre==='non_payee') return !c.commissionPayee && c.status !== 'installation_annulee';
+    if (filtre==='annulee')   return c.status === 'installation_annulee';
     return true;
   });
 
@@ -329,14 +332,14 @@ export default function CommissionsPage() {
                       Commissions
                     </h1>
                     <p style={{margin:0,marginTop:3,fontSize:13,color:'rgba(255,255,255,0.5)'}}>
-                      Solution Express · <span style={{color:'#12b76a',fontWeight:700}}>{withComm.length}</span> vente{withComm.length!==1?'s':''}
+                      Leads · <span style={{color:'#12b76a',fontWeight:700}}>{withComm.length}</span> vente{withComm.length!==1?'s':''}
                     </p>
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {/* Filtre pills */}
                   <div style={{display:'flex',gap:3,background:'rgba(0,0,0,0.2)',borderRadius:10,padding:3}}>
-                    {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳']] as const).map(([k,l])=>(
+                    {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳'],['annulee','✕ Annulée']] as const).map(([k,l])=>(
                       <button key={k} onClick={()=>setFiltre(k)}
                         style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',border:'none',transition:'all 0.2s',
                           background:filtre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'rgba(18,183,106,0.6)'):'transparent',
@@ -387,7 +390,7 @@ export default function CommissionsPage() {
               <div>
                 <div style={{fontSize:10,color:'#12b76a',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Total gagné</div>
                 <div style={{fontSize:isMobile?20:26,fontWeight:900,color:'#12b76a',lineHeight:1}}>
-                  <AnimatedNumber value={totalGagne} decimals={0} color="#12b76a"/>
+                  <AnimatedNumber value={totalGagne} decimals={0} color="#12b76a" suffix=" TND"/>
                 </div>
                 <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginTop:5}}>
                   {filtered.length} vente{filtered.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(filtered.length,1))}
@@ -401,7 +404,7 @@ export default function CommissionsPage() {
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:15,padding:isMobile?'14px 12px':'18px 16px',backdropFilter:'blur(20px)',textAlign:'center',height:'100%'}}>
               <div style={{fontSize:10,color:'#61DAFB',fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:8}}>✓ Payé</div>
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
-                <AnimatedNumber value={totalPaye} decimals={0} color="#61DAFB"/>
+                <AnimatedNumber value={totalPaye} decimals={0} color="#61DAFB" suffix=" TND"/>
               </div>
               <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>{filtered.filter(c=>c.commissionPayee).length} ventes</div>
             </div>
@@ -412,7 +415,7 @@ export default function CommissionsPage() {
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:15,padding:isMobile?'14px 12px':'18px 16px',backdropFilter:'blur(20px)',textAlign:'center',height:'100%'}}>
               <div style={{fontSize:10,color:'#f79009',fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:8}}>⏳ Attente</div>
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
-                <AnimatedNumber value={enAttente} decimals={0} color="#f79009"/>
+                <AnimatedNumber value={enAttente} decimals={0} color="#f79009" suffix=" TND"/>
               </div>
               <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>{filtered.filter(c=>!c.commissionPayee).length} ventes</div>
             </div>
@@ -423,7 +426,7 @@ export default function CommissionsPage() {
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:15,padding:isMobile?'14px 12px':'18px 16px',backdropFilter:'blur(20px)',textAlign:'center',height:'100%'}}>
               <div style={{fontSize:10,color:'#a78bfa',fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:8}}>↑ Max</div>
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
-                <AnimatedNumber value={maximum} decimals={0} color="#a78bfa"/>
+                <AnimatedNumber value={maximum} decimals={0} color="#a78bfa" suffix=" TND"/>
               </div>
               <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>meilleure</div>
             </div>
@@ -434,7 +437,7 @@ export default function CommissionsPage() {
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:15,padding:isMobile?'14px 12px':'18px 16px',backdropFilter:'blur(20px)',textAlign:'center',height:'100%'}}>
               <div style={{fontSize:10,color:'#8b8b9e',fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:8}}>↓ Min</div>
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
-                <AnimatedNumber value={minimum} decimals={0} color="#8b8b9e"/>
+                <AnimatedNumber value={minimum} decimals={0} color="#8b8b9e" suffix=" TND"/>
               </div>
               <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>plus petite</div>
             </div>
@@ -551,7 +554,7 @@ export default function CommissionsPage() {
                   })}
                   <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Total du jour</span>
-                    <span style={{fontSize:15,fontWeight:800,color:'#12b76a'}}>{fmtMoney(selVentes.reduce((s,c)=>s+(c.commissionTotale||0),0))}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:'#12b76a'}}>{fmtMoney(selVentes.filter(c=>c.status!=='installation_annulee').reduce((s,c)=>s+(c.commissionTotale||0),0))}</span>
                   </div>
                 </div>
               </div>
@@ -654,6 +657,17 @@ export default function CommissionsPage() {
         </div>
       </div>
 
+      {/* ════ ULTRAFICHE (readOnly) ════ */}
+      {ultraFiche&&(
+        <UltraFiche
+          fiche={ultraFiche} settings={settings} readOnly
+          onClose={()=>setUltraFiche(null)}
+          onEdit={()=>{}} onDelete={async ()=>{}}
+          onChangeStatus={()=>{}} onTogglePaiement={async ()=>{}}
+          onAddNote={async ()=>{}} onDeleteNote={async ()=>{}}
+        />
+      )}
+
       {/* ════ MODAL RÉSUMÉ ════ */}
       {resumeFiche&&(
         <div onClick={()=>setResumeFiche(null)}
@@ -692,6 +706,13 @@ export default function CommissionsPage() {
                 ?<pre style={{fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.7)',lineHeight:1.75,whiteSpace:'pre-wrap',wordBreak:'break-word',margin:0}}>{resumeFiche.summary}</pre>
                 :<div style={{textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
               }
+            </div>
+            {/* Footer */}
+            <div style={{padding:'12px 20px',borderTop:'1px solid rgba(255,255,255,0.07)',display:'flex',justifyContent:'flex-end',flexShrink:0}}>
+              <button onClick={()=>{setUltraFiche(resumeFiche);setResumeFiche(null);}}
+                style={{padding:'9px 18px',borderRadius:10,background:'linear-gradient(135deg,#12b76a,#61DAFB)',border:'none',color:'#030a16',fontSize:12,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 16px rgba(18,183,106,0.35)'}}>
+                Voir la fiche complète →
+              </button>
             </div>
           </div>
         </div>

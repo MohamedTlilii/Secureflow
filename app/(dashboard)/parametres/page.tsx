@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, CSSProperties } from 'react';
 import {
   Settings, MapPin, Building2, TrendingUp, Star, Shield, Wifi, Smartphone, Tv, Camera, Receipt,
   Phone, Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
   Music, Server, Cloud, Wrench, Bell, Key, Package, Laptop, Tablet, Video,
-  Plus, X, Save, CheckCircle, AlertCircle, ChevronRight, Loader, Trash2, Edit2,
+  Plus, X, Save, CheckCircle, AlertCircle, ChevronRight, Loader, Trash2, Edit2, UserCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import type { Settings as SettingsType, Service } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 /* ─── Cosmos bg ─── */
 const PART_COLORS = ['#a78bfa','#3b6cf8','#8b5cf6','#06b6d4','#12b76a'];
@@ -35,13 +36,15 @@ function slugify(s: string) {
 
 /* ─── Tabs ─── */
 const TABS = [
+  { id:'profil',           label:'Profil',              Icon:UserCircle2, color:'#38bdf8' },
   { id:'villes',           label:'Villes',              Icon:MapPin,      color:'#38bdf8' },
   { id:'typeCommerce',     label:'Commerce',            Icon:Building2,   color:'#f79009' },
   { id:'typeLead',         label:'Lead',                Icon:Zap,         color:'#a764f8' },
   { id:'qualification',    label:'Qualification',       Icon:Star,        color:'#f04438' },
   { id:'services',         label:'Services',            Icon:Shield,      color:'#6366f1' },
-  { id:'objectifAnnuel',   label:'Objectif annuel',     Icon:TrendingUp, color:'#12b76a' },
+  { id:'objectifAnnuel',   label:'Objectif annuel',     Icon:TrendingUp,  color:'#12b76a' },
   { id:'motifsAnnulation', label:"Motifs d'annulation", Icon:AlertCircle, color:'#ef4444' },
+  { id:'commissionDefaut', label:'Commission défaut',   Icon:TrendingUp,  color:'#12b76a' },
 ];
 
 const ICON_OPTIONS = [
@@ -426,6 +429,139 @@ function ServiceSection({ services, onUpdate, isMobile }: {
   );
 }
 
+/* ─────────────────── ProfilSection ─────────────────── */
+const PROFILE_AVATARS = [
+  '👤','👨‍💼','🧑‍💻','🎩','🕵️','🤵',
+  '🦁','🦊','🐺','🦅','🐯','🦋','🐻','🦄',
+  '🎯','🌟','🔥','💎','🚀','⚡','🏆','🛡️',
+  '💡','🎭','🌙','🎸','🤝','🎪','🧲','🎲',
+];
+
+function ProfilSection() {
+  const { user, refreshUser } = useAuth();
+  const [name,       setName]       = useState(user?.name || '');
+  const [role,       setRole]       = useState(user?.role || '');
+  const [email,      setEmail]      = useState(user?.email || '');
+  const [dateDebut,  setDateDebut]  = useState(user?.dateDebut ? user.dateDebut.slice(0,10) : '');
+  const [avatar,     setAvatar]     = useState(user?.avatar || '');
+  const [newPwd,     setNewPwd]     = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [saving,     setSaving]     = useState(false);
+  const color = '#38bdf8';
+
+  const inputStyle: CSSProperties = {
+    width:'100%', padding:'9px 14px', borderRadius:10,
+    border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)',
+    color:'#fff', fontSize:13, outline:'none', boxSizing:'border-box', transition:'border-color 0.2s',
+  };
+
+  const save = async () => {
+    if (newPwd && newPwd !== confirmPwd) { toast.error('Les mots de passe ne correspondent pas'); return; }
+    if (newPwd && newPwd.length < 6)     { toast.error('Mot de passe trop court (min. 6 caractères)'); return; }
+    setSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        name: name.trim(), role: role.trim(), email: email.trim(),
+        dateDebut: dateDebut || null, avatar: avatar || null,
+      };
+      if (newPwd) { body.newPassword = newPwd; }
+      await api.put('/api/profile', body);
+      await refreshUser();
+      setNewPwd(''); setConfirmPwd('');
+      toast.success('Profil sauvegardé !');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erreur lors de la sauvegarde';
+      toast.error(msg);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+
+      {/* Avatar */}
+      <div>
+        <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:10, fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>Avatar</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+          {PROFILE_AVATARS.map(a => (
+            <button key={a} type="button" onClick={() => setAvatar(a === avatar ? '' : a)}
+              style={{ width:50, height:50, borderRadius:12, border:`2px solid ${avatar===a ? color : 'rgba(255,255,255,0.25)'}`, background: avatar===a ? `${color}25` : 'rgba(255,255,255,0.08)', cursor:'pointer', fontSize:24, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', boxShadow: avatar===a ? `0 0 16px ${color}66` : '0 2px 6px rgba(0,0,0,0.3)' }}>
+              {a}
+            </button>
+          ))}
+        </div>
+        {avatar && (
+          <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ fontSize:22 }}>{avatar}</span>
+            <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)' }}>sélectionné</span>
+            <button type="button" onClick={() => setAvatar('')}
+              style={{ background:'none', border:'1px solid rgba(239,68,68,0.25)', borderRadius:6, cursor:'pointer', color:'rgba(239,68,68,0.7)', fontSize:11, fontWeight:600, padding:'2px 8px', transition:'all 0.15s' }}>
+              Retirer
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Champs profil */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        {([
+          ['Nom complet',  name,      setName,      'text',  'Ton nom complet'],
+          ['Rôle',         role,      setRole,      'text',  'Ex: Agent commercial'],
+          ['Email',        email,     setEmail,     'email', 'ton@email.com'],
+        ] as [string, string, (v:string)=>void, string, string][]).map(([label, val, setter, type, ph]) => (
+          <div key={label}>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>{label}</div>
+            <input type={type} value={val} onChange={e => setter(e.target.value)} placeholder={ph} style={inputStyle}
+              onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
+            />
+          </div>
+        ))}
+        <div>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Date de début</div>
+          <input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
+            style={{ ...inputStyle, colorScheme:'dark' }}
+            onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
+          />
+        </div>
+      </div>
+
+      {/* Mot de passe */}
+      <div>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, paddingTop:8, borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:0.8 }}>Changer le mot de passe</div>
+          <span style={{ fontSize:10, color:'rgba(255,255,255,0.25)' }}>— optionnel</span>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+            <div style={{ flex:1, minWidth:150 }}>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Nouveau mot de passe</div>
+              <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="••••••••" style={inputStyle}
+                onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
+              />
+            </div>
+            <div style={{ flex:1, minWidth:150 }}>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Confirmer</div>
+              <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••"
+                style={{ ...inputStyle, borderColor: confirmPwd && newPwd!==confirmPwd ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.12)' }}
+                onFocus={e => (e.target.style.borderColor=confirmPwd&&newPwd!==confirmPwd?'rgba(239,68,68,0.6)':color)}
+                onBlur={e  => (e.target.style.borderColor=confirmPwd&&newPwd!==confirmPwd?'rgba(239,68,68,0.4)':'rgba(255,255,255,0.12)')}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bouton */}
+      <div>
+        <button onClick={save} disabled={saving}
+          style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 24px', borderRadius:13, border:'none', cursor: saving ? 'wait' : 'pointer', background:`linear-gradient(135deg,${color},#0ea5e9)`, color:'#fff', fontSize:13, fontWeight:800, boxShadow:`0 4px 20px ${color}44`, opacity: saving ? 0.7 : 1, transition:'opacity 0.2s' }}>
+          {saving ? <><Loader size={14} style={{ animation:'spin 1s linear infinite' }}/> Sauvegarde…</>
+           : <><Save size={14}/> Sauvegarder le profil</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════════════
    PAGE PRINCIPALE
 ════════════════════════════════════════════════════════════════════ */
@@ -597,6 +733,8 @@ export default function ParametresPage() {
             <div style={{ flex:1, height:1, background:`linear-gradient(90deg,${tab.color}40,transparent)` }}/>
           </div>
 
+          {activeTab === 'profil' && <ProfilSection/>}
+
           {activeTab === 'villes' && (
             <SimpleSection items={settings.villes||[]} color={tab.color} placeholder="Ex: Brossard, Sainte-Julie..."
               onAdd={v => addSimple('villes', v)} onRemove={i => removeSimple('villes', i)}/>
@@ -626,6 +764,44 @@ export default function ParametresPage() {
           {activeTab === 'motifsAnnulation' && (
             <SimpleSection items={settings.motifsAnnulation||[]} color={tab.color} placeholder="Ex: Prix trop élevé, Concurrent..."
               onAdd={v => addSimple('motifsAnnulation', v)} onRemove={i => removeSimple('motifsAnnulation', i)}/>
+          )}
+          {activeTab === 'commissionDefaut' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)' }}>
+                Ces montants seront pré-remplis automatiquement quand tu crées une nouvelle fiche. Tu pourras toujours les modifier dans le formulaire.
+              </div>
+              <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                <div>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Commission fixe par défaut</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="number" min="0" step="0.01"
+                      value={settings.commissionFixeDefaut ?? 0}
+                      onChange={e => upd('commissionFixeDefaut', parseFloat(e.target.value)||0)}
+                      style={{ width:140, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
+                      onFocus={e => (e.target.style.borderColor=tab.color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
+                    />
+                    <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>TND</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Commission extra par défaut</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input type="number" min="0" step="0.01"
+                      value={settings.commissionExtraDefaut ?? 0}
+                      onChange={e => upd('commissionExtraDefaut', parseFloat(e.target.value)||0)}
+                      style={{ width:140, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
+                      onFocus={e => (e.target.style.borderColor=tab.color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
+                    />
+                    <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>TND</span>
+                  </div>
+                </div>
+              </div>
+              {((settings.commissionFixeDefaut||0) > 0 || (settings.commissionExtraDefaut||0) > 0) && (
+                <div style={{ padding:'12px 16px', borderRadius:12, background:'rgba(18,183,106,0.08)', border:'1px solid rgba(18,183,106,0.2)', fontSize:13, color:'#12b76a', fontWeight:600 }}>
+                  Total par défaut : {((settings.commissionFixeDefaut||0) + (settings.commissionExtraDefaut||0)).toFixed(2)} TND
+                </div>
+              )}
+            </div>
           )}
         </div>
         </div>

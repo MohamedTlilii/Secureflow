@@ -15,21 +15,19 @@ const NAV = [
   { to: '/',                 label: 'Dashboard',           color: '#38bdf8', Icon: LayoutDashboard },
   { to: '/comparaison',      label: 'Comparaison',         color: '#34d399', Icon: BarChart2       },
   { to: '/commissions',      label: 'Commissions',         color: '#10b981', Icon: Wallet          },
-  { to: '/solution-express', label: 'Solution Express',    color: '#818cf8', Icon: Users           },
+  { to: '/leads',            label: 'Leads',                color: '#818cf8', Icon: Users           },
   { to: '/pipeline',         label: 'Pipeline',            color: '#c084fc', Icon: Kanban          },
   { to: '/essence',          label: 'Indemnité Carburant', color: '#fb923c', Icon: Fuel            },
   { to: '/database',         label: 'Base de données',     color: '#f472b6', Icon: Database        },
   { to: '/parametres',       label: 'Paramètres',          color: '#a78bfa', Icon: Settings        },
 ] as const;
 
-const DEBUT = new Date(2025, 5, 15, 12, 0, 0);
-
 function fmtDebut(d: Date): string {
-  return d.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function anciennete(): { label: string; suffix: string } {
-  const diff = Math.floor((Date.now() - DEBUT.getTime()) / 86400000);
+function anciennete(d: Date): { label: string; suffix: string } {
+  const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
   if (diff < 30)  return { label: `${diff} jour${diff > 1 ? 's' : ''}`, suffix: "d'activité" };
   if (diff < 365) return { label: `${Math.floor(diff / 30)} mois`,       suffix: "d'activité" };
   const y = Math.floor(diff / 365);
@@ -70,13 +68,16 @@ export default function Sidebar() {
   useEffect(() => { if (showAnniv) setExpanded(false); }, [showAnniv]);
 
   useEffect(() => {
+    if (!user) return;
+    const debut = user.dateDebut ? new Date(user.dateDebut) : null;
+    if (!debut) return;
     const today = new Date();
-    if (today.getMonth() !== 5 || today.getDate() !== 15) return;
+    if (today.getMonth() !== debut.getMonth() || today.getDate() !== debut.getDate()) return;
     const key = `sf_anniv_${today.getFullYear()}`;
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, '1');
     setTimeout(() => setShowAnniv(true), 1200);
-  }, []);
+  }, [user]);
 
   useEffect(() => { if (!showProfile) setStats(null); }, [showProfile]);
 
@@ -95,7 +96,7 @@ export default function Sidebar() {
   useEffect(() => {
     if (!showProfile || stats) return;
     const controller = new AbortController();
-    api.get<SolutionExpress[]>('/api/solution-express', { signal: controller.signal })
+    api.get<SolutionExpress[]>('/api/leads', { signal: controller.signal })
       .then(res => {
         const all = Array.isArray(res.data) ? res.data : [];
         if (!all.length) { setStats({ totalPaye: 0, enAttente: 0, annee: new Date().getFullYear() }); return; }
@@ -139,7 +140,7 @@ export default function Sidebar() {
             <div style={{ fontSize:12.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{user?.name}</div>
             <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:600, textTransform:'capitalize' }}>{user?.role}</div>
           </div>
-          <Avatar/>
+          <Avatar emoji={user?.avatar}/>
         </div>
       </header>
 
@@ -166,7 +167,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <AnnivModal show={showAnniv} name={user?.name} onClose={() => setShowAnniv(false)}/>
+      <AnnivModal show={showAnniv} name={user?.name} debutYear={user?.dateDebut ? new Date(user.dateDebut).getFullYear() : undefined} onClose={() => setShowAnniv(false)}/>
       <style>{`@keyframes profileSlideDown{from{opacity:0;transform:translateY(-10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
     </>
   );
@@ -216,7 +217,7 @@ export default function Sidebar() {
         <div style={{ padding:'10px 8px 14px', borderTop:'1px solid rgba(18,183,106,0.1)', flexShrink:0, position:'relative' }}>
           <div style={{ padding:'1.5px', borderRadius:12, background: showProfile ? 'linear-gradient(135deg,#12b76a60,#3b6cf830)' : 'linear-gradient(135deg,rgba(18,183,106,0.2),rgba(59,108,248,0.1))', marginBottom:6, transition:'background 0.2s' }}>
             <div ref={avatarRef} onClick={() => setShowProfile(p => !p)} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:'10.5px', background:'rgba(2,6,20,0.95)', transition:'all 0.2s', cursor:'pointer', overflow:'hidden' }}>
-              <Avatar size={29}/>
+              <Avatar size={29} emoji={user?.avatar}/>
               <div style={{ flex:1, minWidth:0, opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-6px)', transition:'opacity 0.22s ease 0.05s,transform 0.22s ease 0.05s', pointerEvents: expanded ? 'auto' : 'none' }}>
                 <div style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', background:'linear-gradient(135deg,#e8fff5,#12b76a)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{user?.name}</div>
                 <div style={{ fontSize:10, color:'rgba(18,183,106,0.8)', fontWeight:600, textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
@@ -235,7 +236,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      <AnnivModal show={showAnniv} name={user?.name} onClose={() => setShowAnniv(false)}/>
+      <AnnivModal show={showAnniv} name={user?.name} debutYear={user?.dateDebut ? new Date(user.dateDebut).getFullYear() : undefined} onClose={() => setShowAnniv(false)}/>
     </>
   );
 }
@@ -260,7 +261,14 @@ function LogoSVG({ id, size }: { id: string; size: number }) {
   );
 }
 
-function Avatar({ size = 33 }: { size?: number }) {
+function Avatar({ size = 33, emoji }: { size?: number; emoji?: string | null }) {
+  if (emoji) {
+    return (
+      <div style={{ width:size, height:size, borderRadius:'50%', flexShrink:0, border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 10px rgba(18,183,106,0.25)', background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(59,108,248,0.12))', display:'flex', alignItems:'center', justifyContent:'center', fontSize: Math.round(size * 0.52) }}>
+        {emoji}
+      </div>
+    );
+  }
   return (
     <div style={{ width:size, height:size, borderRadius:'50%', flexShrink:0, border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 10px rgba(18,183,106,0.25)', background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(59,108,248,0.12))', display:'flex', alignItems:'center', justifyContent:'center' }}>
       <UserCircle2 size={Math.round(size * 0.72)} color="#12b76a" strokeWidth={1.5}/>
@@ -268,12 +276,16 @@ function Avatar({ size = 33 }: { size?: number }) {
   );
 }
 
-function ProfilePanel({ user, stats, onClose, onLogout }: { user: { name?: string; role?: string } | null; stats: ProfileStats | null; onClose: () => void; onLogout: () => void }) {
-  const anc = anciennete();
+function ProfilePanel({ user, stats, onClose, onLogout }: {
+  user: { name?: string; role?: string; avatar?: string | null; dateDebut?: string | null; createdAt?: string } | null;
+  stats: ProfileStats | null; onClose: () => void; onLogout: () => void
+}) {
+  const debutDate = user?.dateDebut ? new Date(user.dateDebut) : user?.createdAt ? new Date(user.createdAt) : null;
+  const anc = debutDate ? anciennete(debutDate) : null;
   return (
     <>
       <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.12),transparent)', padding:'16px 14px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:11 }}>
-        <Avatar size={44}/>
+        <Avatar size={44} emoji={user?.avatar}/>
         <div style={{ minWidth:0, flex:1 }}>
           <div style={{ fontSize:13.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
           <div style={{ fontSize:11, color:'#12b76a', fontWeight:600, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
@@ -285,16 +297,18 @@ function ProfilePanel({ user, stats, onClose, onLogout }: { user: { name?: strin
         </button>
       </div>
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:9 }}>
+        {debutDate && (
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.12)' }}>
           <div style={{ width:30, height:30, borderRadius:8, background:'rgba(18,183,106,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <Calendar size={14} color="#12b76a"/>
           </div>
           <div>
             <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
-            <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(DEBUT)}</div>
-            <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anc.label} {anc.suffix}</div>
+            <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
+            {anc && <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
           </div>
         </div>
+        )}
         {stats && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {[
@@ -316,9 +330,9 @@ function ProfilePanel({ user, stats, onClose, onLogout }: { user: { name?: strin
   );
 }
 
-function AnnivModal({ show, name, onClose }: { show: boolean; name?: string; onClose: () => void }) {
+function AnnivModal({ show, name, debutYear, onClose }: { show: boolean; name?: string; debutYear?: number; onClose: () => void }) {
   if (!show) return null;
-  const years = new Date().getFullYear() - DEBUT.getFullYear();
+  const years = new Date().getFullYear() - (debutYear ?? new Date().getFullYear());
   if (years <= 0) return null;
   const COLORS = ['#12b76a','#f79009','#818cf8','#38bdf8','#f04438','#a764f8'];
   return (
@@ -330,16 +344,17 @@ function AnnivModal({ show, name, onClose }: { show: boolean; name?: string; onC
           ))}
         </div>
         <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(247,144,9,0.1),transparent)', padding:'36px 28px 24px', textAlign:'center', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize:52, marginBottom:12, animation:'bounceEmoji 1s ease infinite alternate' }}>🎉</div>
-          <div style={{ fontSize:11, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:2, marginBottom:8 }}>Félicitations</div>
+          <div style={{ fontSize:52, marginBottom:12, animation:'bounceEmoji 1s ease infinite alternate' }}>🔥</div>
+          <div style={{ fontSize:11, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:2, marginBottom:8 }}>Anniversaire</div>
           <h2 style={{ margin:'0 0 6px', fontSize:22, fontWeight:800, background:'linear-gradient(135deg,#e8fff5,#12b76a,#f79009)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{name} !</h2>
-          <div style={{ fontSize:32, fontWeight:900, color:'#12b76a', margin:'10px 0 4px', textShadow:'0 0 30px rgba(18,183,106,0.5)' }}>{years} an{years > 1 ? 's' : ''}</div>
-          <div style={{ fontSize:14, color:'rgba(255,255,255,0.6)' }}>dans le poste 🚀</div>
+          <div style={{ fontSize:36, fontWeight:900, color:'#12b76a', margin:'10px 0 2px', textShadow:'0 0 30px rgba(18,183,106,0.5)' }}>{years} ans 🎯</div>
+          <div style={{ fontSize:13, color:'rgba(255,255,255,0.45)', fontStyle:'italic' }}>et tu es encore là.</div>
         </div>
         <div style={{ padding:'22px 28px 28px', textAlign:'center' }}>
-          <div style={{ fontSize:13.5, color:'rgba(255,255,255,0.65)', lineHeight:1.7, marginBottom:22 }}>
-            Une année de terrain, de clients et de persévérance.<br/>
-            <span style={{ color:'#12b76a', fontWeight:600 }}>Continue comme ça, c&apos;est du solide. 💪</span>
+          <div style={{ fontSize:13.5, color:'rgba(255,255,255,0.65)', lineHeight:1.85, marginBottom:22 }}>
+            Des refus, des relances, des signatures.<br/>
+            Du stress, des doutes, et des victoires.<br/>
+            <span style={{ color:'#12b76a', fontWeight:700 }}>C&apos;est toi qui te lèves et tu continues — c&apos;est ça qui fait la différence. 💎</span>
           </div>
           <button type="button" onClick={onClose} style={{ width:'100%', padding:'13px', borderRadius:14, border:'none', cursor:'pointer', fontSize:14, fontWeight:700, background:'linear-gradient(135deg,#12b76a,#0ea472)', color:'#fff', boxShadow:'0 4px 20px rgba(18,183,106,0.35)' }}>Merci 🙏</button>
         </div>
