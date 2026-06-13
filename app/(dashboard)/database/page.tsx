@@ -305,7 +305,7 @@ export default function DatabasePage() {
                       <Icon size={15} color={color}/>
                     </div>
                     <div style={{ minWidth:0 }}>
-                      <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{label}</div>
+                      <div style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{label}</div>
                       <div style={{ fontSize:18, fontWeight:900, color, lineHeight:1.2 }}>
                         <AnimatedNumber value={value} decimals={suffix===' TND'?0:0} color={color} suffix={suffix}/>
                       </div>
@@ -391,7 +391,7 @@ export default function DatabasePage() {
                         {/* Ville + type */}
                         <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap', alignItems:'center' }}>
                           {item.ville && (
-                            <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'#fff' }}>
                               <MapPin size={10} color="#3b6cf8"/>{item.ville}
                             </div>
                           )}
@@ -402,13 +402,13 @@ export default function DatabasePage() {
                         {/* Email + téléphone */}
                         <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:10 }}>
                           {item.email && (
-                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.4)' }}>
-                              <Mail size={9} color="rgba(255,255,255,0.3)"/>{item.email}
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
+                              <Mail size={9} color="rgba(255,255,255,0.6)"/>{item.email}
                             </div>
                           )}
                           {item.telephone && (
-                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.4)' }}>
-                              <Phone size={9} color="rgba(255,255,255,0.3)"/>{item.telephone}
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
+                              <Phone size={9} color="rgba(255,255,255,0.6)"/>{item.telephone}
                             </div>
                           )}
                         </div>
@@ -510,8 +510,8 @@ export default function DatabasePage() {
                         onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                         <td style={tdSt}><div style={{ fontWeight:600 }}>{item.prenom || '—'}</div></td>
                         <td style={tdSt}>{item.nom || '—'}</td>
-                        <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.email || '—'}</td>
-                        <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)' }}>{item.telephone || '—'}</td>
+                        <td style={{ ...tdSt, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.email || '—'}</td>
+                        <td style={tdSt}>{item.telephone || '—'}</td>
                         <td style={tdSt}>
                           {item.entreprise ? (
                             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -523,7 +523,7 @@ export default function DatabasePage() {
                           )}
                         </td>
                         <td style={tdSt}>
-                          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'#fff' }}>
                             <MapPin size={11} color="#3b6cf8"/> {item.ville || '—'}
                           </div>
                         </td>
@@ -575,8 +575,8 @@ export default function DatabasePage() {
             {/* Footer compteur */}
             {displayData.length > 0 && (
               <div style={{ padding:'10px 20px', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>
-                  <span style={{ fontWeight:700, color:'#e0e0f0' }}>{displayData.length}</span> lead{displayData.length !== 1 ? 's' : ''} affichés sur <span style={{ fontWeight:700 }}>{fichesByAnnee.length}</span> au total
+                <span style={{ fontSize:11, color:'#fff', fontWeight:600 }}>
+                  <span style={{ fontWeight:900 }}>{displayData.length}</span> lead{displayData.length !== 1 ? 's' : ''} affichés sur <span style={{ fontWeight:900 }}>{fichesByAnnee.length}</span> au total
                 </span>
                 {hasFilters && (
                   <span style={{ fontSize:11, background:'rgba(247,144,9,0.1)', color:'#f79009', padding:'2px 10px', borderRadius:20, fontWeight:600 }}>
