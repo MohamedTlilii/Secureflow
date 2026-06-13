@@ -189,9 +189,6 @@ export default function Sidebar() {
           <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#12b76a,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(18,183,106,0.5)' : '0 4px 16px rgba(18,183,106,0.35)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
             <LogoIcon size={21}/>
           </div>
-          <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
-            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#06b6d4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5 }}>SecureFlow</div>
-          </div>
         </div>
 
         {/* Nav */}
