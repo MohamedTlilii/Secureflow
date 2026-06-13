@@ -330,11 +330,11 @@ export default function CommissionsPage() {
               {/* Titre + actions */}
               <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',flexDirection:isMobile?'column':'row',gap:isMobile?12:0,marginBottom:20}}>
                 <div style={{display:'flex',alignItems:'center',gap:14}}>
-                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(245,158,11,0.55)',flexShrink:0}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#ef4444,#dc2626)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(239,68,68,0.55)',flexShrink:0}}>
                     <Wallet size={26} color="#fff"/>
                   </div>
                   <div>
-                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#ef4444)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Commissions
                     </h1>
                   </div>
@@ -585,7 +585,7 @@ export default function CommissionsPage() {
 
               {loading?(
                 <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'60px 0',gap:12}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',border:'3px solid rgba(245,158,11,0.15)',borderTopColor:'#f59e0b',animation:'spin 0.8s linear infinite'}}/>
+                  <div style={{width:36,height:36,borderRadius:'50%',border:'3px solid rgba(239,68,68,0.15)',borderTopColor:'#ef4444',animation:'spin 0.8s linear infinite'}}/>
                 </div>
               ):filteredHistorique.length===0?(
                 <div style={{textAlign:'center',padding:'60px 20px'}}>

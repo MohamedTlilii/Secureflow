@@ -15,7 +15,7 @@ const NAV = [
   { to: '/',                 label: 'Dashboard',           color: '#12b76a', Icon: LayoutDashboard },
   { to: '/leads',            label: 'Leads',               color: '#818cf8', Icon: Users           },
   { to: '/pipeline',         label: 'Pipeline',            color: '#c084fc', Icon: Kanban          },
-  { to: '/commissions',      label: 'Commissions',         color: '#f59e0b', Icon: Wallet          },
+  { to: '/commissions',      label: 'Commissions',         color: '#ef4444', Icon: Wallet          },
   { to: '/comparaison',      label: 'Comparaison',         color: '#3b82f6', Icon: BarChart2       },
   { to: '/essence',          label: 'Indemnité Carburant', color: '#fb923c', Icon: Fuel            },
   { to: '/database',         label: 'Base de données',     color: '#f472b6', Icon: Database        },
