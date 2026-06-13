@@ -345,7 +345,7 @@ export default function SolutionExpressPage() {
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                   {!isMobile && (
-                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.75)', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', textTransform:'capitalize', whiteSpace:'nowrap', fontWeight:700 }}>
+                    <div style={{ fontSize:12, color:'#fff', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', textTransform:'capitalize', whiteSpace:'nowrap', fontWeight:700 }}>
                       {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </div>
                   )}
@@ -435,7 +435,7 @@ export default function SolutionExpressPage() {
                 </div>
                 {/* Pills services */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.85)', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
+                  <span style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
                   {settings.services.filter(sv => usedServiceIds.has(sv.id)).map(sv => (
                     <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
                       style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
@@ -508,7 +508,7 @@ export default function SolutionExpressPage() {
                   <span style={{ fontSize:12, fontWeight:700, color:group.color, textTransform:'uppercase', letterSpacing:1, padding:'4px 14px', borderRadius:20, background:`${group.color}15`, border:`1px solid ${group.color}30`, whiteSpace:'nowrap' }}>
                     {group.label}
                   </span>
-                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', background:'rgba(255,255,255,0.05)', padding:'2px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.07)', fontWeight:700, whiteSpace:'nowrap' }}>
+                  <span style={{ fontSize:11, color:'#fff', background:'rgba(255,255,255,0.05)', padding:'2px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.07)', fontWeight:700, whiteSpace:'nowrap' }}>
                     {group.items.length} fiche{group.items.length!==1?'s':''} · <span style={{ color:group.color }}>{group.items.filter(f=>f.status!=='installation_annulee').reduce((s,f) => s+(f.commissionTotale||0), 0).toFixed(0)} TND</span>
                   </span>
                   <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.07)' }}/>
@@ -562,10 +562,10 @@ export default function SolutionExpressPage() {
           style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div style={{ background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, width:'100%', maxWidth:400, padding:'26px 28px', boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(239,68,68,0.1)' }}>
             <div style={{ fontSize:18, fontWeight:800, color:'#ef4444', marginBottom:6 }}>Confirmer l'annulation</div>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.85)', marginBottom:18 }}>
+            <p style={{ fontSize:13, color:'#fff', marginBottom:18 }}>
               {motifPending.fiche.entreprise || [motifPending.fiche.prenom, motifPending.fiche.nom].filter(Boolean).join(' ')}
             </p>
-            <label style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontWeight:700, letterSpacing:0.4, marginBottom:7, display:'block' }}>Motif d'annulation</label>
+            <label style={{ fontSize:11, color:'#fff', fontWeight:700, letterSpacing:0.4, marginBottom:7, display:'block' }}>Motif d'annulation</label>
             <select value={motifChoice} onChange={e => setMotifChoice(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', borderRadius:10, fontSize:13, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', marginBottom:20 }}>
               <option value="">— Sélectionner —</option>

@@ -158,7 +158,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
                 {clientName}
               </div>
             )}
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:2 }}>
+            <div style={{ fontSize:11, color:'#fff', marginTop:2 }}>
               {fiche.typeClient==='b2b' ? '🏢 B2B' : '🏠 B2C'}
               {settings.typeCommerce.find(t=>t.key===fiche.typeCommerce)?.label
                 ? ` · ${settings.typeCommerce.find(t=>t.key===fiche.typeCommerce)!.label}`
@@ -223,14 +223,14 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
 
         {/* ── Résumé ── */}
         {fiche.summary && (
-          <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', lineHeight:1.5, marginBottom:8, marginTop:4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', borderLeft:`2px solid ${leadColor}`, paddingLeft:8, background:`${leadColor}06`, borderRadius:'0 6px 6px 0', padding:'5px 5px 5px 9px' }}>
+          <p style={{ fontSize:11, color:'#fff', lineHeight:1.5, marginBottom:8, marginTop:4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', borderLeft:`2px solid ${leadColor}`, paddingLeft:8, background:`${leadColor}06`, borderRadius:'0 6px 6px 0', padding:'5px 5px 5px 9px' }}>
             {fiche.summary}
           </p>
         )}
 
         {/* ── Dernière note ── */}
         {lastNote && (
-          <div style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginBottom:8, background:'rgba(255,255,255,0.03)', padding:'5px 9px', borderRadius:7, borderLeft:'2px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:8, background:'rgba(255,255,255,0.03)', padding:'5px 9px', borderRadius:7, borderLeft:'2px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
             💬 {lastNote}
           </div>
         )}
@@ -253,7 +253,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
             </span>
           )}
           {fiche.typeClient === 'b2b' && clientName !== '—' && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.35)' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
               <User size={10}/> {clientName}
             </span>
           )}

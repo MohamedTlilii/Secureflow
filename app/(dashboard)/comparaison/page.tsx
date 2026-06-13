@@ -243,7 +243,7 @@ export default function ComparaisonPage() {
               </div>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:'#f79009'}}>Première année de référence</div>
-                <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',marginTop:2}}>
+                <div style={{fontSize:12,color:'#fff',marginTop:2}}>
                   Aucune donnée pour {prevYear}. La comparaison complète sera disponible en {currYear+1}.
                 </div>
               </div>
@@ -270,11 +270,11 @@ export default function ComparaisonPage() {
                     <div style={{width:34,height:34,borderRadius:10,background:`${color}1a`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                       <Icon size={15} color={color}/>
                     </div>
-                    <div style={{fontSize:10,color:'rgba(255,255,255,0.75)',fontWeight:700,textTransform:'uppercase',letterSpacing:0.5}}>{label}</div>
+                    <div style={{fontSize:10,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:0.5}}>{label}</div>
                     <div style={{fontSize:isMobile?18:22,fontWeight:900,color,lineHeight:1}}>
                       <AnimatedNumber value={curr} decimals={0} color={color} suffix={suffix}/>
                     </div>
-                    <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'rgba(255,255,255,0.65)',fontWeight:600}}>
+                    <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'#fff',fontWeight:600}}>
                       {prevYear} : <span style={{color:prev>0?color:'rgba(255,255,255,0.7)',fontWeight:700}}>{prev.toFixed(0)}{suffix}</span>
                     </div>
                   </div>
@@ -292,12 +292,12 @@ export default function ComparaisonPage() {
               ] as const).map(({year,m,color,arr})=>{
                 const row = (label:string, value:string|number, c:string) => (
                   <div style={{display:'flex',flexDirection:'column',padding:isMobile?'5px 7px':'9px 12px',borderRadius:8,background:`${c}08`,border:`1px solid ${c}25`,gap:1}}>
-                    <span style={{fontSize:isMobile?9:11,color:'rgba(255,255,255,0.55)',fontWeight:600,lineHeight:1.2}}>{label}</span>
+                    <span style={{fontSize:isMobile?9:11,color:'#fff',fontWeight:600,lineHeight:1.2}}>{label}</span>
                     <span style={{fontSize:isMobile?11:13,fontWeight:800,color:c,lineHeight:1}}>{typeof value==='number'?value.toFixed(0):value}</span>
                   </div>
                 );
                 const sep = (label:string) => (
-                  <div style={{fontSize:isMobile?8:10,fontWeight:700,color:'rgba(255,255,255,0.45)',textTransform:'uppercase',letterSpacing:1,marginTop:isMobile?6:10,marginBottom:2,paddingLeft:2}}>{label}</div>
+                  <div style={{fontSize:isMobile?8:10,fontWeight:700,color:'#fff',textTransform:'uppercase',letterSpacing:1,marginTop:isMobile?6:10,marginBottom:2,paddingLeft:2}}>{label}</div>
                 );
                 return (
                   <div key={year} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}40,${color}12)`}}>
@@ -342,10 +342,10 @@ export default function ComparaisonPage() {
                     <div style={{fontSize:isMobile?44:60,fontWeight:900,color:scoreColor,lineHeight:1,marginBottom:12,textShadow:`0 0 40px ${scoreColor}60`}}>
                       {globalScore===null?'—':`${globalScore>0?'+':''}${globalScore}%`}
                     </div>
-                    <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',fontWeight:700}}>
+                    <div style={{fontSize:13,color:'#fff',fontWeight:700}}>
                       {globalScore===null?'Aucune donnée de référence':globalScore>20?'Excellente année !':globalScore>0?'Bonne progression':globalScore===0?'Stable par rapport à l\'année précédente':'En dessous de l\'année précédente'}
                     </div>
-                    <div style={{marginTop:16,fontSize:12,color:'rgba(255,255,255,0.65)'}}>
+                    <div style={{marginTop:16,fontSize:12,color:'#fff'}}>
                       de croissance en commissions entre {prevYear} et {currYear}
                     </div>
                   </div>

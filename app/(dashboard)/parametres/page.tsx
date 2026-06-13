@@ -231,7 +231,7 @@ function ObjectifSection({ objectifs, onAdd, onRemove }: {
           </div>
         ))}
       </div>
-      <div style={{ fontSize:12, color:'rgba(255,255,255,0.35)', marginTop:12 }}>Barre de progression visible sur le Dashboard et Commissions selon l'année sélectionnée.</div>
+      <div style={{ fontSize:12, color:'#fff', marginTop:12 }}>Barre de progression visible sur le Dashboard et Commissions selon l'année sélectionnée.</div>
     </div>
   );
 }
@@ -320,17 +320,17 @@ function ServiceSection({ services, onUpdate, isMobile }: {
                 style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', cursor:'pointer', transition:'background 0.15s', background: expanded === idx ? `${svc.color}12` : 'transparent' }}>
                 <Ic size={16} color={svc.color} style={{ flexShrink:0 }}/>
                 <span style={{ flex:1, fontSize:14, fontWeight:700, color:'#e0e0f0' }}>{svc.label}</span>
-                <span style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginRight:4 }}>
+                <span style={{ fontSize:11, color:'#fff', marginRight:4 }}>
                   {svc.actuel?.length || 0} actuel · {svc.propose?.length || 0} proposé
                 </span>
                 <button onClick={e => startEdit(e, idx)}
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', padding:'3px 6px', borderRadius:6, transition:'color 0.15s', display:'flex', alignItems:'center' }}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#fff', padding:'3px 6px', borderRadius:6, transition:'color 0.15s', display:'flex', alignItems:'center' }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color=svc.color)}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.35)')}>
                   <Edit2 size={13}/>
                 </button>
                 <button onClick={e => { e.stopPropagation(); removeService(idx); }}
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', padding:'3px 6px', borderRadius:6, transition:'color 0.15s', display:'flex', alignItems:'center' }}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#fff', padding:'3px 6px', borderRadius:6, transition:'color 0.15s', display:'flex', alignItems:'center' }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color='#ef4444')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.35)')}>
                   <Trash2 size={13}/>
@@ -528,7 +528,7 @@ function ProfilSection() {
       <div>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, paddingTop:8, borderTop:'1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:0.8 }}>Changer le mot de passe</div>
-          <span style={{ fontSize:10, color:'rgba(255,255,255,0.25)' }}>— optionnel</span>
+          <span style={{ fontSize:10, color:'#fff' }}>— optionnel</span>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>

@@ -66,7 +66,7 @@ function ScoreRing({ value, max, color, label }: { value:number; max:number; col
           <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
         </div>
       </div>
-      <span style={{ fontSize:10, color:'rgba(255,255,255,0.85)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</span>
+      <span style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</span>
     </div>
   );
 }
@@ -241,7 +241,7 @@ export default function PipelinePage() {
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
+                    <div style={{fontSize:12,color:'#fff',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                       {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
@@ -319,7 +319,7 @@ export default function PipelinePage() {
                       <div style={{width:8,height:8,borderRadius:'50%',background:stage.color,boxShadow:`0 0 6px ${stage.color}80`}}/>
                       <span style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,0.9)',textTransform:'uppercase',letterSpacing:0.6}}>{stage.label}</span>
                     </div>
-                    <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'rgba(255,255,255,0.85)',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
+                    <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'#fff',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
                       {colItems.length}
                     </span>
                   </div>
@@ -374,7 +374,7 @@ export default function PipelinePage() {
                                   )}
                                 </div>
                                 {(f.prenom||f.nom)&&f.entreprise&&(
-                                  <div style={{fontSize:11,color:'rgba(255,255,255,0.85)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
+                                  <div style={{fontSize:11,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
                                     {`${f.prenom||''} ${f.nom||''}`.trim()}
                                   </div>
                                 )}
@@ -383,7 +383,7 @@ export default function PipelinePage() {
 
                             {/* Ville */}
                             {f.ville&&(
-                              <div style={{fontSize:11,color:'rgba(255,255,255,0.85)',marginBottom:7,display:'flex',alignItems:'center',gap:4}}>
+                              <div style={{fontSize:11,color:'#fff',marginBottom:7,display:'flex',alignItems:'center',gap:4}}>
                                 <MapPin size={9}/> {f.ville}
                               </div>
                             )}
@@ -429,7 +429,7 @@ export default function PipelinePage() {
                             {/* Motif annulation */}
                             {stage.key==='installation_annulee'&&f.motifAnnulation&&(
                               <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 9px',borderRadius:8,background:'rgba(190,18,60,0.08)',border:'1px solid rgba(190,18,60,0.2)',marginBottom:0}}>
-                                <span style={{fontSize:11,color:'rgba(255,255,255,0.85)',fontWeight:700}}>Motif :</span>
+                                <span style={{fontSize:11,color:'#fff',fontWeight:700}}>Motif :</span>
                                 <span style={{fontSize:11,color:'#be123c',fontWeight:700}}>{f.motifAnnulation}</span>
                               </div>
                             )}
@@ -466,17 +466,17 @@ export default function PipelinePage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(8px)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
           <div style={{background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))',border:'1px solid rgba(190,18,60,0.3)',borderRadius:20,padding:'26px 28px',width:'100%',maxWidth:400,boxShadow:'0 40px 100px rgba(0,0,0,0.7)'}}>
             <div style={{fontSize:18,fontWeight:800,color:'#be123c',marginBottom:6}}>⚠️ Confirmer l'annulation</div>
-            <p style={{fontSize:13,color:'rgba(255,255,255,0.85)',marginBottom:18}}>Pourquoi cette installation a-t-elle été annulée ?</p>
+            <p style={{fontSize:13,color:'#fff',marginBottom:18}}>Pourquoi cette installation a-t-elle été annulée ?</p>
             <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:20}}>
               {settings.motifsAnnulation.map(m=>(
                 <button key={m} onClick={()=>{setMotif(m);}}
-                  style={{padding:'11px 16px',borderRadius:10,border:`1px solid ${motif===m?'rgba(190,18,60,0.5)':'rgba(190,18,60,0.2)'}`,background:motif===m?'rgba(190,18,60,0.15)':'rgba(190,18,60,0.06)',color:'rgba(255,255,255,0.85)',fontSize:13,fontWeight:700,cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                  style={{padding:'11px 16px',borderRadius:10,border:`1px solid ${motif===m?'rgba(190,18,60,0.5)':'rgba(190,18,60,0.2)'}`,background:motif===m?'rgba(190,18,60,0.15)':'rgba(190,18,60,0.06)',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
                   {m}
                 </button>
               ))}
             </div>
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setMotifModal(null)} style={{flex:1,padding:'10px 0',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,color:'rgba(255,255,255,0.85)',fontSize:13,cursor:'pointer'}}>Annuler</button>
+              <button onClick={()=>setMotifModal(null)} style={{flex:1,padding:'10px 0',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,color:'#fff',fontSize:13,cursor:'pointer'}}>Annuler</button>
               <button onClick={confirmMotif} style={{flex:1,padding:'10px 0',background:'#be123c',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 16px rgba(190,18,60,0.4)'}}>Confirmer</button>
             </div>
           </div>

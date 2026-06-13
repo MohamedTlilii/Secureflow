@@ -427,7 +427,7 @@ export default function DatabasePage() {
                     ))}
                   </div>
                 ) : (
-                  <div style={{ padding:'40px 0', textAlign:'center', color:'rgba(255,255,255,0.35)' }}>
+                  <div style={{ padding:'40px 0', textAlign:'center', color:'#fff' }}>
                     <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
                       <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
                     </div>
@@ -554,7 +554,7 @@ export default function DatabasePage() {
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={9} style={{ padding:'52px 0', textAlign:'center', color:'rgba(255,255,255,0.35)' }}>
+                        <td colSpan={9} style={{ padding:'52px 0', textAlign:'center', color:'#fff' }}>
                           <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
                             <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
                           </div>

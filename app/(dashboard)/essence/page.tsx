@@ -325,7 +325,7 @@ export default function EssencePage() {
                 </div>
 
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
+                  <div style={{fontSize:12,color:'#fff',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                     {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                   </div>
                   <select value={annee} onChange={e=>handleAnneeChange(e.target.value)}
@@ -368,7 +368,7 @@ export default function EssencePage() {
 
               {/* Barre progression */}
               <div>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:11,color:'rgba(255,255,255,0.85)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:11,color:'#fff'}}>
                   <span>Mois reçus · {stats.moisRecus} / {stats.moisTotal}</span>
                   <span style={{fontWeight:700,color:pc}}>{stats.pctRecu}%</span>
                 </div>
@@ -404,7 +404,7 @@ export default function EssencePage() {
                       <span style={{fontSize:20,fontWeight:900,color:c}}>{yr}</span>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:16}}>
-                      <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{s.recus}/{s.total} mois</span>
+                      <span style={{fontSize:13,fontWeight:700,color:'#fff'}}>{s.recus}/{s.total} mois</span>
                       <span style={{fontSize:14,fontWeight:800,color:c}}>{s.montant.toFixed(0)} TND</span>
                       <span style={{fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:20,background:`${c}20`,color:c,border:`1px solid ${c}40`}}>{allPaid?'✓ Payé':'En attente'}</span>
                     </div>

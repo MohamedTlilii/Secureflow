@@ -590,7 +590,7 @@ export default function DashboardPage() {
                         </div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:annulee?'#be123c':'#c0c0e0'}}>{name}</div>
-                          <div style={{fontSize:11,color:'rgba(255,255,255,0.75)',marginTop:1}}>{f.ville||'—'} · {new Date(f.dateVente??f.createdAt).toLocaleDateString('fr-FR')}</div>
+                          <div style={{fontSize:11,color:'#fff',marginTop:1}}>{f.ville||'—'} · {new Date(f.dateVente??f.createdAt).toLocaleDateString('fr-FR')}</div>
                           {annulee&&f.motifAnnulation&&<div style={{fontSize:10,color:'#be123c',marginTop:1}}>✕ {f.motifAnnulation}</div>}
                         </div>
                         <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'rgba(59,108,248,0.12)',color:f.typeClient==='b2b'?'#3b6cf8':'#12b76a',flexShrink:0}}>

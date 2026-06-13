@@ -341,7 +341,7 @@ export default function CommissionsPage() {
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
+                    <div style={{fontSize:12,color:'#fff',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                       {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
@@ -443,9 +443,9 @@ export default function CommissionsPage() {
               <span style={{fontWeight:700}}>Objectif {MOIS_FULL[calMois.month]} {annee}</span>
               <span style={{fontSize:12}}>
                 {totalPaye>0&&<span style={{color:'#12b76a',fontWeight:800}}>{totalPaye.toFixed(0)}</span>}
-                {totalPaye>0&&(enAttente>0||totalAnnule>0)&&<span style={{color:'rgba(255,255,255,0.65)'}}> + </span>}
+                {totalPaye>0&&(enAttente>0||totalAnnule>0)&&<span style={{color:'#fff'}}> + </span>}
                 {enAttente>0&&<span style={{color:'#f79009',fontWeight:800}}>{enAttente.toFixed(0)}</span>}
-                {enAttente>0&&totalAnnule>0&&<span style={{color:'rgba(255,255,255,0.65)'}}> + </span>}
+                {enAttente>0&&totalAnnule>0&&<span style={{color:'#fff'}}> + </span>}
                 {totalAnnule>0&&<span style={{color:'#be123c',fontWeight:800}}>{totalAnnule.toFixed(0)}</span>}
                 {totalPaye===0&&enAttente===0&&totalAnnule===0&&<span style={{color:'rgba(255,255,255,0.8)'}}>0</span>}
                 <span style={{color:'#fff',fontWeight:800}}> / {objectif} TND — </span>
@@ -593,7 +593,7 @@ export default function CommissionsPage() {
                     <Wallet size={28} color="#12b76a" style={{opacity:0.4}}/>
                   </div>
                   <div style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Aucune commission</div>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.65)'}}>
+                  <div style={{fontSize:12,color:'#fff'}}>
                     {MOIS_FULL[calMois.month]} {calMois.year}
                   </div>
                 </div>
@@ -620,7 +620,7 @@ export default function CommissionsPage() {
                                 {`${c.prenom||''} ${c.nom||''}`.trim()}
                               </div>
                             )}
-                            <div style={{fontSize:11,color:'rgba(255,255,255,0.75)',marginTop:3,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                            <div style={{fontSize:11,color:'#fff',marginTop:3,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
                               {c.ville&&<span style={{display:'flex',alignItems:'center',gap:3}}><MapPin size={9}/>{c.ville}</span>}
                               <span style={{display:'flex',alignItems:'center',gap:3}}><Calendar size={9}/>{fmtDate(c.dateVente??c.createdAt)}</span>
                               {c.commissionPayee&&c.datePaiementCommission&&!isMobile&&(
@@ -714,7 +714,7 @@ export default function CommissionsPage() {
             <div style={{overflowY:'auto',flex:1,padding:20}}>
               {resumeFiche.summary
                 ?<pre style={{fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.7)',lineHeight:1.75,whiteSpace:'pre-wrap',wordBreak:'break-word',margin:0}}>{resumeFiche.summary}</pre>
-                :<div style={{textAlign:'center',color:'rgba(255,255,255,0.65)',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
+                :<div style={{textAlign:'center',color:'#fff',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
               }
             </div>
             {/* Footer */}
