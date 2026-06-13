@@ -94,7 +94,7 @@ export default function DashboardPage() {
 
   const [seFiches,     setSeFiches]     = useState<SolutionExpress[]>([]);
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
-  const [anneeGlobal,  setAnneeGlobal]  = useState<string>('tout');
+  const [anneeGlobal,  setAnneeGlobal]  = useState<string>(String(new Date().getFullYear()));
   const [dashMois,     setDashMois]     = useState<string>('tout');
   const [chartFiltre,  setChartFiltre]  = useState<'total'|'installe'|'encours'|'annule'|'paye'>('total');
   const [loading,      setLoading]      = useState(true);
