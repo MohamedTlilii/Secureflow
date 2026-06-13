@@ -677,7 +677,7 @@ export default function ParametresPage() {
             <div style={{ position:'relative', zIndex:1 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#6366f1,#a78bfa)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(99,102,241,0.55)', flexShrink:0 }}>
+                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#a78bfa,#c084fc)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(167,139,250,0.55)', flexShrink:0 }}>
                     <Settings size={26} color="#fff"/>
                   </div>
                   <div>

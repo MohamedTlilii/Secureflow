@@ -227,7 +227,7 @@ export default function PipelinePage() {
               {/* Titre + filtres */}
               <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',flexDirection:isMobile?'column':'row',gap:isMobile?12:0,marginBottom:20}}>
                 <div style={{display:'flex',alignItems:'center',gap:14}}>
-                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#a78bfa,#3b6cf8)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(167,139,250,0.55)',flexShrink:0}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#c084fc,#a78bfa)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(192,132,252,0.55)',flexShrink:0}}>
                     <Target size={26} color="#fff"/>
                   </div>
                   <div>

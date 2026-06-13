@@ -223,7 +223,7 @@ export default function DatabasePage() {
               {/* Titre + sélecteurs */}
               <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0, marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#06b6d4,#0891b2)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(6,182,212,0.5)', flexShrink:0 }}>
+                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#f472b6,#ec4899)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(244,114,182,0.5)', flexShrink:0 }}>
                     <DbIcon size={26} color="#fff"/>
                   </div>
                   <div>
@@ -255,22 +255,6 @@ export default function DatabasePage() {
                     </select>
                   )}
                 </div>
-              </div>
-
-              {/* Stats cards */}
-              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap:10 }}>
-                {[
-                  { label:'Total fiches', value:fichesByAnnee.length,                     color:'#06b6d4' },
-                  { label:'Résultats',    value:displayData.length,                        color:'#12b76a' },
-                  { label:'Filtrés',      value:fichesByAnnee.length - displayData.length, color:'#f79009' },
-                ].map((s,i) => (
-                  <div key={i} style={{ background:`${s.color}12`, borderRadius:12, padding:'12px 16px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.06}s ease both` }}>
-                    <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>{s.label}</div>
-                    <div style={{ fontSize: isMobile ? 20 : 24, fontWeight:900, lineHeight:1 }}>
-                      <AnimatedNumber value={s.value} decimals={0} color={s.color}/>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

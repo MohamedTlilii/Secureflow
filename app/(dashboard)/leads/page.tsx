@@ -334,7 +334,7 @@ export default function SolutionExpressPage() {
               {/* Titre + actions */}
               <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0, marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#2215d4,#a78bfa)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(34,21,212,0.55)', flexShrink:0 }}>
+                  <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#818cf8,#a5b4fc)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(129,140,248,0.55)', flexShrink:0 }}>
                     <Building2 size={26} color="#fff"/>
                   </div>
                   <div>

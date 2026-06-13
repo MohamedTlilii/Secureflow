@@ -314,7 +314,7 @@ export default function EssencePage() {
               {/* Titre + actions */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
                 <div style={{display:'flex',alignItems:'center',gap:14}}>
-                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(245,158,11,0.55)',flexShrink:0}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#fb923c,#f97316)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(251,146,60,0.55)',flexShrink:0}}>
                     <Fuel size={26} color="#fff"/>
                   </div>
                   <div>
