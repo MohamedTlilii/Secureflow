@@ -31,12 +31,12 @@ export const STATUS_LABEL: Record<StatusFiche, string> = {
 };
 
 export const STATUS_COLOR: Record<StatusFiche, string> = {
-  new: '#8b8b9e',
-  contacted: '#3b6cf8',
-  proposal: '#f59e0b',
+  new: '#3b6cf8',
+  contacted: '#f79009',
+  proposal: '#a764f8',
   installation_en_cours: '#f97316',
-  installe: '#12b76a',
-  installation_annulee: '#ef4444',
+  installe: '#22c55e',
+  installation_annulee: '#be123c',
 };
 
 export interface Fournisseurs {

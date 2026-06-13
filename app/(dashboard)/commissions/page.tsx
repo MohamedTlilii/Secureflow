@@ -14,7 +14,7 @@ import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings } from '@/types';
-import { DEFAULT_SETTINGS, MOIS_FULL } from '@/types';
+import { DEFAULT_SETTINGS, MOIS_FULL, STATUS_COLOR as STATUS_CLR, STATUS_LABEL as STATUS_LBL } from '@/types';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const fmtDate  = (d?: string | null) =>
@@ -24,14 +24,6 @@ const fmtMoney = (v: number) => `${(v||0).toFixed(2)} TND`;
 /* ─── constantes ──────────────────────────────────────────── */
 const MOIS_COURT  = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
-const STATUS_CLR: Record<string, string> = {
-  new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8',
-  installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c',
-};
-const STATUS_LBL: Record<string, string> = {
-  new:'Nouveau', contacted:'Contacté', proposal:'Soumission',
-  installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée',
-};
 
 /* ─── cosmos ──────────────────────────────────────────────── */
 const PART_COLORS = ['#12b76a','#61DAFB','#3b6cf8','#a78bfa','#f59e0b'];
@@ -342,7 +334,7 @@ export default function CommissionsPage() {
                     <Wallet size={26} color="#030a16"/>
                   </div>
                   <div>
-                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#12b76a)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#10b981)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Commissions
                     </h1>
                   </div>

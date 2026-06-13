@@ -184,7 +184,7 @@ export default function ComparaisonPage() {
                   <div style={{width:48,height:48,borderRadius:15,background:'linear-gradient(135deg,#12b76a,#3b6cf8)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(18,183,106,0.45)',flexShrink:0}}>
                     <BarChart2 size={24} color="#fff"/>
                   </div>
-                  <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                  <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#34d399)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                     Comparaison Annuelle
                   </h1>
                 </div>

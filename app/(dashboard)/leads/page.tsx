@@ -338,7 +338,7 @@ export default function SolutionExpressPage() {
                     <Building2 size={26} color="#fff"/>
                   </div>
                   <div>
-                    <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
+                    <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#818cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                       Leads
                     </h1>
                   </div>

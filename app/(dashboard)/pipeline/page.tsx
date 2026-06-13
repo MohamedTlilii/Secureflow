@@ -231,7 +231,7 @@ export default function PipelinePage() {
                     <Target size={26} color="#fff"/>
                   </div>
                   <div>
-                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#a78bfa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#c084fc)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Pipeline
                     </h1>
                     <p style={{margin:0,marginTop:3,fontSize:13,color:'#a78bfa',fontWeight:700}}>

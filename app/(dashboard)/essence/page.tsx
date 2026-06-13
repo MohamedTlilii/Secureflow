@@ -318,7 +318,7 @@ export default function EssencePage() {
                     <Fuel size={26} color="#fff"/>
                   </div>
                   <div>
-                    <h1 style={{margin:0,fontSize:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                    <h1 style={{margin:0,fontSize:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#fb923c)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Essence
                     </h1>
                   </div>

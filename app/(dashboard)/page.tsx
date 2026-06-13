@@ -13,17 +13,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
-import { DEFAULT_SETTINGS, VALID_STATUTS, MOIS_FULL } from '@/types';
-
-/* ─── couleurs statuts (MERN palette) ────────────────────── */
-const STATUS_CLR: Record<StatusFiche, string> = {
-  new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8',
-  installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c',
-};
-const STATUS_LBL: Record<StatusFiche, string> = {
-  new:'Nouveau', contacted:'Contacté', proposal:'Soumission',
-  installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée',
-};
+import { DEFAULT_SETTINGS, VALID_STATUTS, MOIS_FULL, STATUS_COLOR as STATUS_CLR, STATUS_LABEL as STATUS_LBL } from '@/types';
 
 const LEAD_PALETTE = ['#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e'];
 const PART_COLORS  = ['#12b76a','#3b6cf8','#61DAFB','#a78bfa','#34d399'];
