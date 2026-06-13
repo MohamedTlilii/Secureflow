@@ -190,7 +190,7 @@ export default function DatabasePage() {
     color: '#c0c0e0', whiteSpace: 'nowrap',
   };
   const tdSt: React.CSSProperties = {
-    padding: '13px 14px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13, color: '#c0c0e0',
+    padding: '13px 14px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13, color: '#fff',
   };
 
   return (
@@ -278,7 +278,7 @@ export default function DatabasePage() {
 
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
-                  <span style={{ color:'rgba(255,255,255,0.5)' }}>{dbStats.storageMB} MB utilisés</span>
+                  <span style={{ color:'#fff', fontWeight:700 }}>{dbStats.storageMB} MB utilisés</span>
                   <span style={{ fontWeight:700, color:barColor }}>{pct}% / {dbStats.storageLimit} MB</span>
                 </div>
                 <div style={{ height:10, borderRadius:6, background:'rgba(255,255,255,0.07)', overflow:'hidden' }}>

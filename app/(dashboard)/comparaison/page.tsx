@@ -181,10 +181,10 @@ export default function ComparaisonPage() {
               {/* Titre */}
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:6}}>
-                  <div style={{width:48,height:48,borderRadius:15,background:'linear-gradient(135deg,#34d399,#10b981)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(52,211,153,0.45)',flexShrink:0}}>
+                  <div style={{width:48,height:48,borderRadius:15,background:'linear-gradient(135deg,#3b82f6,#1d4ed8)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(59,130,246,0.45)',flexShrink:0}}>
                     <BarChart2 size={24} color="#fff"/>
                   </div>
-                  <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#34d399)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                  <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#3b82f6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                     Comparaison Annuelle
                   </h1>
                 </div>

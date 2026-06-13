@@ -13,13 +13,13 @@ import type { SolutionExpress } from '@/types';
 
 const NAV = [
   { to: '/',                 label: 'Dashboard',           color: '#12b76a', Icon: LayoutDashboard },
-  { to: '/comparaison',      label: 'Comparaison',         color: '#34d399', Icon: BarChart2       },
-  { to: '/commissions',      label: 'Commissions',         color: '#10b981', Icon: Wallet          },
+  { to: '/comparaison',      label: 'Comparaison',         color: '#3b82f6', Icon: BarChart2       },
+  { to: '/commissions',      label: 'Commissions',         color: '#f59e0b', Icon: Wallet          },
   { to: '/leads',            label: 'Leads',                color: '#818cf8', Icon: Users           },
   { to: '/pipeline',         label: 'Pipeline',            color: '#c084fc', Icon: Kanban          },
   { to: '/essence',          label: 'Indemnité Carburant', color: '#fb923c', Icon: Fuel            },
   { to: '/database',         label: 'Base de données',     color: '#f472b6', Icon: Database        },
-  { to: '/parametres',       label: 'Paramètres',          color: '#a78bfa', Icon: Settings        },
+  { to: '/parametres',       label: 'Paramètres',          color: '#06b6d4', Icon: Settings        },
 ] as const;
 
 function fmtDebut(d: Date): string {

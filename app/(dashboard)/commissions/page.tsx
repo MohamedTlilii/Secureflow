@@ -330,11 +330,11 @@ export default function CommissionsPage() {
               {/* Titre + actions */}
               <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',flexDirection:isMobile?'column':'row',gap:isMobile?12:0,marginBottom:20}}>
                 <div style={{display:'flex',alignItems:'center',gap:14}}>
-                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#10b981,#34d399)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(16,185,129,0.55)',flexShrink:0}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 28px rgba(245,158,11,0.55)',flexShrink:0}}>
                     <Wallet size={26} color="#fff"/>
                   </div>
                   <div>
-                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#10b981)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                    <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Commissions
                     </h1>
                   </div>
@@ -365,7 +365,7 @@ export default function CommissionsPage() {
           {/* Total gagné — grande carte */}
           <div style={{gridColumn:isMobile?'1 / -1':'auto',padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#12b76a70,#61DAFB35)',animation:'fadeSlideUp 0.4s 0.05s ease both'}}>
             <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px 18px':'22px 26px',backdropFilter:'blur(20px)',display:'flex',alignItems:'center',gap:14,height:'100%'}}>
-              <div style={{width:isMobile?44:52,height:isMobile?44:52,borderRadius:14,background:'linear-gradient(135deg,#10b981,#34d399)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 20px rgba(16,185,129,0.5)'}}>
+              <div style={{width:isMobile?44:52,height:isMobile?44:52,borderRadius:14,background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 20px rgba(245,158,11,0.5)'}}>
                 <TrendingUp size={isMobile?18:22} color="#fff"/>
               </div>
               <div>
