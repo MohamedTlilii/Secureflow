@@ -630,7 +630,7 @@ export default function CommissionsPage() {
                             {annulee&&c.motifAnnulation&&<div style={{fontSize:10,color:'#be123c',marginTop:3,fontWeight:700}}>✕ {c.motifAnnulation}</div>}
                           </div>
                           {/* Fixe + Extra desktop */}
-                          {!isMobile&&!annulee&&(c.commissionFixe>0||c.commissionExtra>0)&&(
+                          {!isMobile&&(c.commissionFixe>0||c.commissionExtra>0)&&(
                             <div style={{textAlign:'right',flexShrink:0}}>
                               {c.commissionFixe>0&&<div style={{fontSize:11,color:'#fff'}}>Fixe : <strong style={{color:'#fff'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
                               {c.commissionExtra>0&&<div style={{fontSize:11,color:'#fff'}}>Extra : <strong style={{color:'#fff'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
