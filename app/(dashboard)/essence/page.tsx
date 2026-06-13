@@ -32,6 +32,17 @@ interface Particle { x:number;y:number;s:number;d:number;delay:number;color:stri
 /* ─── helpers ────────────────────────────────────────── */
 const pctCol = (p:number) => p>=80?'#12b76a':p>=40?'#f59e0b':'#ef4444';
 
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const h = () => setM(window.innerWidth < 640);
+    h();
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return m;
+}
+
 /* ─── NoteModal ──────────────────────────────────────── */
 function NoteModal({ doc, anneeLabel, onClose, onSave }:{
   doc:EssenceMois; anneeLabel:string;
@@ -40,8 +51,8 @@ function NoteModal({ doc, anneeLabel, onClose, onSave }:{
   const [txt, setTxt] = useState(doc.note||'');
   return (
     <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
-      style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(8px)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div style={{background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))',border:'1px solid rgba(245,158,11,0.3)',borderRadius:22,padding:'28px 30px',width:400,boxShadow:'0 40px 80px rgba(0,0,0,0.7)'}}>
+      style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(8px)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+      <div style={{background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))',border:'1px solid rgba(245,158,11,0.3)',borderRadius:22,padding:'28px 24px',width:'100%',maxWidth:400,boxShadow:'0 40px 80px rgba(0,0,0,0.7)'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
           <h3 style={{fontSize:16,fontWeight:800,color:'#f59e0b',margin:0}}>
             💬 Note — {MOIS_FULL[doc.mois]} {anneeLabel}
@@ -65,6 +76,7 @@ function NoteModal({ doc, anneeLabel, onClose, onSave }:{
    PAGE PRINCIPALE
 ═══════════════════════════════════════════════════════ */
 export default function EssencePage() {
+  const isMobile = useIsMobile();
   const [data,      setData]      = useState<EssenceMois[]>([]);
   const [annees,    setAnnees]    = useState<number[]>([]);
   const [annee,     setAnnee]     = useState<string>(String(new Date().getFullYear()));
@@ -278,7 +290,7 @@ export default function EssencePage() {
         <div key={i} style={{position:'fixed',left:`${p.x}%`,bottom:`-${p.y}px`,width:p.s,height:p.s,borderRadius:'50%',background:p.color,opacity:0.4,pointerEvents:'none',zIndex:0,animation:`particle-rise ${p.d}s linear infinite`,animationDelay:`${p.delay}s`}}/>
       ))}
 
-      <div style={{position:'relative',zIndex:1,padding:'28px 32px 40px'}}>
+      <div style={{position:'relative',zIndex:1,padding: isMobile ? '16px 12px 40px' : '28px 32px 40px'}}>
 
         {/* ── Alerte ── */}
         {alertMois&&(
@@ -401,11 +413,11 @@ export default function EssencePage() {
               })
             ):dataVisible.map((m,i)=>(
               <div key={m.id} className="ess-row"
-                style={{display:'flex',alignItems:'center',gap:14,
+                style={{display:'flex',alignItems:'center',gap:isMobile?10:14,flexWrap: isMobile?'wrap':'nowrap',
                   background:m.recu?'rgba(18,183,106,0.05)':'rgba(255,255,255,0.02)',
                   backdropFilter:'blur(12px)',
                   border:`1px solid ${m.recu?'rgba(18,183,106,0.2)':'rgba(255,255,255,0.06)'}`,
-                  borderRadius:14,padding:'14px 18px',transition:'all 0.15s',
+                  borderRadius:14,padding: isMobile?'12px 14px':'14px 18px',transition:'all 0.15s',
                   animation:`fadeSlideUp 0.35s ${i*0.04}s ease both`}}>
 
                 {/* Icon */}
@@ -417,7 +429,7 @@ export default function EssencePage() {
                 </div>
 
                 {/* Mois */}
-                <div style={{minWidth:150}}>
+                <div style={{minWidth: isMobile?0:150, flex: isMobile?1:undefined}}>
                   <div style={{fontWeight:800,fontSize:14,color:m.recu?'#12b76a':'rgba(255,255,255,0.9)'}}>
                     {MOIS_FULL[m.mois]}{annee==='tout'?` ${m.annee}`:''}
                   </div>
@@ -429,12 +441,12 @@ export default function EssencePage() {
                 </div>
 
                 {/* Montant éditable */}
-                <div style={{flex:1}}>
+                <div style={{flex:1, minWidth:0}}>
                   {editingId===m.id?(
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <input type="number" value={editVal} onChange={e=>setEditVal(e.target.value)}
                         autoFocus step="0.001"
-                        style={{width:120,padding:'6px 10px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(245,158,11,0.4)',borderRadius:8,color:'#fff',fontSize:13,outline:'none'}}
+                        style={{width:isMobile?90:120,padding:'6px 10px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(245,158,11,0.4)',borderRadius:8,color:'#fff',fontSize:13,outline:'none'}}
                         onKeyDown={e=>{ if(e.key==='Enter') saveMontant(m); if(e.key==='Escape') setEditingId(null); }}/>
                       <button onClick={()=>saveMontant(m)} style={{background:'rgba(18,183,106,0.15)',border:'1px solid rgba(18,183,106,0.3)',borderRadius:7,padding:'5px 7px',cursor:'pointer',color:'#12b76a',display:'flex'}}><Check size={13}/></button>
                       <button onClick={()=>setEditingId(null)} style={{background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:7,padding:'5px 7px',cursor:'pointer',color:'#ef4444',display:'flex'}}><X size={13}/></button>
@@ -453,8 +465,8 @@ export default function EssencePage() {
                   )}
                 </div>
 
-                {/* Actions */}
-                <div style={{display:'flex',gap:8}}>
+                {/* Actions — pleine largeur sur mobile */}
+                <div style={{display:'flex',gap:8, ...(isMobile && {width:'100%',justifyContent:'flex-end'})}}>
                   <button onClick={()=>setNoteModal(m)}
                     style={{display:'flex',alignItems:'center',gap:5,background:'rgba(59,108,248,0.1)',border:'1px solid rgba(59,108,248,0.2)',borderRadius:9,padding:'7px 12px',color:'#3b6cf8',cursor:'pointer',fontSize:12,fontWeight:700}}>
                     <MessageSquare size={13}/> Note
@@ -466,7 +478,7 @@ export default function EssencePage() {
                       borderRadius:9,padding:'7px 14px',
                       color:m.recu?'#12b76a':'#f59e0b',
                       cursor:'pointer',fontSize:12,fontWeight:800,transition:'all 0.15s'}}>
-                    {m.recu?<><CheckCircle size={13}/> Reçu</>:<><Clock size={13}/> En attente</>}
+                    {m.recu?<><CheckCircle size={13}/> Reçu</>:<><Clock size={13}/> En att.</>}
                   </button>
                 </div>
               </div>

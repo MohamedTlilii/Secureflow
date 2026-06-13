@@ -1,6 +1,17 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const h = () => setM(window.innerWidth < 640);
+    h();
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return m;
+}
 import {
   X, Edit2, Trash2, Shield, Wifi, Smartphone, Tv, Camera, Receipt, Phone, Mail, MapPin,
   Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
@@ -53,6 +64,7 @@ export default function UltraFiche({
   onChangeStatus, onTogglePaiement, onAddNote, onDeleteNote,
   readOnly = false,
 }: UltraFicheProps) {
+  const isMobile = useIsMobile();
   const [noteText,   setNoteText]   = useState('');
   const [noteLoading, setNoteLoading] = useState(false);
 
@@ -88,20 +100,22 @@ export default function UltraFiche({
       style={{
         position: 'fixed', inset: 0, zIndex: 2000,
         background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 16,
         animation: 'fadeIn 0.15s ease',
       }}
     >
       <div style={{
         background: '#0b0b22', border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 22, width: '100%', maxWidth: 780, maxHeight: '92vh',
+        borderRadius: isMobile ? '20px 20px 0 0' : 22,
+        width: '100%', maxWidth: isMobile ? '100%' : 780,
+        maxHeight: isMobile ? '92vh' : '92vh',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: `0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px ${color}20`,
       }}>
 
         {/* ─── HEADER ─────────────────────────────── */}
         <div style={{
-          padding: '20px 24px 16px',
+          padding: isMobile ? '16px 16px 14px' : '20px 24px 16px',
           background: `linear-gradient(135deg, ${color}18 0%, transparent 60%)`,
           borderBottom: '1px solid rgba(255,255,255,0.07)',
           position: 'relative',
@@ -112,24 +126,24 @@ export default function UltraFiche({
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
             {/* Avatar */}
             <div style={{
-              width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+              width: isMobile ? 42 : 52, height: isMobile ? 42 : 52, borderRadius: 14, flexShrink: 0,
               background: `linear-gradient(135deg, ${color}40, ${color}15)`,
               border: `2px solid ${color}40`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 900, color,
+              fontSize: isMobile ? 15 : 18, fontWeight: 900, color,
             }}>
               {initials}
             </div>
 
             {/* Name block */}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>
                 {fiche.entreprise || clientName}
               </div>
               {fiche.entreprise && (
-                <div style={{ fontSize: 13, color: '#8b8b9e', marginTop: 3 }}>{clientName}</div>
+                <div style={{ fontSize: 12, color: '#8b8b9e', marginTop: 3 }}>{clientName}</div>
               )}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>
                 <span style={chip(color)}>{STATUS_LABEL[fiche.status]}</span>
                 <span style={chip('#6b6b9e')}>{fiche.typeClient?.toUpperCase()}</span>
                 {fiche.typeCommerce && (
@@ -140,11 +154,11 @@ export default function UltraFiche({
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              {fiche.urgencyScore > 0 && <MiniScoreRing score={fiche.urgencyScore} size={40} />}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {!isMobile && fiche.urgencyScore > 0 && <MiniScoreRing score={fiche.urgencyScore} size={40} />}
               {/* Actions */}
               {!readOnly && <button onClick={onEdit} style={iconBtn('#3b6cf8')} title="Modifier"><Edit2 size={14} /></button>}
-              {!readOnly && <button onClick={() => onDelete(fiche.id)} style={iconBtn('#ef4444')} title="Supprimer"><Trash2 size={14} /></button>}
+              {!readOnly && !isMobile && <button onClick={() => onDelete(fiche.id)} style={iconBtn('#ef4444')} title="Supprimer"><Trash2 size={14} /></button>}
               <button onClick={onClose} style={iconBtn('#6b6b9e')} title="Fermer"><X size={14} /></button>
             </div>
           </div>
@@ -203,10 +217,10 @@ export default function UltraFiche({
         )}
 
         {/* ─── BODY ───────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 14px' : '18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* 3-col info grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {/* Info grid — 3 cols desktop, 1 col mobile */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? 10 : 12 }}>
             {/* Contact */}
             <InfoBlock title="Contact" icon={<Phone size={13} />}>
               <InfoRow label="Téléphone">{fiche.telephone || '—'}</InfoRow>
@@ -393,7 +407,7 @@ export default function UltraFiche({
         </div>
 
         {/* ─── FOOTER ─────────────────────────────── */}
-        <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div style={{ padding: isMobile ? '12px 14px' : '12px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           {/* Quick status change for annulé */}
           {!readOnly && fiche.status === 'installation_annulee' && (
             <button
