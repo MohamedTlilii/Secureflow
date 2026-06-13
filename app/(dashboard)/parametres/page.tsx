@@ -637,19 +637,6 @@ export default function ParametresPage() {
   const tab = TABS.find(t => t.id === activeTab) || TABS[0];
   const TabIcon = tab.Icon;
 
-  /* ── Loading ── */
-  if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh', flexDirection:'column', gap:16 }}>
-      <div style={{ width:44, height:44, borderRadius:'50%', border:'3px solid rgba(167,139,250,0.15)', borderTopColor:'#a78bfa', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(167,139,250,0.3)' }}/>
-      <div style={{ color:'#fff', fontSize:13 }}>Chargement des paramètres…</div>
-    </div>
-  );
-
-  if (!settings) return (
-    <div style={{ textAlign:'center', padding:40, color:'#fff' }}>
-      <AlertCircle size={32} style={{ marginBottom:12 }}/><div>Impossible de charger les paramètres</div>
-    </div>
-  );
 
   return (
     <div style={{ position:'relative', minHeight:'100vh', color:'#fff', overflow:'hidden' }}>
@@ -693,6 +680,18 @@ export default function ParametresPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Contenu conditionnel ── */}
+        {loading ? (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'60px 0', gap:14, flexDirection:'column' }}>
+            <div style={{ width:40, height:40, borderRadius:'50%', border:'3px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.8s linear infinite' }}/>
+            <div style={{ color:'#fff', fontSize:13 }}>Chargement…</div>
+          </div>
+        ) : !settings ? (
+          <div style={{ textAlign:'center', padding:40, color:'#fff' }}>
+            <AlertCircle size={32} style={{ marginBottom:12 }}/><div>Impossible de charger les paramètres</div>
+          </div>
+        ) : (<>
 
         {/* ── Tabs ── */}
         <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#a78bfa30,#6366f115)', marginBottom:16 }}>
@@ -816,6 +815,7 @@ export default function ParametresPage() {
             <Save size={14}/> Sauvegarder
           </button>
         )}
+        </>)}
       </div>
     </div>
   );
