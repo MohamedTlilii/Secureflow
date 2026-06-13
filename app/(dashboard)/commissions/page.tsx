@@ -482,7 +482,7 @@ export default function CommissionsPage() {
                 <XAxis dataKey="name" tick={{fill:'#fff',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
                 <YAxis hide/>
                 <Tooltip
-                  cursor={{fill:'#fff'}}
+                  cursor={{fill:'rgba(255,255,255,0.04)'}}
                   contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,fontSize:12}}
                   content={({active,payload})=>{
                     if(!active||!payload?.length) return null;
