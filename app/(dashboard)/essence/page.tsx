@@ -346,7 +346,7 @@ export default function EssencePage() {
               </div>
 
               {/* Stats cards */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:16}}>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:10,marginBottom:16}}>
                 {[
                   {label:'En attente',    value:stats.totalManquant, color:'#f59e0b', Icon:TrendingUp,  decimals:0, suffix:' TND'},
                   {label:'Total reçu',    value:stats.totalRecu,     color:'#12b76a', Icon:CheckCircle, decimals:0, suffix:' TND'},

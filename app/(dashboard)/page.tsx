@@ -267,7 +267,7 @@ export default function DashboardPage() {
                       Dashboard
                     </h1>
                     <p style={{color:'#12b76a',fontSize:13,margin:0,marginTop:2,fontWeight:700}}>
-                      {totalSE} lead{totalSE!==1?'s':''}{anneeGlobal!=='tout'&&` · ${anneeGlobal}`}
+                      {totalSE} lead{totalSE!==1?'s':''} · {anneeGlobal==='tout'?'Toutes les années':anneeGlobal}
                     </p>
                   </div>
                 </div>

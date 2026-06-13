@@ -1,7 +1,17 @@
 ﻿'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import React from 'react';
+
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const h = () => setM(window.innerWidth < 768);
+    h(); window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return m;
+}
 import {
   Edit2, Trash2, Shield, Wifi, Smartphone, Tv, Camera, Receipt,
   Phone, Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
@@ -49,6 +59,7 @@ interface FicheCardProps {
 }
 
 export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDelete, onTogglePaiement }: FicheCardProps) {
+  const isMobile = useIsMobile();
   const [hovered, setHovered] = useState(false);
   const [tilt,    setTilt]    = useState({ x: 0, y: 0 });
   const [aurora,  setAurora]  = useState({ x: 50, y: 50 });
@@ -260,7 +271,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
       {/* ── Actions bar ── */}
       <div
         onClick={e => e.stopPropagation()}
-        style={{ display:'flex', justifyContent:'flex-end', gap:6, padding:'9px 14px', borderTop:'1px solid rgba(255,255,255,0.05)', opacity: hovered ? 1 : 0.35, transition:'opacity 0.2s' }}
+        style={{ display:'flex', justifyContent:'flex-end', gap:6, padding:'9px 14px', borderTop:'1px solid rgba(255,255,255,0.05)', opacity: isMobile || hovered ? 1 : 0.35, transition:'opacity 0.2s' }}
       >
         <button onClick={() => onEdit(fiche)}
           style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:'rgba(59,108,248,0.1)', border:'1px solid rgba(59,108,248,0.25)', color:'#3b6cf8', fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}
