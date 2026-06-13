@@ -127,9 +127,7 @@ export default function Sidebar() {
       {/* Top header */}
       <header style={{ position:'fixed', top:0, left:0, right:0, zIndex:200, background:'rgba(2,6,20,0.97)', borderBottom:'1px solid rgba(18,183,106,0.18)', backdropFilter:'blur(40px)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', height:56, boxShadow:'0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(18,183,106,0.1)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(135deg,#12b76a,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(18,183,106,0.45)', flexShrink:0 }}>
-            <LogoIcon size={19}/>
-          </div>
+          <LogoIcon size={32}/>
           <div>
             <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, lineHeight:1 }}>SecureFlow</div>
           </div>
@@ -185,10 +183,8 @@ export default function Sidebar() {
         <div style={{ position:'absolute', bottom:-40, left:-20, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
 
         {/* Logo */}
-        <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(18,183,106,0.12)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
-          <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#12b76a,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(18,183,106,0.5)' : '0 4px 16px rgba(18,183,106,0.35)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
-            <LogoIcon size={21}/>
-          </div>
+        <div style={{ padding:'14px 17px 10px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+          <LogoIcon size={44}/>
         </div>
 
         {/* Nav */}
