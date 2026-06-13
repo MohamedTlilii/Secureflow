@@ -184,6 +184,16 @@ export default function Sidebar() {
         <div style={{ position:'absolute', top:-60, left:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.13) 0%,transparent 70%)', pointerEvents:'none' }}/>
         <div style={{ position:'absolute', bottom:-40, left:-20, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
 
+        {/* Logo */}
+        <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(255,30,30,0.15)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
+          <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#ff2d2d,#ff6b6b)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(255,45,45,0.6)' : '0 4px 16px rgba(255,45,45,0.4)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
+            <LogoSVG id="sb" size={21}/>
+          </div>
+          <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
+            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#fff 20%,#ff4444,#ff0000)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, filter:'drop-shadow(0 0 8px rgba(255,50,50,0.8))' }}>SecureFlow</div>
+          </div>
+        </div>
+
         {/* Nav */}
         <nav style={{ flex:1, padding:'10px 8px', display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden', position:'relative' }}>
           {NAV.map(({ to, Icon, label, color }, idx) => {
