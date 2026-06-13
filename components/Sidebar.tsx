@@ -155,9 +155,9 @@ export default function Sidebar() {
         {NAV.map(({ to, Icon, label, color }) => {
           const active = isActive(to);
           return (
-            <Link key={to} href={to} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 2px', borderRadius:10, color: active ? color : 'rgba(139,154,184,0.7)', textDecoration:'none', position:'relative' }}>
+            <Link key={to} href={to} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 2px', borderRadius:10, color: active ? color : `${color}88`, textDecoration:'none', position:'relative' }}>
               {active && <div style={{ position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)', width:20, height:2.5, borderRadius:2, background:`linear-gradient(90deg,${color},${color}aa)`, boxShadow:`0 0 10px ${color}99` }}/>}
-              <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : 'transparent', transform: active ? 'scale(1.12)' : 'scale(1)', transition:'all 0.2s' }}>
+              <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : `${color}0f`, transform: active ? 'scale(1.12)' : 'scale(1)', transition:'all 0.2s' }}>
                 <Icon size={18} style={{ filter: active ? `drop-shadow(0 0 5px ${color}99)` : 'none' }}/>
               </div>
               <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.7 }}>{label.split(' ')[0]}</span>
@@ -199,7 +199,7 @@ export default function Sidebar() {
           {NAV.map(({ to, Icon, label, color }, idx) => {
             const active = isActive(to);
             return (
-              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color: active ? color : 'rgba(255,255,255,0.8)', background: active ? `${color}16` : 'transparent', border:`1px solid ${active ? `${color}35` : 'transparent'}`, fontSize:12.5, fontWeight:700, transition:'all 0.18s ease', textDecoration:'none', boxShadow: active ? `0 0 16px ${color}18,inset 0 0 12px ${color}08` : 'none' }}>
+              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color: active ? color : `${color}99`, background: active ? `${color}16` : `${color}08`, border:`1px solid ${active ? `${color}35` : `${color}15`}`, fontSize:12.5, fontWeight:700, transition:'all 0.18s ease', textDecoration:'none', boxShadow: active ? `0 0 16px ${color}18,inset 0 0 12px ${color}08` : 'none' }}>
                 <div style={{ minWidth:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, filter: active ? `drop-shadow(0 0 6px ${color}bb)` : 'none', transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
                   <Icon size={17}/>
                 </div>

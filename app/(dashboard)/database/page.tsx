@@ -271,7 +271,7 @@ export default function DatabasePage() {
                 </div>
                 <div>
                   <div style={{ fontSize:14, fontWeight:800, color:'#e0e0f0' }}>Stockage PostgreSQL</div>
-                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>Plan actuel — {dbStats.storageLimit} MB</div>
+                  <div style={{ fontSize:11, color:'#fff', fontWeight:700 }}>Plan actuel — {dbStats.storageLimit} MB</div>
                 </div>
                 <div style={{ marginLeft:'auto', fontSize:22, fontWeight:900, color:barColor }}>{pct}%</div>
               </div>
