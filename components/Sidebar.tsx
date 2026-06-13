@@ -286,16 +286,16 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
             <Calendar size={14} color="#818cf8"/>
           </div>
           <div>
-            <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+            <div style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
             <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
-            {anc && <div style={{ fontSize:10.5, color:'#818cf8', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
+            {anc && <div style={{ fontSize:10.5, color:'#fff', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
           </div>
         </div>
         )}
         {stats && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {[
-              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#3b6cf8', bg:'rgba(59,108,248,0.06)',  border:'rgba(59,108,248,0.15)' },
+              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#22c55e', bg:'rgba(34,197,94,0.06)',  border:'rgba(34,197,94,0.15)' },
               { label:`⏳ En attente ${stats.annee}`, value:`${stats.enAttente.toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
             ].map(s => (
               <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
