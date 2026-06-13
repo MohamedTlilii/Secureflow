@@ -240,7 +240,20 @@ export default function Sidebar() {
 
 function LogoIcon({ size }: { size: number }) {
   return (
-    <TrendingUp size={size} color="#fff" style={{ filter:`drop-shadow(0 0 ${Math.round(size*0.4)}px rgba(18,183,106,0.9)) drop-shadow(0 0 ${Math.round(size*0.2)}px rgba(6,182,212,0.6))` }}/>
+    <svg viewBox="0 0 32 32" width={size} height={size}
+      style={{ filter:'drop-shadow(0 0 6px rgba(18,183,106,0.95)) drop-shadow(0 0 12px rgba(6,182,212,0.5))' }}>
+      {/* Head */}
+      <circle cx="10" cy="6" r="4" fill="white"/>
+      {/* Body */}
+      <path d="M6 12 Q10 10 14 12 L13 22 H7 Z" fill="white"/>
+      {/* Arm reaching */}
+      <path d="M14 14 Q20 11 25 13" stroke="white" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+      {/* Grabbing fingers */}
+      <path d="M24 11 Q27 12 26 15 Q23 16 22 14" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Coin */}
+      <circle cx="28" cy="9" r="3.5" fill="none" stroke="white" strokeWidth="1.8"/>
+      <text x="26.3" y="10.8" fontSize="4.5" fill="white" fontWeight="900" fontFamily="Arial">$</text>
+    </svg>
   );
 }
 
