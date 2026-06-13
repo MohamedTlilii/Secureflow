@@ -244,9 +244,21 @@ export default function EssencePage() {
   const now = new Date();
   const dataVisible = data.filter(m =>
     annee === 'tout'
-      ? (m.annee < now.getFullYear() || m.mois <= now.getMonth())
+      ? (m.annee < now.getFullYear() || (m.annee === now.getFullYear() && m.mois <= now.getMonth()))
       : (Number(annee) !== now.getFullYear() || m.mois <= now.getMonth())
   );
+
+  const yearSummary = useMemo(()=>{
+    if(annee!=='tout') return [];
+    const map: Record<string,{total:number;recus:number;montant:number}> = {};
+    dataVisible.forEach(m=>{
+      const yr=String(m.annee);
+      if(!map[yr]) map[yr]={total:0,recus:0,montant:0};
+      map[yr].total++;
+      if(m.recu){ map[yr].recus++; map[yr].montant+=m.montantAttendu; }
+    });
+    return Object.entries(map).sort(([a],[b])=>Number(b)-Number(a));
+  },[annee,dataVisible]);
 
   /* ────────────────── RENDER ────────────────── */
   return (
@@ -272,7 +284,7 @@ export default function EssencePage() {
         {alertMois&&(
           <div style={{display:'flex',alignItems:'center',gap:12,background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',borderRadius:14,padding:'13px 18px',marginBottom:16,animation:'fadeSlideUp .4s ease both'}}>
             <AlertCircle size={16} color="#ef4444"/>
-            <span style={{fontSize:13,fontWeight:600}}>
+            <span style={{fontSize:13,fontWeight:700}}>
               ⚠️ <strong>{MOIS_FULL[alertMois.mois]} {alertMois.annee}</strong> n&apos;a pas encore été marqué comme reçu.
             </span>
           </div>
@@ -297,15 +309,11 @@ export default function EssencePage() {
                     <h1 style={{margin:0,fontSize:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Essence
                     </h1>
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginTop:4}}>
-                      <span style={{fontSize:13,color:'rgba(255,255,255,0.5)'}}>Indemnité carburant</span>
-                      <span style={{fontSize:13,color:'rgba(255,255,255,0.35)'}}>· <span style={{color:'#f59e0b',fontWeight:700}}>{data.length}</span> mois</span>
-                    </div>
                   </div>
                 </div>
 
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                     {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                   </div>
                   <select value={annee} onChange={e=>handleAnneeChange(e.target.value)}
@@ -322,12 +330,6 @@ export default function EssencePage() {
                       <Trash2 size={14}/>
                     </button>
                   )}
-                  <button onClick={exportCSV}
-                    style={{display:'flex',alignItems:'center',gap:8,padding:'10px 22px',borderRadius:13,border:'none',background:'linear-gradient(135deg,#f59e0b,#d97706)',color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 20px rgba(245,158,11,0.45)',whiteSpace:'nowrap'}}
-                    onMouseEnter={e=>(e.currentTarget.style.transform='scale(1.04)')}
-                    onMouseLeave={e=>(e.currentTarget.style.transform='scale(1)')}>
-                    <Download size={16}/> Export CSV
-                  </button>
                 </div>
               </div>
 
@@ -354,7 +356,7 @@ export default function EssencePage() {
 
               {/* Barre progression */}
               <div>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:11,color:'rgba(255,255,255,0.4)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:11,color:'rgba(255,255,255,0.85)'}}>
                   <span>Mois reçus · {stats.moisRecus} / {stats.moisTotal}</span>
                   <span style={{fontWeight:700,color:pc}}>{stats.pctRecu}%</span>
                 </div>
@@ -366,59 +368,6 @@ export default function EssencePage() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════
-            CHARTS
-            ════════════════════════════════════════ */}
-        {annee!=='tout'&&chartData.length>0&&(
-          <div style={{padding:'1px',borderRadius:18,background:'linear-gradient(135deg,#f59e0b30,#d9770620)',marginBottom:16}}>
-            <div style={{background:'rgba(2,8,16,0.97)',borderRadius:17,padding:'18px 22px',backdropFilter:'blur(20px)'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
-                <span style={{fontWeight:800,fontSize:14,color:'rgba(255,255,255,0.8)'}}>Visualisation {annee}</span>
-                <div style={{display:'flex',gap:8}}>
-                  {([['bar','Barres',BarChart2],['area','Cumulatif',Activity]] as const).map(([t,label,Icon])=>(
-                    <button key={t} onClick={()=>setChartType(t)}
-                      style={{display:'flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:9,border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
-                        background:chartType===t?'rgba(245,158,11,0.2)':'rgba(255,255,255,0.05)',
-                        color:chartType===t?'#f59e0b':'rgba(255,255,255,0.4)'}}>
-                      <Icon size={13}/>{label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                {chartType==='bar'?(
-                  <BarChart data={chartData} barCategoryGap="30%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)"/>
-                    <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.35)',fontSize:11}} axisLine={false} tickLine={false}/>
-                    <YAxis tick={{fill:'rgba(255,255,255,0.35)',fontSize:11}} axisLine={false} tickLine={false} width={50} tickFormatter={v=>`${v}`}/>
-                    <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:10,fontSize:12}} labelStyle={{color:'#f59e0b',fontWeight:700}} formatter={(v:number)=>[`${v.toFixed(2)} TND`]}/>
-                    <Bar dataKey="Attendu" fill="rgba(245,158,11,0.25)" radius={[4,4,0,0]}/>
-                    <Bar dataKey="Reçu"    fill="#12b76a"              radius={[4,4,0,0]}/>
-                  </BarChart>
-                ):(
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="gAtt" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02}/>
-                      </linearGradient>
-                      <linearGradient id="gRec" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#12b76a" stopOpacity={0.35}/>
-                        <stop offset="95%" stopColor="#12b76a" stopOpacity={0.02}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)"/>
-                    <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.35)',fontSize:11}} axisLine={false} tickLine={false}/>
-                    <YAxis tick={{fill:'rgba(255,255,255,0.35)',fontSize:11}} axisLine={false} tickLine={false} width={50}/>
-                    <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:10,fontSize:12}} labelStyle={{color:'#f59e0b',fontWeight:700}} formatter={(v:number)=>[`${v.toFixed(2)} TND`]}/>
-                    <Area type="monotone" dataKey="cumAtt" name="Attendu cumulé" stroke="#f59e0b" fill="url(#gAtt)" strokeWidth={2}/>
-                    <Area type="monotone" dataKey="cumRec" name="Reçu cumulé"    stroke="#12b76a" fill="url(#gRec)" strokeWidth={2}/>
-                  </AreaChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
 
         {/* ════════════════════════════════════════
             LISTE MENSUELLE
@@ -426,11 +375,31 @@ export default function EssencePage() {
         {loading?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:320,gap:16}}>
             <div style={{width:48,height:48,borderRadius:'50%',border:'3px solid rgba(245,158,11,0.15)',borderTopColor:'#f59e0b',animation:'spin 0.8s linear infinite',boxShadow:'0 0 20px rgba(245,158,11,0.3)'}}/>
-            <span style={{fontSize:14,color:'rgba(255,255,255,0.35)',letterSpacing:0.3}}>Chargement…</span>
+            <span style={{fontSize:14,color:'rgba(255,255,255,0.8)',letterSpacing:0.3}}>Chargement…</span>
           </div>
         ):(
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {dataVisible.map((m,i)=>(
+            {annee==='tout'?(
+              yearSummary.map(([yr,s],i)=>{
+                const allPaid = s.recus===s.total&&s.total>0;
+                const c = allPaid?'#12b76a':'#f79009';
+                return (
+                  <div key={yr} onClick={()=>handleAnneeChange(yr)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px',borderRadius:14,background:`${c}08`,border:`1px solid ${c}25`,cursor:'pointer',transition:'all 0.15s',animation:`fadeSlideUp 0.35s ${i*0.06}s ease both'`}}
+                    onMouseEnter={e=>e.currentTarget.style.background=`${c}15`}
+                    onMouseLeave={e=>e.currentTarget.style.background=`${c}08`}>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <div style={{width:10,height:10,borderRadius:'50%',background:c,boxShadow:`0 0 8px ${c}99`}}/>
+                      <span style={{fontSize:20,fontWeight:900,color:c}}>{yr}</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:16}}>
+                      <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{s.recus}/{s.total} mois</span>
+                      <span style={{fontSize:14,fontWeight:800,color:c}}>{s.montant.toFixed(0)} TND</span>
+                      <span style={{fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:20,background:`${c}20`,color:c,border:`1px solid ${c}40`}}>{allPaid?'✓ Payé':'En attente'}</span>
+                    </div>
+                  </div>
+                );
+              })
+            ):dataVisible.map((m,i)=>(
               <div key={m.id} className="ess-row"
                 style={{display:'flex',alignItems:'center',gap:14,
                   background:m.recu?'rgba(18,183,106,0.05)':'rgba(255,255,255,0.02)',
@@ -453,7 +422,7 @@ export default function EssencePage() {
                     {MOIS_FULL[m.mois]}{annee==='tout'?` ${m.annee}`:''}
                   </div>
                   {m.dateReception&&(
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:3}}>
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:3}}>
                       Reçu le {new Date(m.dateReception).toLocaleDateString('fr-FR')}
                     </div>
                   )}
@@ -473,14 +442,14 @@ export default function EssencePage() {
                   ):(
                     <div style={{display:'flex',alignItems:'center',gap:7,cursor:'pointer'}}
                       onClick={()=>{ setEditingId(m.id); setEditVal(String(m.montantAttendu)); }}>
-                      <span style={{fontSize:17,fontWeight:900,color:'#f59e0b',letterSpacing:-0.5}}>
+                      <span style={{fontSize:17,fontWeight:900,color:m.recu?'#12b76a':'#f59e0b',letterSpacing:-0.5}}>
                         {Math.round(m.montantAttendu)} TND
                       </span>
                       <Edit3 size={12} color="rgba(255,255,255,0.25)"/>
                     </div>
                   )}
                   {m.note&&(
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',fontStyle:'italic',marginTop:3}}>💬 {m.note}</div>
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',fontStyle:'italic',marginTop:3}}>💬 {m.note}</div>
                   )}
                 </div>
 
@@ -495,14 +464,17 @@ export default function EssencePage() {
                       background:m.recu?'rgba(18,183,106,0.15)':'rgba(255,255,255,0.05)',
                       border:`1px solid ${m.recu?'rgba(18,183,106,0.25)':'rgba(255,255,255,0.09)'}`,
                       borderRadius:9,padding:'7px 14px',
-                      color:m.recu?'#12b76a':'rgba(255,255,255,0.5)',
+                      color:m.recu?'#12b76a':'#f59e0b',
                       cursor:'pointer',fontSize:12,fontWeight:800,transition:'all 0.15s'}}>
                     {m.recu?<><CheckCircle size={13}/> Reçu</>:<><Clock size={13}/> En attente</>}
                   </button>
                 </div>
               </div>
             ))}
-            {data.length===0&&(
+            {annee==='tout'&&yearSummary.length===0&&(
+              <div style={{textAlign:'center',padding:'60px 0',color:'rgba(255,255,255,0.8)',fontSize:14}}>Aucune donnée</div>
+            )}
+            {data.length===0&&annee!=='tout'&&(
               <div style={{textAlign:'center',padding:'80px 0',color:'rgba(255,255,255,0.3)',fontSize:14}}>
                 Aucune donnée pour {annee==='tout'?'toutes les années':annee}
               </div>

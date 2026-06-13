@@ -66,7 +66,7 @@ function ScoreRing({ value, max, color, label }: { value:number; max:number; col
           <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
         </div>
       </div>
-      <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</span>
+      <span style={{ fontSize:10, color:'rgba(255,255,255,0.85)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</span>
     </div>
   );
 }
@@ -234,30 +234,18 @@ export default function PipelinePage() {
                     <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#a78bfa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Pipeline
                     </h1>
-                    <p style={{margin:0,marginTop:3,fontSize:13,color:'rgba(255,255,255,0.5)'}}>
-                      Kanban · <span style={{color:'#a78bfa',fontWeight:700}}>{total}</span> fiche{total!==1?'s':''}
+                    <p style={{margin:0,marginTop:3,fontSize:13,color:'#a78bfa',fontWeight:700}}>
+                      {total} lead{total!==1?'s':''}
                     </p>
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                       {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
-                  {/* Pills commission */}
-                  <div style={{display:'flex',gap:3,background:'rgba(0,0,0,0.2)',borderRadius:10,padding:3}}>
-                    {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳'],['annulee','✕ Annulée']] as const).map(([k,l])=>(
-                      <button key={k} onClick={()=>setFiltreComm(k)}
-                        style={{padding:'5px 10px',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',border:'none',transition:'all 0.2s',whiteSpace:'nowrap',
-                          background:filtreComm===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':k==='annulee'?'#be123c':'rgba(167,139,250,0.6)'):'transparent',
-                          color:filtreComm===k?'#fff':'rgba(255,255,255,0.5)',
-                          boxShadow:filtreComm===k?'0 2px 8px rgba(0,0,0,0.2)':'none'}}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                  <select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
+<select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
                     <option value="tout">Toutes les années</option>
                     {annees.map(y=><option key={y} value={y}>{y}</option>)}
@@ -287,49 +275,6 @@ export default function PipelinePage() {
                 })}
               </div>
 
-              {/* Total B2B/B2C + conversion + rings */}
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
-                <div style={{flex:1,minWidth:200}}>
-                  <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)'}}>Taux d'installation</span>
-                    <span style={{fontSize:22,fontWeight:900,color:'#22c55e'}}>{convRate}%</span>
-                    <span style={{fontSize:12,color:'rgba(255,255,255,0.35)'}}>{installe} / {total}</span>
-                  </div>
-                  <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.07)',overflow:'hidden',marginBottom:10}}>
-                    <div style={{height:'100%',borderRadius:3,background:'linear-gradient(90deg,#3b6cf8,#a78bfa,#22c55e)',width:`${convRate}%`,transition:'width 1.2s ease',boxShadow:'0 0 12px rgba(167,139,250,0.4)'}}/>
-                  </div>
-                  <div style={{display:'flex',gap:16}}>
-                    {[{val:b2b,label:'B2B',c:'#3b6cf8'},{val:b2c,label:'B2C',c:'#12b76a'}].map(({val,label,c})=>(
-                      <div key={label} style={{display:'flex',alignItems:'center',gap:6}}>
-                        <span style={{fontSize:16,fontWeight:900,color:c}}>{val}</span>
-                        <span style={{fontSize:11,color:'rgba(255,255,255,0.4)',fontWeight:600}}>{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {!isMobile&&(
-                  <div style={{display:'flex',flexDirection:'column',gap:12,alignItems:'flex-end'}}>
-                    <div style={{display:'flex',gap:20}}>
-                      <ScoreRing value={proposals} max={total||1} color="#a764f8" label="Soumission"/>
-                      <ScoreRing value={enCours}   max={total||1} color="#f97316" label="En cours"/>
-                      <ScoreRing value={installe}  max={total||1} color="#22c55e" label="Installé"/>
-                      <ScoreRing value={annulees}  max={total||1} color="#be123c" label="Annulée"/>
-                    </div>
-                    {activeServices.length>0&&(
-                      <div style={{display:'flex',gap:14}}>
-                        {activeServices.map(svc=>(
-                          <div key={svc.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                            <div style={{width:40,height:40,borderRadius:'50%',border:`2.5px solid ${svc.color||'#8b8b9e'}`,background:`${svc.color||'#8b8b9e'}15`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                              <span style={{fontSize:14,fontWeight:800,color:svc.color||'#8b8b9e'}}>{serviceCounts[svc.id]||0}</span>
-                            </div>
-                            <span style={{fontSize:9,color:'rgba(255,255,255,0.5)',fontWeight:700,textTransform:'uppercase',textAlign:'center',maxWidth:40,lineHeight:1.2}}>{svc.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -337,10 +282,21 @@ export default function PipelinePage() {
         {/* ════════════════════════════════════════
             KANBAN
             ════════════════════════════════════════ */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}}>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {([['tout','Tout','#a78bfa'],['payee','✓ Payée','#12b76a'],['non_payee','⏳ Attente','#f79009'],['annulee','✕ Annulée','#be123c']] as const).map(([k,l,c])=>(
+              <button key={k} onClick={()=>setFiltreComm(k)}
+                style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${filtreComm===k?c:'rgba(255,255,255,0.1)'}`,background:filtreComm===k?`${c}25`:'transparent',color:filtreComm===k?c:'rgba(255,255,255,0.8)',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {loading?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:320,gap:16}}>
             <div style={{width:48,height:48,borderRadius:'50%',border:'3px solid rgba(167,139,250,0.15)',borderTopColor:'#a78bfa',animation:'spin 0.8s linear infinite',boxShadow:'0 0 20px rgba(167,139,250,0.3)'}}/>
-            <span style={{fontSize:14,color:'rgba(255,255,255,0.35)'}}>Chargement…</span>
+            <span style={{fontSize:14,color:'rgba(255,255,255,0.8)'}}>Chargement…</span>
           </div>
         ):(
           <div style={{display:'flex',gap:12,alignItems:'flex-start',paddingBottom:24,overflowX:'auto',scrollSnapType:isMobile?'x mandatory':'none',WebkitOverflowScrolling:'touch'}}>
@@ -355,7 +311,7 @@ export default function PipelinePage() {
                   onDragOver={e=>{e.preventDefault();setOver(stage.key);}}
                   onDragLeave={()=>setOver(null)}
                   onDrop={()=>onDrop(stage.key)}
-                  style={{scrollSnapAlign:isMobile?'start':'none',background:isOver?`${stage.color}10`:'rgba(2,8,16,0.97)',borderRadius:16,padding:12,border:isOver?`2px dashed ${stage.color}`:`1px solid ${stage.color}30`,display:'flex',flexDirection:'column',minWidth:isMobile?'85vw':240,maxWidth:isMobile?'85vw':280,transition:'all 0.2s',animation:`fadeSlideUp 0.4s ${stageIdx*0.06}s ease both`,flexShrink:0,backdropFilter:'blur(20px)',boxShadow:`0 4px 20px ${stage.color}15`}}>
+                  style={{scrollSnapAlign:isMobile?'start':'none',background:isOver?`${stage.color}10`:'rgba(2,8,16,0.97)',borderRadius:16,padding:12,border:isOver?`2px dashed ${stage.color}`:`1px solid ${stage.color}30`,display:'flex',flexDirection:'column',minWidth:isMobile?'85vw':colItems.length===0?140:240,maxWidth:isMobile?'85vw':colItems.length===0?160:280,transition:'all 0.2s',animation:`fadeSlideUp 0.4s ${stageIdx*0.06}s ease both`,flexShrink:0,backdropFilter:'blur(20px)',boxShadow:`0 4px 20px ${stage.color}15`}}>
 
                   {/* En-tête colonne */}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
@@ -363,7 +319,7 @@ export default function PipelinePage() {
                       <div style={{width:8,height:8,borderRadius:'50%',background:stage.color,boxShadow:`0 0 6px ${stage.color}80`}}/>
                       <span style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,0.9)',textTransform:'uppercase',letterSpacing:0.6}}>{stage.label}</span>
                     </div>
-                    <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'rgba(255,255,255,0.4)',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
+                    <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'rgba(255,255,255,0.85)',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
                       {colItems.length}
                     </span>
                   </div>
@@ -418,7 +374,7 @@ export default function PipelinePage() {
                                   )}
                                 </div>
                                 {(f.prenom||f.nom)&&f.entreprise&&(
-                                  <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
+                                  <div style={{fontSize:11,color:'rgba(255,255,255,0.85)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
                                     {`${f.prenom||''} ${f.nom||''}`.trim()}
                                   </div>
                                 )}
@@ -427,7 +383,7 @@ export default function PipelinePage() {
 
                             {/* Ville */}
                             {f.ville&&(
-                              <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginBottom:7,display:'flex',alignItems:'center',gap:4}}>
+                              <div style={{fontSize:11,color:'rgba(255,255,255,0.85)',marginBottom:7,display:'flex',alignItems:'center',gap:4}}>
                                 <MapPin size={9}/> {f.ville}
                               </div>
                             )}
@@ -473,8 +429,8 @@ export default function PipelinePage() {
                             {/* Motif annulation */}
                             {stage.key==='installation_annulee'&&f.motifAnnulation&&(
                               <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 9px',borderRadius:8,background:'rgba(190,18,60,0.08)',border:'1px solid rgba(190,18,60,0.2)',marginBottom:0}}>
-                                <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontWeight:500}}>Motif :</span>
-                                <span style={{fontSize:11,color:'#be123c',fontWeight:600}}>{f.motifAnnulation}</span>
+                                <span style={{fontSize:11,color:'rgba(255,255,255,0.85)',fontWeight:700}}>Motif :</span>
+                                <span style={{fontSize:11,color:'#be123c',fontWeight:700}}>{f.motifAnnulation}</span>
                               </div>
                             )}
 
@@ -493,7 +449,7 @@ export default function PipelinePage() {
                     })}
 
                     {colItems.length===0&&(
-                      <div style={{textAlign:'center',padding:'24px 0',color:'rgba(255,255,255,0.25)',fontSize:12,borderRadius:10,border:`2px dashed ${isOver?stage.color:'rgba(255,255,255,0.06)'}`,transition:'border-color 0.2s',background:isOver?`${stage.color}04`:'transparent'}}>
+                      <div style={{textAlign:'center',padding:'24px 0',color:'rgba(255,255,255,0.7)',fontSize:12,borderRadius:10,border:`2px dashed ${isOver?stage.color:'rgba(255,255,255,0.06)'}`,transition:'border-color 0.2s',background:isOver?`${stage.color}04`:'transparent'}}>
                         {isOver?'Déposer ici':'Vide'}
                       </div>
                     )}
@@ -510,17 +466,17 @@ export default function PipelinePage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(8px)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
           <div style={{background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))',border:'1px solid rgba(190,18,60,0.3)',borderRadius:20,padding:'26px 28px',width:'100%',maxWidth:400,boxShadow:'0 40px 100px rgba(0,0,0,0.7)'}}>
             <div style={{fontSize:18,fontWeight:800,color:'#be123c',marginBottom:6}}>⚠️ Confirmer l'annulation</div>
-            <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:18}}>Pourquoi cette installation a-t-elle été annulée ?</p>
+            <p style={{fontSize:13,color:'rgba(255,255,255,0.85)',marginBottom:18}}>Pourquoi cette installation a-t-elle été annulée ?</p>
             <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:20}}>
               {settings.motifsAnnulation.map(m=>(
                 <button key={m} onClick={()=>{setMotif(m);}}
-                  style={{padding:'11px 16px',borderRadius:10,border:`1px solid ${motif===m?'rgba(190,18,60,0.5)':'rgba(190,18,60,0.2)'}`,background:motif===m?'rgba(190,18,60,0.15)':'rgba(190,18,60,0.06)',color:'rgba(255,255,255,0.85)',fontSize:13,fontWeight:500,cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                  style={{padding:'11px 16px',borderRadius:10,border:`1px solid ${motif===m?'rgba(190,18,60,0.5)':'rgba(190,18,60,0.2)'}`,background:motif===m?'rgba(190,18,60,0.15)':'rgba(190,18,60,0.06)',color:'rgba(255,255,255,0.85)',fontSize:13,fontWeight:700,cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
                   {m}
                 </button>
               ))}
             </div>
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setMotifModal(null)} style={{flex:1,padding:'10px 0',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,color:'rgba(255,255,255,0.5)',fontSize:13,cursor:'pointer'}}>Annuler</button>
+              <button onClick={()=>setMotifModal(null)} style={{flex:1,padding:'10px 0',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,color:'rgba(255,255,255,0.85)',fontSize:13,cursor:'pointer'}}>Annuler</button>
               <button onClick={confirmMotif} style={{flex:1,padding:'10px 0',background:'#be123c',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 16px rgba(190,18,60,0.4)'}}>Confirmer</button>
             </div>
           </div>

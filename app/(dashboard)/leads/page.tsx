@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Plus, Search, X, Filter, ChevronUp, ChevronDown,
-  TrendingUp, Wallet, Building2, CheckCircle,
+  TrendingUp, Building2, CheckCircle, XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -293,10 +293,8 @@ export default function SolutionExpressPage() {
   /* ── Stats ── */
   const totalFiches   = fichesByAnnee.length;
   const totalInstalle = fichesByAnnee.filter(f => f.status === 'installe').length;
+  const totalAnnule   = fichesByAnnee.filter(f => f.status === 'installation_annulee').length;
   const totalPipeline = fichesByAnnee.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
-  const convRate      = totalFiches > 0 ? Math.round((totalInstalle / totalFiches) * 100) : 0;
-  const commTot       = fichesByAnnee.filter(f => f.status !== 'installation_annulee').reduce((s, f) => s + (f.commissionTotale || 0), 0);
-  const commAtt       = fichesByAnnee.filter(f => !f.commissionPayee && f.status !== 'installation_annulee').reduce((s, f) => s + (f.commissionTotale || 0), 0);
 
   const filtersActive  = Object.values(filters).some(Boolean) || !!search;
   const villesDispos   = useMemo(() => {
@@ -343,14 +341,11 @@ export default function SolutionExpressPage() {
                     <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                       Leads
                     </h1>
-                    <p style={{ margin:0, marginTop:3, fontSize:13, color:'rgba(255,255,255,0.5)' }}>
-                      CRM personnel · <span style={{ color:'#a78bfa', fontWeight:700 }}>{totalFiches}</span> fiche{totalFiches !== 1 ? 's' : ''}
-                    </p>
                   </div>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                   {!isMobile && (
-                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.08)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.75)', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', textTransform:'capitalize', whiteSpace:'nowrap', fontWeight:700 }}>
                       {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </div>
                   )}
@@ -363,7 +358,7 @@ export default function SolutionExpressPage() {
                     style={{ display:'flex', alignItems:'center', gap:8, padding: isMobile ? '9px 16px' : '10px 22px', borderRadius:13, border:'none', background:'linear-gradient(135deg,#2215d4,#a78bfa)', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 4px 20px rgba(34,21,212,0.45)', transition:'all 0.2s', whiteSpace:'nowrap' }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform='scale(1.04)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform='scale(1)')}>
-                    <Plus size={16}/> Nouvelle fiche
+                    <Plus size={16}/> Nouveau lead
                   </button>
                 </div>
               </div>
@@ -371,10 +366,10 @@ export default function SolutionExpressPage() {
               {/* Stats cards */}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:16 }}>
                 {[
-                  { label:'Total fiches',     value:totalFiches,   color:'#a78bfa', Icon:Building2,   suffix:'' },
-                  { label:'Installés',        value:totalInstalle, color:'#12b76a', Icon:CheckCircle,  suffix:'' },
-                  { label:'Commission TND',   value:commTot,       color:'#3b6cf8', Icon:Wallet,       suffix:'' },
-                  { label:'En attente TND',   value:commAtt,       color:'#f79009', Icon:TrendingUp,   suffix:'' },
+                  { label:'Total leads',  value:totalFiches,   color:'#a78bfa', Icon:Building2,  },
+                  { label:'En cours',     value:totalPipeline, color:'#f79009', Icon:TrendingUp,  },
+                  { label:'Installés',    value:totalInstalle, color:'#12b76a', Icon:CheckCircle, },
+                  { label:'Annulés',      value:totalAnnule,   color:'#ef4444', Icon:XCircle,     },
                 ].map((s,i) => (
                   <div key={i} style={{ background:`${s.color}12`, borderRadius:12, padding:'12px 16px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.06}s ease both` }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
@@ -388,17 +383,6 @@ export default function SolutionExpressPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Barre de conversion */}
-              <div>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'rgba(255,255,255,0.4)' }}>
-                  <span>Taux d'installation · {totalPipeline} en pipeline</span>
-                  <span style={{ fontWeight:700, color:'#a78bfa' }}>{convRate}%</span>
-                </div>
-                <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.07)', overflow:'hidden' }}>
-                  <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#2215d4,#a78bfa,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease', boxShadow:'0 0 12px rgba(167,139,250,0.4)' }}/>
-                </div>
               </div>
             </div>
           </div>
@@ -423,7 +407,7 @@ export default function SolutionExpressPage() {
                   </button>
                 )}
                 <button onClick={() => setShowFilt(p => !p)}
-                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, cursor:'pointer', color:'rgba(255,255,255,0.6)', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600 }}>
+                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, cursor:'pointer', color:'rgba(255,255,255,0.6)', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:700 }}>
                   {showFilt ? <><ChevronUp size={14}/> Cacher</> : <><ChevronDown size={14}/> Afficher</>}
                 </button>
               </div>
@@ -451,10 +435,10 @@ export default function SolutionExpressPage() {
                 </div>
                 {/* Pills services */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.85)', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
                   {settings.services.filter(sv => usedServiceIds.has(sv.id)).map(sv => (
                     <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
-                      style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
+                      style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
                         border:`1px solid ${filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.12)'}`,
                         background: filters.service===sv.id ? `${sv.color}22` : 'transparent',
                         color: filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.5)' }}>
@@ -488,7 +472,7 @@ export default function SolutionExpressPage() {
 
         {/* Compteur résultats */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-          <span style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>
+          <span style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontWeight:700 }}>
             <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>{totalVisible}</span> fiche{totalVisible !== 1 ? 's' : ''}{filtersActive ? ' trouvée' : ' au total'}
           </span>
           {filtersActive && <span style={{ fontSize:11, background:'rgba(167,139,250,0.1)', color:'#a78bfa', padding:'2px 12px', borderRadius:20, fontWeight:700 }}>Filtres actifs</span>}
@@ -500,18 +484,18 @@ export default function SolutionExpressPage() {
         {loading ? (
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:16 }}>
             <div style={{ width:48, height:48, borderRadius:'50%', border:'3px solid rgba(167,139,250,0.15)', borderTopColor:'#a78bfa', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(167,139,250,0.3)' }}/>
-            <span style={{ fontSize:14, color:'rgba(255,255,255,0.35)', letterSpacing:0.3 }}>Chargement des fiches…</span>
+            <span style={{ fontSize:14, color:'rgba(255,255,255,0.8)', letterSpacing:0.3 }}>Chargement des fiches…</span>
           </div>
         ) : groups.length === 0 ? (
           <div style={{ textAlign:'center', padding:'80px 20px' }}>
             <div style={{ width:72, height:72, borderRadius:20, background:'rgba(167,139,250,0.08)', border:'1px solid rgba(167,139,250,0.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', boxShadow:'0 0 30px rgba(167,139,250,0.15)' }}>
               <Building2 size={32} color="#a78bfa" style={{ opacity:0.6 }}/>
             </div>
-            <p style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Aucune fiche trouvée</p>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.35)', marginBottom:20 }}>Essayez d'ajuster vos filtres</p>
+            <p style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Aucun lead trouvé</p>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,0.8)', marginBottom:20 }}>Essayez d'ajuster vos filtres</p>
             <button onClick={openAdd}
               style={{ padding:'10px 24px', borderRadius:12, background:'linear-gradient(135deg,#2215d4,#a78bfa)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:7 }}>
-              <Plus size={14}/> Créer une fiche
+              <Plus size={14}/> Créer un lead
             </button>
           </div>
         ) : (
@@ -524,8 +508,8 @@ export default function SolutionExpressPage() {
                   <span style={{ fontSize:12, fontWeight:700, color:group.color, textTransform:'uppercase', letterSpacing:1, padding:'4px 14px', borderRadius:20, background:`${group.color}15`, border:`1px solid ${group.color}30`, whiteSpace:'nowrap' }}>
                     {group.label}
                   </span>
-                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.05)', padding:'2px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.07)', fontWeight:600, whiteSpace:'nowrap' }}>
-                    {group.items.length} fiche{group.items.length!==1?'s':''} · <span style={{ color:group.color }}>{group.items.reduce((s,f) => s+(f.commissionTotale||0), 0).toFixed(0)} TND</span>
+                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.85)', background:'rgba(255,255,255,0.05)', padding:'2px 10px', borderRadius:20, border:'1px solid rgba(255,255,255,0.07)', fontWeight:700, whiteSpace:'nowrap' }}>
+                    {group.items.length} fiche{group.items.length!==1?'s':''} · <span style={{ color:group.color }}>{group.items.filter(f=>f.status!=='installation_annulee').reduce((s,f) => s+(f.commissionTotale||0), 0).toFixed(0)} TND</span>
                   </span>
                   <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.07)' }}/>
                 </div>
@@ -578,10 +562,10 @@ export default function SolutionExpressPage() {
           style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div style={{ background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, width:'100%', maxWidth:400, padding:'26px 28px', boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(239,68,68,0.1)' }}>
             <div style={{ fontSize:18, fontWeight:800, color:'#ef4444', marginBottom:6 }}>Confirmer l'annulation</div>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginBottom:18 }}>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,0.85)', marginBottom:18 }}>
               {motifPending.fiche.entreprise || [motifPending.fiche.prenom, motifPending.fiche.nom].filter(Boolean).join(' ')}
             </p>
-            <label style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontWeight:700, letterSpacing:0.4, marginBottom:7, display:'block' }}>Motif d'annulation</label>
+            <label style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontWeight:700, letterSpacing:0.4, marginBottom:7, display:'block' }}>Motif d'annulation</label>
             <select value={motifChoice} onChange={e => setMotifChoice(e.target.value)}
               style={{ width:'100%', padding:'9px 12px', borderRadius:10, fontSize:13, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', marginBottom:20 }}>
               <option value="">— Sélectionner —</option>

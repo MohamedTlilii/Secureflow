@@ -114,7 +114,7 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
       <div style={{padding:14}}>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:6}}>
           {['L','M','M','J','V','S','D'].map((d,i)=>(
-            <div key={i} style={{textAlign:'center',fontSize:10,color:'rgba(255,255,255,0.4)',fontWeight:700,padding:'3px 0'}}>{d}</div>
+            <div key={i} style={{textAlign:'center',fontSize:10,color:'rgba(255,255,255,0.8)',fontWeight:700,padding:'3px 0'}}>{d}</div>
           ))}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3}}>
@@ -150,7 +150,7 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
             );
           })}
         </div>
-        <div style={{display:'flex',gap:12,marginTop:12,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.07)',fontSize:10,color:'rgba(255,255,255,0.4)',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:12,marginTop:12,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.07)',fontSize:10,color:'rgba(255,255,255,0.8)',flexWrap:'wrap'}}>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#12b76a',display:'inline-block'}}/> Payée</span>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#f79009',display:'inline-block'}}/> En attente</span>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#be123c',display:'inline-block'}}/> Annulée</span>
@@ -259,34 +259,48 @@ export default function CommissionsPage() {
     return true;
   });
 
-  const actives    = filtered.filter(c=>c.status!=='installation_annulee');
-  const totalGagne = actives.reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const totalPaye  = actives.filter(c=>c.commissionPayee).reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const enAttente  = Math.max(0, totalGagne-totalPaye);
-  const vals       = actives.map(c=>c.commissionTotale||0).filter(v=>v>0);
-  const maximum    = vals.length?Math.max(...vals):0;
-  const minimum    = vals.length?Math.min(...vals):0;
-  const pctPaye    = totalGagne>0?Math.round((totalPaye/totalGagne)*100):0;
-  const objectif   = annee!=='tout'?(settings.objectifAnnuel?.[annee]||0):0;
-  const objPct     = objectif>0?Math.min(Math.round((totalGagne/objectif)*100),100):0;
-
   /* ── historique du mois calendrier ── */
   const filteredHistorique = filtered.filter(c=>{
     const d = new Date(c.dateVente??c.createdAt);
     return d.getFullYear()===calMois.year && d.getMonth()===calMois.month;
   });
 
+  /* ── stats cartes : tout = toutes années, année = mois du calendrier ── */
+  const baseStats       = annee==='tout' ? filtered : filteredHistorique;
+  const activesForStats = baseStats.filter(c=>c.status!=='installation_annulee');
+  const annuleeForStats = baseStats.filter(c=>c.status==='installation_annulee');
+  const actives     = filtre==='annulee' ? annuleeForStats : activesForStats;
+  const totalGagne  = filtre==='annulee' ? 0 : activesForStats.reduce((s,c)=>s+(c.commissionTotale||0), 0);
+  const totalAnnule = annuleeForStats.reduce((s,c)=>s+(c.commissionTotale||0), 0);
+  const totalPaye   = filtre==='annulee' ? 0 : activesForStats.filter(c=>c.commissionPayee).reduce((s,c)=>s+(c.commissionTotale||0), 0);
+  const enAttente   = filtre==='annulee' ? 0 : Math.max(0, totalGagne-totalPaye);
+  const vals        = actives.map(c=>c.commissionTotale||0).filter(v=>v>0);
+  const maximum     = vals.length?Math.max(...vals):0;
+  const minimum     = vals.length?Math.min(...vals):0;
+  const pctPaye     = totalGagne>0?Math.round((totalPaye/totalGagne)*100):0;
+
+  /* ── stats annuelles = objectif + badge graphique ── */
+  const activesAll    = filtered.filter(c=>c.status!=='installation_annulee');
+  const totalGagneAll = activesAll.reduce((s,c)=>s+(c.commissionTotale||0), 0);
+  const objectif      = annee!=='tout'?(settings.objectifAnnuel?.[annee]||0):0;
+  const objPct        = objectif>0?Math.min(Math.round((totalGagne/objectif)*100),100):0;
+
   /* ── chart data ── */
   const chartData = annee==='tout'
     ? annees.map((yr,i)=>{
         const yrF = filtered.filter(c=>String(new Date(c.dateVente??c.createdAt).getFullYear())===String(yr));
-        return { name:String(yr), total:yrF.filter(c=>c.status!=='installation_annulee').reduce((s,c)=>s+(c.commissionTotale||0),0), count:yrF.length, color:YEAR_COLORS[i%YEAR_COLORS.length] };
+        const activeYrF = filtre === 'annulee' ? yrF : yrF.filter(c=>c.status!=='installation_annulee');
+        const barColor = filtre==='payee'?'#12b76a':filtre==='non_payee'?'#f79009':filtre==='annulee'?'#be123c':YEAR_COLORS[i%YEAR_COLORS.length];
+        const cPayee   = yrF.filter(c=>c.commissionPayee&&c.status!=='installation_annulee').length;
+        const cAttente = yrF.filter(c=>!c.commissionPayee&&c.status!=='installation_annulee').length;
+        const cAnnulee = yrF.filter(c=>c.status==='installation_annulee').length;
+        return { name:String(yr), total:activeYrF.reduce((s,c)=>s+(c.commissionTotale||0),0), count:yrF.length, cPayee, cAttente, cAnnulee, color:barColor };
       })
     : [...filteredHistorique].sort((a,b)=>new Date(a.dateVente??a.createdAt).getTime()-new Date(b.dateVente??b.createdAt).getTime())
         .map(c=>{
           const d = new Date(c.dateVente??c.createdAt);
           const annulee = c.status==='installation_annulee';
-          return { name:`${d.getDate()} ${MOIS_COURT[d.getMonth()]}`, total:c.commissionTotale||0, color:annulee?'#be123c':'#12b76a', annulee, fullNom:c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'?', motif:c.motifAnnulation||'', payee:c.commissionPayee };
+          return { name:`${d.getDate()} ${MOIS_COURT[d.getMonth()]}`, total:c.commissionTotale||0, color:annulee?'#be123c':c.commissionPayee?'#12b76a':'#f79009', annulee, fullNom:c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'?', motif:c.motifAnnulation||'', payee:c.commissionPayee };
         });
 
 
@@ -331,26 +345,11 @@ export default function CommissionsPage() {
                     <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#fff 30%,#12b76a)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
                       Commissions
                     </h1>
-                    <p style={{margin:0,marginTop:3,fontSize:13,color:'rgba(255,255,255,0.5)'}}>
-                      Leads · <span style={{color:'#12b76a',fontWeight:700}}>{withComm.length}</span> vente{withComm.length!==1?'s':''}
-                    </p>
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                  {/* Filtre pills */}
-                  <div style={{display:'flex',gap:3,background:'rgba(0,0,0,0.2)',borderRadius:10,padding:3}}>
-                    {([['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳'],['annulee','✕ Annulée']] as const).map(([k,l])=>(
-                      <button key={k} onClick={()=>setFiltre(k)}
-                        style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:8,fontSize:11,fontWeight:700,cursor:'pointer',border:'none',transition:'all 0.2s',
-                          background:filtre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'rgba(18,183,106,0.6)'):'transparent',
-                          color:filtre===k?'#fff':'rgba(255,255,255,0.5)',
-                          boxShadow:filtre===k?'0 2px 8px rgba(0,0,0,0.2)':'none'}}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
                   {!isMobile&&(
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.08)',whiteSpace:'nowrap'}}>
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
                       {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
@@ -362,24 +361,14 @@ export default function CommissionsPage() {
                 </div>
               </div>
 
-              {/* Progress bar payé */}
-              <div>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6,fontSize:11,color:'rgba(255,255,255,0.4)'}}>
-                  <span>{actives.filter(c=>c.commissionPayee).length} / {actives.length} ventes payées</span>
-                  <span style={{fontWeight:800,color:pctPaye>=70?'#12b76a':pctPaye>=40?'#f79009':'#ef4444'}}>{pctPaye}% payé</span>
-                </div>
-                <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.07)',overflow:'hidden'}}>
-                  <div style={{height:'100%',borderRadius:3,background:`linear-gradient(90deg,#12b76a,${pctPaye>=70?'#61DAFB':'#f79009'})`,width:`${pctPaye}%`,transition:'width 1.2s ease',boxShadow:'0 0 12px rgba(18,183,106,0.5)'}}/>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         {/* ════════════════════════════════════════
-            STATS CARDS (5 cartes, style SE)
+            STATS CARDS (6 cartes, style SE)
             ════════════════════════════════════════ */}
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'2fr 1fr 1fr 1fr 1fr',gap:isMobile?10:14,marginBottom:20}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'2fr 1fr 1fr 1fr 1fr 1fr',gap:isMobile?10:14,marginBottom:20}}>
 
           {/* Total gagné — grande carte */}
           <div style={{gridColumn:isMobile?'1 / -1':'auto',padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#12b76a70,#61DAFB35)',animation:'fadeSlideUp 0.4s 0.05s ease both'}}>
@@ -392,8 +381,8 @@ export default function CommissionsPage() {
                 <div style={{fontSize:isMobile?20:26,fontWeight:900,color:'#12b76a',lineHeight:1}}>
                   <AnimatedNumber value={totalGagne} decimals={0} color="#12b76a" suffix=" TND"/>
                 </div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginTop:5}}>
-                  {filtered.length} vente{filtered.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(filtered.length,1))}
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:5}}>
+                  {activesForStats.length} vente{activesForStats.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(activesForStats.length,1))}
                 </div>
               </div>
             </div>
@@ -406,7 +395,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={totalPaye} decimals={0} color="#61DAFB" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>{filtered.filter(c=>c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{activesForStats.filter(c=>c.commissionPayee).length} ventes</div>
             </div>
           </div>
 
@@ -417,7 +406,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={enAttente} decimals={0} color="#f79009" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>{filtered.filter(c=>!c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{activesForStats.filter(c=>!c.commissionPayee).length} ventes</div>
             </div>
           </div>
 
@@ -428,7 +417,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={maximum} decimals={0} color="#a78bfa" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>meilleure</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>meilleure</div>
             </div>
           </div>
 
@@ -439,7 +428,18 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={minimum} decimals={0} color="#8b8b9e" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:5}}>plus petite</div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>plus petite</div>
+            </div>
+          </div>
+
+          {/* Annulé */}
+          <div style={{gridColumn:isMobile?'1 / -1':'auto',padding:'1px',borderRadius:16,background:'linear-gradient(135deg,#be123c60,#f0443820)',animation:'fadeSlideUp 0.4s 0.3s ease both'}}>
+            <div style={{background:'rgba(2,8,16,0.97)',borderRadius:15,padding:isMobile?'14px 12px':'18px 16px',backdropFilter:'blur(20px)',textAlign:'center',height:'100%'}}>
+              <div style={{fontSize:10,color:'#be123c',fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:8}}>✕ Annulé</div>
+              <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
+                <AnimatedNumber value={totalAnnule} decimals={0} color="#be123c" suffix=" TND"/>
+              </div>
+              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{annuleeForStats.length} vente{annuleeForStats.length!==1?'s':''}</div>
             </div>
           </div>
         </div>
@@ -447,12 +447,22 @@ export default function CommissionsPage() {
         {/* Objectif annuel */}
         {annee!=='tout'&&objectif>0&&(
           <div style={{marginBottom:16,background:'rgba(18,183,106,0.05)',borderRadius:12,padding:'12px 18px',border:'1px solid rgba(18,183,106,0.15)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'rgba(255,255,255,0.5)',marginBottom:6}}>
-              <span style={{fontWeight:700}}>Objectif {annee}</span>
-              <span style={{fontWeight:800,color:objPct>=100?'#12b76a':'#f79009'}}>{totalGagne.toFixed(0)} / {objectif} TND — {objPct}%</span>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'rgba(255,255,255,0.5)',marginBottom:4}}>
+              <span style={{fontWeight:700}}>Objectif {MOIS_FULL[calMois.month]} {annee}</span>
+              <span style={{fontSize:12}}>
+                {totalPaye>0&&<span style={{color:'#12b76a',fontWeight:800}}>{totalPaye.toFixed(0)}</span>}
+                {totalPaye>0&&(enAttente>0||totalAnnule>0)&&<span style={{color:'rgba(255,255,255,0.65)'}}> + </span>}
+                {enAttente>0&&<span style={{color:'#f79009',fontWeight:800}}>{enAttente.toFixed(0)}</span>}
+                {enAttente>0&&totalAnnule>0&&<span style={{color:'rgba(255,255,255,0.65)'}}> + </span>}
+                {totalAnnule>0&&<span style={{color:'#be123c',fontWeight:800}}>{totalAnnule.toFixed(0)}</span>}
+                {totalPaye===0&&enAttente===0&&totalAnnule===0&&<span style={{color:'rgba(255,255,255,0.8)'}}>0</span>}
+                <span style={{color:'#fff',fontWeight:800}}> / {objectif} TND — </span>
+                <span style={{color:objPct>=100?'#12b76a':'#f79009',fontWeight:800}}>{objPct}%</span>
+              </span>
             </div>
-            <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
-              <div style={{height:'100%',borderRadius:3,background:objPct>=100?'linear-gradient(90deg,#12b76a,#61DAFB)':'linear-gradient(90deg,#3b6cf8,#12b76a)',width:`${objPct}%`,transition:'width 1.2s ease'}}/>
+            <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',display:'flex'}}>
+              <div style={{height:'100%',background:'#12b76a',width:`${objectif>0?Math.min((totalPaye/objectif)*100,100):0}%`,transition:'width 1.2s ease'}}/>
+              <div style={{height:'100%',background:'#f79009',width:`${objectif>0?Math.min((enAttente/objectif)*100,100):0}%`,transition:'width 1.2s ease'}}/>
             </div>
           </div>
         )}
@@ -462,13 +472,17 @@ export default function CommissionsPage() {
             ════════════════════════════════════════ */}
         <div style={{padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#12b76a50,#61DAFB25,#a78bfa15)',marginBottom:20}}>
           <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'20px 24px',backdropFilter:'blur(20px)'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}}>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Commissions par {annee==='tout'?'année':'mois'}</div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginTop:2}}>{annee==='tout'?'Toutes les années':annee}</div>
+            <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8,flexDirection:isMobile?'column':'row'}}>
+              <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>
+                Commissions par {annee==='tout'?'année':'mois'} {annee!=='tout'&&<span style={{color:'#12b76a'}}>{annee}</span>}
               </div>
-              <div style={{fontSize:12,fontWeight:700,color:'#12b76a',background:'rgba(18,183,106,0.08)',padding:'4px 12px',borderRadius:20,border:'1px solid rgba(18,183,106,0.2)'}}>
-                {fmtMoney(totalGagne)}
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {([['tout','Tout','#12b76a'],['payee','✓ Payée','#12b76a'],['non_payee','⏳ Attente','#f79009'],['annulee','✕ Annulée','#be123c']] as const).map(([k,l,c])=>(
+                  <button key={k} onClick={()=>setFiltre(k)}
+                    style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${filtre===k?c:'rgba(255,255,255,0.1)'}`,background:filtre===k?`${c}25`:'transparent',color:filtre===k?c:'rgba(255,255,255,0.4)',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>
+                    {l}
+                  </button>
+                ))}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={isMobile?120:160}>
@@ -490,10 +504,14 @@ export default function CommissionsPage() {
                           <>
                             <div style={{color:d.annulee?'#be123c':'#12b76a'}}>{d.annulee?'❌ Annulée':'✅ Installé'}</div>
                             {d.annulee&&d.motif&&<div style={{color:'#be123c',fontSize:11,marginTop:2}}>✕ {d.motif}</div>}
-                            <div style={{color:d.payee?'#12b76a':'#f79009',fontSize:11,marginTop:2}}>{d.payee?'✓ Payée':'⏳ Non payée'}</div>
+                            {!d.annulee&&<div style={{color:d.payee?'#12b76a':'#f79009',fontSize:11,marginTop:2}}>{d.payee?'✓ Payée':'⏳ Non payée'}</div>}
                           </>
                         ):(
-                          <div style={{color:'rgba(255,255,255,0.5)'}}>{d.count} installation{(d.count||0)>1?'s':''}</div>
+                          <div style={{display:'flex',flexDirection:'column',gap:3,marginTop:2}}>
+                            {d.cPayee>0&&<div style={{color:'#12b76a',fontSize:11}}>✓ {d.cPayee} payée{d.cPayee>1?'s':''}</div>}
+                            {d.cAttente>0&&<div style={{color:'#f79009',fontSize:11}}>⏳ {d.cAttente} en attente</div>}
+                            {d.cAnnulee>0&&<div style={{color:'#be123c',fontSize:11}}>✕ {d.cAnnulee} annulée{d.cAnnulee>1?'s':''}</div>}
+                          </div>
                         )}
                       </div>
                     );
@@ -508,9 +526,9 @@ export default function CommissionsPage() {
         </div>
 
         {/* ════════════════════════════════════════
-            CALENDRIER + HISTORIQUE
+            CALENDRIER + HISTORIQUE (année seulement)
             ════════════════════════════════════════ */}
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'320px 1fr',gap:20,alignItems:'flex-start'}}>
+        {annee!=='tout'&&<div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'320px 1fr',gap:20,alignItems:'flex-start'}}>
 
           {/* Calendrier */}
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -528,7 +546,7 @@ export default function CommissionsPage() {
                     <Calendar size={12} color="#12b76a"/>
                     {selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
                   </div>
-                  <button onClick={()=>{setSelDate(null);setSelVentes([]);}} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.4)',fontSize:18,lineHeight:1}}>×</button>
+                  <button onClick={()=>{setSelDate(null);setSelVentes([]);}} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.8)',fontSize:18,lineHeight:1}}>×</button>
                 </div>
                 <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:8}}>
                   {selVentes.map(c=>{
@@ -539,21 +557,21 @@ export default function CommissionsPage() {
                     return (
                       <div key={c.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:ann?'rgba(190,18,60,0.04)':'rgba(255,255,255,0.03)',borderRadius:10,padding:'10px 12px',gap:8,border:`1px solid ${bdr}`}}>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12,fontWeight:600,color:'#c0c0e0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                          <div style={{fontSize:12,fontWeight:700,color:'#c0c0e0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                             {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                           </div>
-                          {c.ville&&<div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:2}}>{c.ville}</div>}
-                          {ann&&c.motifAnnulation&&<div style={{fontSize:9,color:'#be123c',marginTop:2,fontWeight:600}}>✕ {c.motifAnnulation}</div>}
+                          {c.ville&&<div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:2}}>{c.ville}</div>}
+                          {ann&&c.motifAnnulation&&<div style={{fontSize:9,color:'#be123c',marginTop:2,fontWeight:700}}>✕ {c.motifAnnulation}</div>}
                         </div>
                         <div style={{textAlign:'right',flexShrink:0}}>
                           <div style={{fontSize:14,fontWeight:700,color:clr}}>{fmtMoney(c.commissionTotale)}</div>
-                          <div style={{fontSize:9,color:clr,fontWeight:600}}>{lbl}</div>
+                          <div style={{fontSize:9,color:clr,fontWeight:700}}>{lbl}</div>
                         </div>
                       </div>
                     );
                   })}
                   <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Total du jour</span>
+                    <span style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Total du jour</span>
                     <span style={{fontSize:15,fontWeight:800,color:'#12b76a'}}>{fmtMoney(selVentes.filter(c=>c.status!=='installation_annulee').reduce((s,c)=>s+(c.commissionTotale||0),0))}</span>
                   </div>
                 </div>
@@ -567,7 +585,7 @@ export default function CommissionsPage() {
               <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.07)',background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div style={{fontSize:13,fontWeight:700,color:'#c0c0e0'}}>Historique des commissions</div>
                 {filteredHistorique.length>0&&(
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.04)',padding:'3px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.08)',fontWeight:600}}>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.04)',padding:'3px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.08)',fontWeight:700}}>
                     <span style={{color:'#c0c0e0',fontWeight:800}}>{filteredHistorique.length}</span> vente{filteredHistorique.length!==1?'s':''}
                   </div>
                 )}
@@ -582,8 +600,8 @@ export default function CommissionsPage() {
                   <div style={{width:60,height:60,borderRadius:18,background:'rgba(18,183,106,0.06)',border:'1px solid rgba(18,183,106,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
                     <Wallet size={28} color="#12b76a" style={{opacity:0.4}}/>
                   </div>
-                  <div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Aucune commission</div>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>
+                  <div style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Aucune commission</div>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.65)'}}>
                     {MOIS_FULL[calMois.month]} {calMois.year}
                   </div>
                 </div>
@@ -606,24 +624,24 @@ export default function CommissionsPage() {
                               {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                             </div>
                             {c.typeClient==='b2b'&&c.entreprise&&(`${c.prenom||''} ${c.nom||''}`.trim())&&(
-                              <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                              <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                                 {`${c.prenom||''} ${c.nom||''}`.trim()}
                               </div>
                             )}
-                            <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginTop:3,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                            <div style={{fontSize:11,color:'rgba(255,255,255,0.75)',marginTop:3,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
                               {c.ville&&<span style={{display:'flex',alignItems:'center',gap:3}}><MapPin size={9}/>{c.ville}</span>}
                               <span style={{display:'flex',alignItems:'center',gap:3}}><Calendar size={9}/>{fmtDate(c.dateVente??c.createdAt)}</span>
                               {c.commissionPayee&&c.datePaiementCommission&&!isMobile&&(
-                                <span style={{color:'#12b76a',fontWeight:600}}>· Payée le {fmtDate(c.datePaiementCommission)}</span>
+                                <span style={{color:'#12b76a',fontWeight:700}}>· Payée le {fmtDate(c.datePaiementCommission)}</span>
                               )}
                             </div>
-                            {annulee&&c.motifAnnulation&&<div style={{fontSize:10,color:'#be123c',marginTop:3,fontWeight:600}}>✕ {c.motifAnnulation}</div>}
+                            {annulee&&c.motifAnnulation&&<div style={{fontSize:10,color:'#be123c',marginTop:3,fontWeight:700}}>✕ {c.motifAnnulation}</div>}
                           </div>
                           {/* Fixe + Extra desktop */}
                           {!isMobile&&!annulee&&(c.commissionFixe>0||c.commissionExtra>0)&&(
                             <div style={{textAlign:'right',flexShrink:0}}>
-                              {c.commissionFixe>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Fixe : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
-                              {c.commissionExtra>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Extra : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
+                              {c.commissionFixe>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Fixe : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
+                              {c.commissionExtra>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Extra : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
                             </div>
                           )}
                           {/* Montant */}
@@ -654,7 +672,7 @@ export default function CommissionsPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* ════ ULTRAFICHE (readOnly) ════ */}
@@ -684,19 +702,19 @@ export default function CommissionsPage() {
                   <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:resumeFiche.typeClient==='b2b'?'rgba(59,108,248,0.15)':'rgba(167,139,250,0.15)',color:resumeFiche.typeClient==='b2b'?'#3b6cf8':'#a78bfa',border:`1px solid ${resumeFiche.typeClient==='b2b'?'rgba(59,108,248,0.3)':'rgba(167,139,250,0.3)'}`}}>
                     {resumeFiche.typeClient==='b2b'?'🏢 B2B':'👤 B2C'}
                   </span>
-                  {resumeFiche.typeCommerce&&<span style={{fontSize:11,color:'rgba(255,255,255,0.5)',fontWeight:600}}>{commerceLbl[resumeFiche.typeCommerce]||resumeFiche.typeCommerce}</span>}
-                  {resumeFiche.ville&&<span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>· {resumeFiche.ville}</span>}
+                  {resumeFiche.typeCommerce&&<span style={{fontSize:11,color:'rgba(255,255,255,0.5)',fontWeight:700}}>{commerceLbl[resumeFiche.typeCommerce]||resumeFiche.typeCommerce}</span>}
+                  {resumeFiche.ville&&<span style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>· {resumeFiche.ville}</span>}
                 </div>
                 {resumeFiche.status&&(
                   <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:20,background:`${STATUS_CLR[resumeFiche.status]}20`,color:STATUS_CLR[resumeFiche.status],border:`1px solid ${STATUS_CLR[resumeFiche.status]}40`,display:'inline-block',width:'fit-content'}}>
                     {STATUS_LBL[resumeFiche.status]||resumeFiche.status}
                   </span>
                 )}
-                {resumeFiche.qualificationSysteme&&<div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}><span style={{fontWeight:600}}>Système : </span>{qualifLbl[resumeFiche.qualificationSysteme]||resumeFiche.qualificationSysteme}</div>}
-                {resumeFiche.dateVente&&<div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}><span style={{fontWeight:600}}>Date de vente : </span>{fmtDate(resumeFiche.dateVente)}</div>}
+                {resumeFiche.qualificationSysteme&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}><span style={{fontWeight:700}}>Système : </span>{qualifLbl[resumeFiche.qualificationSysteme]||resumeFiche.qualificationSysteme}</div>}
+                {resumeFiche.dateVente&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}><span style={{fontWeight:700}}>Date de vente : </span>{fmtDate(resumeFiche.dateVente)}</div>}
               </div>
               <button onClick={()=>setResumeFiche(null)}
-                style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.4)',fontSize:22,lineHeight:1,flexShrink:0}}
+                style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.8)',fontSize:22,lineHeight:1,flexShrink:0}}
                 onMouseEnter={e=>e.currentTarget.style.color='#ef4444'}
                 onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.4)'}>×</button>
             </div>
@@ -704,7 +722,7 @@ export default function CommissionsPage() {
             <div style={{overflowY:'auto',flex:1,padding:20}}>
               {resumeFiche.summary
                 ?<pre style={{fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.7)',lineHeight:1.75,whiteSpace:'pre-wrap',wordBreak:'break-word',margin:0}}>{resumeFiche.summary}</pre>
-                :<div style={{textAlign:'center',color:'rgba(255,255,255,0.3)',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
+                :<div style={{textAlign:'center',color:'rgba(255,255,255,0.65)',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
               }
             </div>
             {/* Footer */}

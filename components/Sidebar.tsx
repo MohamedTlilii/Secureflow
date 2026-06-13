@@ -12,7 +12,7 @@ import api from '@/lib/api';
 import type { SolutionExpress } from '@/types';
 
 const NAV = [
-  { to: '/',                 label: 'Dashboard',           color: '#38bdf8', Icon: LayoutDashboard },
+  { to: '/',                 label: 'Dashboard',           color: '#12b76a', Icon: LayoutDashboard },
   { to: '/comparaison',      label: 'Comparaison',         color: '#34d399', Icon: BarChart2       },
   { to: '/commissions',      label: 'Commissions',         color: '#10b981', Icon: Wallet          },
   { to: '/leads',            label: 'Leads',                color: '#818cf8', Icon: Users           },
@@ -131,14 +131,13 @@ export default function Sidebar() {
             <LogoSVG id="mh" size={19}/>
           </div>
           <div>
-            <div style={{ fontWeight:900, fontSize:14.5, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.3, lineHeight:1 }}>SecureFlow</div>
-            <div style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontWeight:600, letterSpacing:0.5, textTransform:'uppercase' }}>CRM</div>
+            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, lineHeight:1 }}>SecureFlow</div>
           </div>
         </div>
         <div ref={avatarRef} onClick={() => setShowProfile(p => !p)} style={{ display:'flex', alignItems:'center', gap:9, padding:'5px 8px', borderRadius:10, cursor:'pointer', background: showProfile ? 'rgba(18,183,106,0.12)' : 'transparent', border:`1px solid ${showProfile ? 'rgba(18,183,106,0.35)' : 'transparent'}`, transition:'all 0.2s' }}>
           <div style={{ textAlign:'right' }}>
             <div style={{ fontSize:12.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{user?.name}</div>
-            <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:600, textTransform:'capitalize' }}>{user?.role}</div>
+            <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:700, textTransform:'capitalize' }}>{user?.role}</div>
           </div>
           <Avatar emoji={user?.avatar}/>
         </div>
@@ -161,7 +160,7 @@ export default function Sidebar() {
               <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : 'transparent', transform: active ? 'scale(1.12)' : 'scale(1)', transition:'all 0.2s' }}>
                 <Icon size={18} style={{ filter: active ? `drop-shadow(0 0 5px ${color}99)` : 'none' }}/>
               </div>
-              <span style={{ fontSize:9, fontWeight: active ? 700 : 500, letterSpacing:0.2, opacity: active ? 1 : 0.7 }}>{label.split(' ')[0]}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.7 }}>{label.split(' ')[0]}</span>
             </Link>
           );
         })}
@@ -191,8 +190,7 @@ export default function Sidebar() {
             <LogoSVG id="sb" size={21}/>
           </div>
           <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
-            <div style={{ fontWeight:900, fontSize:14, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.3 }}>SecureFlow</div>
-            <div style={{ fontSize:9.5, color:'rgba(255,255,255,0.3)', fontWeight:600, letterSpacing:0.5, textTransform:'uppercase', marginTop:1 }}>CRM</div>
+            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5 }}>SecureFlow</div>
           </div>
         </div>
 
@@ -201,7 +199,7 @@ export default function Sidebar() {
           {NAV.map(({ to, Icon, label, color }, idx) => {
             const active = isActive(to);
             return (
-              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color: active ? color : 'rgba(139,154,184,0.65)', background: active ? `${color}16` : 'transparent', border:`1px solid ${active ? `${color}35` : 'transparent'}`, fontSize:12.5, fontWeight: active ? 700 : 400, transition:'all 0.18s ease', textDecoration:'none', boxShadow: active ? `0 0 16px ${color}18,inset 0 0 12px ${color}08` : 'none' }}>
+              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color: active ? color : 'rgba(255,255,255,0.8)', background: active ? `${color}16` : 'transparent', border:`1px solid ${active ? `${color}35` : 'transparent'}`, fontSize:12.5, fontWeight:700, transition:'all 0.18s ease', textDecoration:'none', boxShadow: active ? `0 0 16px ${color}18,inset 0 0 12px ${color}08` : 'none' }}>
                 <div style={{ minWidth:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, filter: active ? `drop-shadow(0 0 6px ${color}bb)` : 'none', transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
                   <Icon size={17}/>
                 </div>
@@ -220,7 +218,7 @@ export default function Sidebar() {
               <Avatar size={29} emoji={user?.avatar}/>
               <div style={{ flex:1, minWidth:0, opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-6px)', transition:'opacity 0.22s ease 0.05s,transform 0.22s ease 0.05s', pointerEvents: expanded ? 'auto' : 'none' }}>
                 <div style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', background:'linear-gradient(135deg,#e8fff5,#12b76a)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{user?.name}</div>
-                <div style={{ fontSize:10, color:'rgba(18,183,106,0.8)', fontWeight:600, textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
+                <div style={{ fontSize:10, color:'rgba(18,183,106,0.8)', fontWeight:700, textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
               </div>
             </div>
           </div>
@@ -288,9 +286,9 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
         <Avatar size={44} emoji={user?.avatar}/>
         <div style={{ minWidth:0, flex:1 }}>
           <div style={{ fontSize:13.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
-          <div style={{ fontSize:11, color:'#12b76a', fontWeight:600, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
+          <div style={{ fontSize:11, color:'#12b76a', fontWeight:700, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
         </div>
-        <button type="button" onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}
+        <button type="button" onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.9)', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
           onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>
           <X size={13}/>
@@ -303,7 +301,7 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
             <Calendar size={14} color="#12b76a"/>
           </div>
           <div>
-            <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
             <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
             {anc && <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
           </div>
@@ -316,13 +314,13 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
               { label:`⏳ En attente ${stats.annee}`, value:`${stats.enAttente.toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
             ].map(s => (
               <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{s.label}</div>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,0.85)', fontWeight:700 }}>{s.label}</div>
                 <div style={{ fontSize:14, fontWeight:800, color:s.color }}>{s.value}</div>
               </div>
             ))}
           </div>
         )}
-        <button type="button" onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px', borderRadius:10, border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.06)', color:'#ef4444', cursor:'pointer', fontSize:13, fontWeight:600 }}>
+        <button type="button" onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px', borderRadius:10, border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.06)', color:'#ef4444', cursor:'pointer', fontSize:13, fontWeight:700 }}>
           <LogOut size={15}/> Déconnexion
         </button>
       </div>
@@ -348,10 +346,10 @@ function AnnivModal({ show, name, debutYear, onClose }: { show: boolean; name?: 
           <div style={{ fontSize:11, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:2, marginBottom:8 }}>Anniversaire</div>
           <h2 style={{ margin:'0 0 6px', fontSize:22, fontWeight:800, background:'linear-gradient(135deg,#e8fff5,#12b76a,#f79009)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{name} !</h2>
           <div style={{ fontSize:36, fontWeight:900, color:'#12b76a', margin:'10px 0 2px', textShadow:'0 0 30px rgba(18,183,106,0.5)' }}>{years} ans 🎯</div>
-          <div style={{ fontSize:13, color:'rgba(255,255,255,0.45)', fontStyle:'italic' }}>et tu es encore là.</div>
+          <div style={{ fontSize:13, color:'rgba(255,255,255,0.8)', fontStyle:'italic' }}>et tu es encore là.</div>
         </div>
         <div style={{ padding:'22px 28px 28px', textAlign:'center' }}>
-          <div style={{ fontSize:13.5, color:'rgba(255,255,255,0.65)', lineHeight:1.85, marginBottom:22 }}>
+          <div style={{ fontSize:13.5, color:'rgba(255,255,255,0.9)', lineHeight:1.85, marginBottom:22 }}>
             Des refus, des relances, des signatures.<br/>
             Du stress, des doutes, et des victoires.<br/>
             <span style={{ color:'#12b76a', fontWeight:700 }}>C&apos;est toi qui te lèves et tu continues — c&apos;est ça qui fait la différence. 💎</span>

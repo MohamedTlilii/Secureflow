@@ -2,17 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  TrendingUp, TrendingDown, Minus, BarChart2,
-  Calendar, Wallet, CheckCircle, Target,
+  BarChart2,
+  Calendar, Wallet, CheckCircle, Target, XCircle,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-} from 'recharts';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
-import type { SolutionExpress } from '@/types';
+import type { SolutionExpress, Settings } from '@/types';
+import { DEFAULT_SETTINGS } from '@/types';
 
 /* ─── cosmos ──────────────────────────────────────────────── */
 const PART_COLORS = ['#12b76a','#3b6cf8','#61DAFB','#a78bfa','#34d399'];
@@ -34,13 +32,6 @@ const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct'
 
 const getYear  = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getFullYear();
 const getMonth = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getMonth();
-
-/* ─── calcul delta % ─────────────────────────────────────── */
-function pct(curr: number, prev: number): number | null {
-  if (prev === 0 && curr === 0) return null;
-  if (prev === 0) return 100;
-  return Math.round(((curr - prev) / Math.abs(prev)) * 100);
-}
 
 /* ─── métriques ───────────────────────────────────────────── */
 interface Metrics {
@@ -64,37 +55,7 @@ function calcMetrics(arr: SolutionExpress[]): Metrics {
   };
 }
 
-/* ─── DeltaBadge ──────────────────────────────────────────── */
-function DeltaBadge({ curr, prev }: { curr:number; prev:number }) {
-  const delta = pct(curr, prev);
-  if (delta === null) return <span style={{fontSize:11,color:'#8b8b9e'}}>—</span>;
-  const up    = delta > 0;
-  const eq    = delta === 0;
-  const color = eq?'#8b8b9e':up?'#12b76a':'#ef4444';
-  const bg    = eq?'rgba(139,139,158,0.1)':up?'rgba(18,183,106,0.12)':'rgba(239,68,68,0.12)';
-  const bord  = eq?'rgba(139,139,158,0.2)':up?'rgba(18,183,106,0.3)':'rgba(239,68,68,0.3)';
-  const Icon  = eq?Minus:up?TrendingUp:TrendingDown;
-  return (
-    <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'3px 9px',borderRadius:20,background:bg,border:`1px solid ${bord}`}}>
-      <Icon size={11} color={color}/>
-      <span style={{fontSize:12,fontWeight:700,color}}>{up?'+':''}{delta}%</span>
-    </div>
-  );
-}
 
-/* ─── Tooltip recharts ────────────────────────────────────── */
-interface TooltipProps { active?:boolean; payload?:{name:string;value:number;color:string}[]; label?:string }
-function ChartTooltip({ active, payload, label }: TooltipProps) {
-  if (!active||!payload?.length) return null;
-  return (
-    <div style={{background:'rgba(3,8,26,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 14px',backdropFilter:'blur(20px)'}}>
-      <div style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:6}}>{label}</div>
-      {payload.map((p,i)=>(
-        <div key={i} style={{fontSize:12,color:p.color,fontWeight:600}}>{p.name} : {(p.value||0).toFixed(0)} TND</div>
-      ))}
-    </div>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════
    PAGE PRINCIPALE
@@ -103,9 +64,9 @@ export default function ComparaisonPage() {
   const isMobile = useIsMobile();
 
   const [fiches,          setFiches]          = useState<SolutionExpress[]>([]);
+  const [settings,        setSettings]        = useState<Settings>(DEFAULT_SETTINGS);
   const [loading,         setLoading]         = useState(true);
   const [selectedYear,    setSelectedYear]    = useState(new Date().getFullYear());
-  const [hoveredAnnulee,  setHoveredAnnulee]  = useState<number|null>(null);
   const [mounted,         setMounted]         = useState(false);
   const starsRef = useRef<Star[]>([]);
   const partsRef = useRef<Particle[]>([]);
@@ -127,8 +88,12 @@ export default function ComparaisonPage() {
   /* ── fetch ── */
   const fetchAll = useCallback(async () => {
     try {
-      const { data } = await api.get<SolutionExpress[]>('/api/leads');
-      setFiches(Array.isArray(data)?data:[]);
+      const [{ data: leads }, { data: cfg }] = await Promise.all([
+        api.get<SolutionExpress[]>('/api/leads'),
+        api.get<Settings>('/api/settings'),
+      ]);
+      setFiches(Array.isArray(leads)?leads:[]);
+      if (cfg) setSettings(cfg);
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
   }, []);
@@ -157,37 +122,23 @@ export default function ComparaisonPage() {
   const hasPrevData = mPrev.total > 0;
   const hasCurrData = mCurr.total > 0;
 
-  /* ── chart mensuel commissions ── */
-  const monthlyData = useMemo(()=>
-    MONTHS_FR.map((name,idx)=>{
-      const sum = (arr: SolutionExpress[]) =>
-        arr.filter(f=>f.status!=='installation_annulee')
-           .filter(f=>getMonth(f)===idx)
-           .reduce((s,f)=>s+(f.commissionTotale||0), 0);
-      return { name, [prevYear]:Math.round(sum(fichesPrev)), [currYear]:Math.round(sum(fichesCurr)) };
-    }),
-    [fichesCurr,fichesPrev,currYear,prevYear]);
-
-  /* ── chart annulées ── */
-  const monthlyAnnulee = useMemo(()=>
-    MONTHS_FR.map((name,idx)=>({
-      name,
-      prev: fichesPrev.filter(f=>f.status==='installation_annulee'&&getMonth(f)===idx).length,
-      curr: fichesCurr.filter(f=>f.status==='installation_annulee'&&getMonth(f)===idx).length,
-    })),
-    [fichesCurr,fichesPrev]);
-
   /* ── meilleur mois ── */
-  const bestMonth = (year: number) => {
+  const bestMonth = (arr: SolutionExpress[]) => {
     let best = { idx:-1, val:0 };
-    monthlyData.forEach((m,i)=>{ if(((m[year]||0) as number)>best.val) best={idx:i,val:(m[year]||0) as number}; });
-    return best.idx>=0?`${MONTHS_FR[best.idx]} · ${best.val.toFixed(0)} TND`:'—';
+    MONTHS_FR.forEach((_,idx)=>{
+      const val = arr.filter(f=>f.status!=='installation_annulee'&&getMonth(f)===idx)
+                     .reduce((s,f)=>s+(f.commissionTotale||0), 0);
+      if(val>best.val) best={idx,val};
+    });
+    return best.idx>=0&&best.val>0?`${MONTHS_FR[best.idx]} · ${best.val.toFixed(0)} TND`:'—';
   };
 
   /* ── score global ── */
-  const globalScore  = pct(mCurr.gained, mPrev.gained);
-  const scoreColor   = globalScore===null?'#8b8b9e':globalScore>0?'#12b76a':globalScore<0?'#ef4444':'#8b8b9e';
-  const scoreEmoji   = globalScore===null?'📊':globalScore>20?'🚀':globalScore>0?'📈':globalScore===0?'➡️':'📉';
+  const globalScore: number|null = mPrev.gained===0&&mCurr.gained===0 ? null
+    : mPrev.gained===0 ? 100
+    : Math.round(((mCurr.gained-mPrev.gained)/Math.abs(mPrev.gained))*100);
+  const scoreColor = globalScore===null?'#8b8b9e':globalScore>0?'#12b76a':globalScore<0?'#ef4444':'#8b8b9e';
+  const scoreEmoji = globalScore===null?'📊':globalScore>20?'🚀':globalScore>0?'📈':globalScore===0?'➡️':'📉';
 
   /* ── KPI list ── */
   const kpis = [
@@ -195,6 +146,7 @@ export default function ComparaisonPage() {
     { label:'Commissions payées',      Icon:CheckCircle, color:'#3b6cf8', curr:mCurr.paid,     prev:mPrev.paid,     suffix:' TND' },
     { label:'En attente',              Icon:Target,      color:'#f79009', curr:mCurr.pending,  prev:mPrev.pending,  suffix:' TND' },
     { label:'Installations réalisées', Icon:BarChart2,   color:'#a764f8', curr:mCurr.installe, prev:mPrev.installe, suffix:''     },
+    { label:'Installations annulées',  Icon:XCircle,     color:'#ef4444', curr:mCurr.annulee,  prev:mPrev.annulee,  suffix:''     },
   ];
 
   /* ────────────────── RENDER ────────────────── */
@@ -233,14 +185,8 @@ export default function ComparaisonPage() {
                     <BarChart2 size={24} color="#fff"/>
                   </div>
                   <h1 style={{margin:0,fontSize:isMobile?20:26,fontWeight:900,letterSpacing:-0.5,background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
-                    Comparaison annuelle
+                    Comparaison Annuelle
                   </h1>
-                </div>
-                <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',paddingLeft:60,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                  Évolution de vos commissions · {prevYear} → {currYear}
-                  {selectedYear===realYear&&(
-                    <span style={{fontSize:11,color:'#12b76a',fontWeight:700,padding:'2px 8px',borderRadius:6,background:'rgba(18,183,106,0.12)',border:'1px solid rgba(18,183,106,0.25)'}}>Année en cours</span>
-                  )}
                 </div>
               </div>
 
@@ -255,13 +201,16 @@ export default function ComparaisonPage() {
 
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(59,108,248,0.12)',border:'1px solid rgba(59,108,248,0.3)',textAlign:'center',minWidth:72}}>
-                    <div style={{fontSize:9,color:'rgba(255,255,255,0.35)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Précédent</div>
+                    <div style={{fontSize:9,color:'rgba(255,255,255,0.9)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Précédent</div>
                     <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#3b6cf8',lineHeight:1}}>{prevYear}</div>
                   </div>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,0.2)',fontWeight:300}}>vs</div>
+                  <div style={{fontSize:13,color:'#fff',fontWeight:700}}>vs</div>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(18,183,106,0.12)',border:'1px solid rgba(18,183,106,0.3)',textAlign:'center',minWidth:72}}>
-                    <div style={{fontSize:9,color:'rgba(255,255,255,0.35)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Actuel</div>
+                    <div style={{fontSize:9,color:'rgba(255,255,255,0.9)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Actuel</div>
                     <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#12b76a',lineHeight:1}}>{currYear}</div>
+                    {selectedYear===realYear&&(
+                      <div style={{fontSize:8,color:'#12b76a',fontWeight:700,marginTop:4,letterSpacing:0.3,opacity:0.8}}>En cours</div>
+                    )}
                   </div>
                 </div>
 
@@ -294,7 +243,7 @@ export default function ComparaisonPage() {
               </div>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:'#f79009'}}>Première année de référence</div>
-                <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',marginTop:2}}>
+                <div style={{fontSize:12,color:'rgba(255,255,255,0.75)',marginTop:2}}>
                   Aucune donnée pour {prevYear}. La comparaison complète sera disponible en {currYear+1}.
                 </div>
               </div>
@@ -314,116 +263,23 @@ export default function ComparaisonPage() {
             {/* ════════════════════════════════════════
                 4 KPI CARDS
                 ════════════════════════════════════════ */}
-            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:14,marginBottom:24}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(5,1fr)',gap:14,marginBottom:24}}>
               {kpis.map(({label,Icon,color,curr,prev,suffix},i)=>(
                 <div key={i} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}45,${color}15)`,animation:`fadeSlideUp 0.4s ${0.05+i*0.05}s ease both`}}>
                   <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'14px 12px':'18px 20px',backdropFilter:'blur(20px)',height:'100%',display:'flex',flexDirection:'column',gap:10}}>
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                      <div style={{width:34,height:34,borderRadius:10,background:`${color}1a`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        <Icon size={15} color={color}/>
-                      </div>
-                      <DeltaBadge curr={curr} prev={prev}/>
+                    <div style={{width:34,height:34,borderRadius:10,background:`${color}1a`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      <Icon size={15} color={color}/>
                     </div>
-                    <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',fontWeight:700,textTransform:'uppercase',letterSpacing:0.5}}>{label}</div>
+                    <div style={{fontSize:10,color:'rgba(255,255,255,0.75)',fontWeight:700,textTransform:'uppercase',letterSpacing:0.5}}>{label}</div>
                     <div style={{fontSize:isMobile?18:22,fontWeight:900,color,lineHeight:1}}>
                       <AnimatedNumber value={curr} decimals={0} color={color} suffix={suffix}/>
                     </div>
-                    <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'rgba(255,255,255,0.3)',fontWeight:600}}>
-                      {prevYear} : <span style={{color:'rgba(255,255,255,0.45)',fontWeight:700}}>{prev.toFixed(0)}</span>
+                    <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'rgba(255,255,255,0.65)',fontWeight:600}}>
+                      {prevYear} : <span style={{color:prev>0?color:'rgba(255,255,255,0.7)',fontWeight:700}}>{prev.toFixed(0)}{suffix}</span>
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* ════════════════════════════════════════
-                GRAPHIQUE COMMISSIONS MENSUELLES
-                ════════════════════════════════════════ */}
-            <div style={{padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#3b6cf840,#12b76a20)',marginBottom:20}}>
-              <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'24px',backdropFilter:'blur(20px)'}}>
-                <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',flexDirection:isMobile?'column':'row',gap:12,marginBottom:20}}>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:700,color:'#c0c0e0'}}>Commissions par mois</div>
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.35)',marginTop:3}}>Comparaison mensuelle {prevYear} vs {currYear}</div>
-                  </div>
-                  <div style={{display:'flex',gap:16,alignItems:'center'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:10,height:10,borderRadius:3,background:'#3b6cf8'}}/>
-                      <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontWeight:600}}>{prevYear}</span>
-                    </div>
-                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:10,height:10,borderRadius:3,background:'#12b76a'}}/>
-                      <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontWeight:600}}>{currYear}</span>
-                    </div>
-                  </div>
-                </div>
-                <ResponsiveContainer width="100%" height={isMobile?180:240}>
-                  <BarChart data={monthlyData} barGap={3} barCategoryGap="28%">
-                    <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.35)',fontSize:10}} axisLine={false} tickLine={false}/>
-                    <YAxis tick={{fill:'rgba(255,255,255,0.25)',fontSize:10}} axisLine={false} tickLine={false} width={42}/>
-                    <Tooltip content={<ChartTooltip/>} cursor={{fill:'rgba(255,255,255,0.03)'}}/>
-                    <Bar dataKey={prevYear} name={String(prevYear)} fill="#3b6cf8" radius={[4,4,0,0]} maxBarSize={22}/>
-                    <Bar dataKey={currYear} name={String(currYear)} fill="#12b76a" radius={[4,4,0,0]} maxBarSize={22}/>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* ════════════════════════════════════════
-                INSTALLATIONS ANNULÉES (mini-bars custom)
-                ════════════════════════════════════════ */}
-            <div style={{padding:'1.5px',borderRadius:18,background:'linear-gradient(135deg,#ef444440,#ef444410)',marginBottom:20}}>
-              <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'24px',backdropFilter:'blur(20px)'}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:18}}>
-                  <div style={{width:9,height:9,borderRadius:'50%',background:'#ef4444',boxShadow:'0 0 10px #ef444499',animation:'glowPulse 2s ease infinite'}}/>
-                  <div style={{fontSize:14,fontWeight:700,color:'#ef4444'}}>Installations annulées par mois</div>
-                  <div style={{marginLeft:'auto',display:'flex',gap:14}}>
-                    <div style={{display:'flex',alignItems:'center',gap:5}}>
-                      <div style={{width:8,height:8,borderRadius:2,background:'#3b6cf8'}}/>
-                      <span style={{fontSize:11,color:'rgba(255,255,255,0.4)',fontWeight:600}}>{prevYear}</span>
-                    </div>
-                    <div style={{display:'flex',alignItems:'center',gap:5}}>
-                      <div style={{width:8,height:8,borderRadius:2,background:'#ef4444'}}/>
-                      <span style={{fontSize:11,color:'rgba(255,255,255,0.4)',fontWeight:600}}>{currYear}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{display:'grid',gridTemplateColumns:'repeat(12,1fr)',gap:isMobile?4:8}}>
-                  {monthlyAnnulee.map((m,i)=>{
-                    const maxVal = Math.max(...monthlyAnnulee.map(x=>Math.max(x.prev,x.curr)),1);
-                    const isHov  = hoveredAnnulee===i;
-                    return (
-                      <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,position:'relative',cursor:'default'}}
-                        onMouseEnter={()=>setHoveredAnnulee(i)}
-                        onMouseLeave={()=>setHoveredAnnulee(null)}>
-                        {isHov&&(
-                          <div style={{position:'absolute',bottom:'100%',left:'50%',transform:'translateX(-50%)',marginBottom:8,background:'rgba(3,8,26,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 14px',whiteSpace:'nowrap',zIndex:10,pointerEvents:'none',backdropFilter:'blur(20px)'}}>
-                            <div style={{fontSize:12,fontWeight:700,color:'#fff',marginBottom:6}}>{m.name} — Annulées</div>
-                            <div style={{display:'flex',flexDirection:'column',gap:4}}>
-                              <div style={{fontSize:12,color:'#3b6cf8',fontWeight:600}}>{prevYear} : {m.prev} annulée{m.prev!==1?'s':''}</div>
-                              <div style={{fontSize:12,color:'#ef4444',fontWeight:600}}>{currYear} : {m.curr} annulée{m.curr!==1?'s':''}</div>
-                            </div>
-                          </div>
-                        )}
-                        <div style={{display:'flex',alignItems:'flex-end',gap:2,height:60}}>
-                          <div style={{width:isMobile?6:10,background:'#3b6cf8',borderRadius:'3px 3px 0 0',height:`${Math.max((m.prev/maxVal)*56,m.prev>0?4:0)}px`,transition:'height 0.4s ease',opacity:m.prev>0?1:0.15}}/>
-                          <div style={{width:isMobile?6:10,background:'#ef4444',borderRadius:'3px 3px 0 0',height:`${Math.max((m.curr/maxVal)*56,m.curr>0?4:0)}px`,transition:'height 0.4s ease',opacity:m.curr>0?1:0.15}}/>
-                        </div>
-                        <span style={{fontSize:isMobile?8:10,color:isHov?'rgba(255,255,255,0.7)':'rgba(255,255,255,0.3)',fontWeight:600,transition:'color 0.15s'}}>{m.name}</span>
-                        {(m.prev>0||m.curr>0)&&(
-                          <span style={{fontSize:9,color:'rgba(255,255,255,0.2)'}}>{m.prev}/{m.curr}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {monthlyAnnulee.every(m=>m.prev===0&&m.curr===0)&&(
-                  <div style={{textAlign:'center',padding:'16px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>
-                    Aucune installation annulée sur cette période
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* ════════════════════════════════════════
@@ -431,42 +287,46 @@ export default function ComparaisonPage() {
                 ════════════════════════════════════════ */}
             <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16,marginBottom:20}}>
               {([
-                { year:prevYear, m:mPrev, color:'#3b6cf8', hasData:hasPrevData },
-                { year:currYear, m:mCurr, color:'#12b76a', hasData:hasCurrData },
-              ] as const).map(({year,m,color,hasData})=>(
-                <div key={year} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}40,${color}12)`}}>
-                  <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'22px',backdropFilter:'blur(20px)'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-                      <div style={{width:9,height:9,borderRadius:'50%',background:color,boxShadow:`0 0 10px ${color}99`,animation:'glowPulse 2s ease infinite'}}/>
-                      <div style={{fontSize:15,fontWeight:800,color}}>{year}</div>
-                    </div>
-                    {hasData?(
-                      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                        {([
-                          { label:'Total fiches',          value:m.total,                                              c:'#a78bfa' },
-                          { label:'Installations',          value:m.installe,                                           c:'#12b76a' },
-                          { label:'Installations annulées', value:m.annulee,                                            c:'#ef4444' },
-                          { label:'Taux d\'installation',   value:m.total>0?`${Math.round((m.installe/m.total)*100)}%`:'—', c:'#22c55e' },
-                          { label:'Commission ↑ Max',       value:m.commMax>0?`${m.commMax.toFixed(0)} TND`:'—',       c:'#f79009' },
-                          { label:'Commission ↓ Min',       value:m.commMin>0?`${m.commMin.toFixed(0)} TND`:'—',       c:'#fb7185' },
-                          { label:'Taux de paiement',       value:`${m.payRate}%`,                                      c:'#38bdf8' },
-                          { label:'Meilleur mois',          value:bestMonth(year),                                      c:'#facc15' },
-                          { label:'Total commissions',      value:m.gained>0?`${m.gained.toFixed(0)} TND`:'—',         c:'#12b76a' },
-                        ] as {label:string;value:string|number;c:string}[]).map((row,i)=>(
-                          <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 12px',borderRadius:9,background:`${row.c}08`,border:`1px solid ${row.c}25`}}>
-                            <span style={{fontSize:12,color:'rgba(255,255,255,0.45)',fontWeight:500}}>{row.label}</span>
-                            <span style={{fontSize:13,fontWeight:700,color:row.c}}>{typeof row.value==='number'?row.value.toFixed(0):row.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ):(
-                      <div style={{textAlign:'center',padding:'28px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>
-                        Aucune donnée pour {year}
-                      </div>
-                    )}
+                { year:prevYear, m:mPrev, color:'#3b6cf8', arr:fichesPrev },
+                { year:currYear, m:mCurr, color:'#12b76a', arr:fichesCurr },
+              ] as const).map(({year,m,color,arr})=>{
+                const row = (label:string, value:string|number, c:string) => (
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 12px',borderRadius:9,background:`${c}08`,border:`1px solid ${c}25`}}>
+                    <span style={{fontSize:12,color:'rgba(255,255,255,0.85)',fontWeight:700}}>{label}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:c}}>{typeof value==='number'?value.toFixed(0):value}</span>
                   </div>
-                </div>
-              ))}
+                );
+                const sep = (label:string) => (
+                  <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',textTransform:'uppercase',letterSpacing:1.2,marginTop:10,marginBottom:2,paddingLeft:4}}>{label}</div>
+                );
+                return (
+                  <div key={year} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}40,${color}12)`}}>
+                    <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'22px',backdropFilter:'blur(20px)'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+                        <div style={{width:9,height:9,borderRadius:'50%',background:color,boxShadow:`0 0 10px ${color}99`,animation:'glowPulse 2s ease infinite'}}/>
+                        <div style={{fontSize:15,fontWeight:800,color}}>{year}</div>
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                        {sep('Leads')}
+                        {row('Total fiches',          m.total,                                                              '#a78bfa')}
+                        {row('Installations',          m.installe,                                                           '#12b76a')}
+                        {row('Installations annulées', m.annulee,                                                            '#ef4444')}
+                        {row('Taux d\'installation',   m.total>0?`${Math.round((m.installe/m.total)*100)}%`:'0%',           '#22c55e')}
+                        {sep('Commissions')}
+                        {row('Total commissions',      m.gained>0?`${m.gained.toFixed(0)} TND`:'0 TND',                    '#12b76a')}
+                        {row('Commissions payées',     m.paid>0?`${m.paid.toFixed(0)} TND`:'0 TND',                        '#3b6cf8')}
+                        {row('En attente',             m.pending>0?`${m.pending.toFixed(0)} TND`:'0 TND',                  '#f79009')}
+                        {row('Taux de paiement',       `${m.payRate}%`,                                                     '#38bdf8')}
+                        {(()=>{const obj=settings.objectifAnnuel?.[String(year)]??0;const pct=obj>0?Math.round((m.gained/obj)*100):0;return(<>{row('Objectif',obj>0?`${obj.toFixed(0)} TND`:'—','#a78bfa')}{row('Atteinte objectif',obj>0?`${pct}%`:'—',pct>=100?'#12b76a':pct>=50?'#f79009':'#ef4444')}</>);})()}
+                        {sep('Stats')}
+                        {row('Commission Max',         m.commMax>0?`${m.commMax.toFixed(0)} TND`:'0 TND',                  '#f79009')}
+                        {row('Commission Min',         m.commMin>0?`${m.commMin.toFixed(0)} TND`:'0 TND',                  '#fb7185')}
+                        {row('Meilleur mois',          bestMonth(arr),                                                      '#facc15')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* ════════════════════════════════════════
@@ -478,14 +338,14 @@ export default function ComparaisonPage() {
                   <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:320,height:320,borderRadius:'50%',background:`radial-gradient(circle,${scoreColor}12 0%,transparent 70%)`,pointerEvents:'none'}}/>
                   <div style={{position:'relative'}}>
                     <div style={{fontSize:44,marginBottom:12}}>{scoreEmoji}</div>
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',fontWeight:700,textTransform:'uppercase',letterSpacing:2,marginBottom:10}}>Performance globale</div>
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.7)',fontWeight:700,textTransform:'uppercase',letterSpacing:2,marginBottom:10}}>Performance globale</div>
                     <div style={{fontSize:isMobile?44:60,fontWeight:900,color:scoreColor,lineHeight:1,marginBottom:12,textShadow:`0 0 40px ${scoreColor}60`}}>
                       {globalScore===null?'—':`${globalScore>0?'+':''}${globalScore}%`}
                     </div>
-                    <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',fontWeight:500}}>
+                    <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',fontWeight:700}}>
                       {globalScore===null?'Aucune donnée de référence':globalScore>20?'Excellente année !':globalScore>0?'Bonne progression':globalScore===0?'Stable par rapport à l\'année précédente':'En dessous de l\'année précédente'}
                     </div>
-                    <div style={{marginTop:16,fontSize:12,color:'rgba(255,255,255,0.3)'}}>
+                    <div style={{marginTop:16,fontSize:12,color:'rgba(255,255,255,0.65)'}}>
                       de croissance en commissions entre {prevYear} et {currYear}
                     </div>
                   </div>
