@@ -349,7 +349,7 @@ export default function DashboardPage() {
                 <BarChart data={evolutionData} barSize={isMobile?8:14} barGap={2} margin={{top:16,right:0,left:-20,bottom:0}}>
                   <XAxis dataKey="name" tick={{fill:'#fff',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fill:'#fff',fontSize:10}} axisLine={false} tickLine={false} allowDecimals={false}/>
-                  <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:12}} cursor={{fill:'#fff'}}
+                  <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:12}} cursor={{fill:'rgba(255,255,255,0.04)'}}
                     formatter={(v:unknown,n:string)=>[v as number,n]}/>
                   {chartFiltre==='total'?(
                     <>
