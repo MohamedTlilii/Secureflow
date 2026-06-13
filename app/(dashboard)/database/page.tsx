@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { SolutionExpress, DbStats, Settings, StatusFiche } from '@/types';
-import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS } from '@/types';
+import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS, MOIS_FULL } from '@/types';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 
 /* ─── Cosmos ─── */
@@ -44,6 +44,7 @@ export default function DatabasePage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
+  const [moisFiltre,  setMoisFiltre]  = useState<string>('tout');
   const [selected, setSelected] = useState<SolutionExpress | null>(null);
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'',
@@ -106,9 +107,12 @@ export default function DatabasePage() {
   const annees = useMemo(() =>
     [...new Set(leads.map(getYear))].sort().reverse(), [leads]);
 
-  const fichesByAnnee = useMemo(() =>
-    anneeFiltre === 'tout' ? leads : leads.filter(f => getYear(f) === anneeFiltre),
-    [leads, anneeFiltre]);
+  const fichesByAnnee = useMemo(() => {
+    let r = anneeFiltre === 'tout' ? leads : leads.filter(f => getYear(f) === anneeFiltre);
+    if (anneeFiltre !== 'tout' && moisFiltre !== 'tout')
+      r = r.filter(f => new Date(f.dateVente ?? f.createdAt ?? Date.now()).getMonth() === Number(moisFiltre));
+    return r;
+  }, [leads, anneeFiltre, moisFiltre]);
 
   const villesDispos = useMemo(() =>
     settings?.villes?.length ? [...settings.villes].sort() :
@@ -199,8 +203,8 @@ export default function DatabasePage() {
                     <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#06b6d4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                       Base de Données
                     </h1>
-                    <p style={{ margin:0, marginTop:3, fontSize:13, color:'rgba(255,255,255,0.55)' }}>
-                      Leads · <span style={{ color:'#12b76a', fontWeight:700 }}>{fichesByAnnee.length}</span> enregistrement{fichesByAnnee.length !== 1 ? 's' : ''}
+                    <p style={{ margin:0, marginTop:3, fontSize:13, color:'#12b76a', fontWeight:700 }}>
+                      {fichesByAnnee.length} lead{fichesByAnnee.length !== 1 ? 's' : ''} · {anneeFiltre === 'tout' ? 'Toutes les années' : moisFiltre !== 'tout' ? `${MOIS_FULL[Number(moisFiltre)]} ${anneeFiltre}` : anneeFiltre}
                     </p>
                   </div>
                 </div>
@@ -211,11 +215,18 @@ export default function DatabasePage() {
                       {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </div>
                   )}
-                  <select value={anneeFiltre} onChange={e => setAnneeFiltre(e.target.value)}
+                  <select value={anneeFiltre} onChange={e => { setAnneeFiltre(e.target.value); setMoisFiltre('tout'); }}
                     style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', outline:'none', fontWeight:700 }}>
                     <option value="tout">Toutes les années</option>
                     {annees.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
+                  {anneeFiltre !== 'tout' && (
+                    <select value={moisFiltre} onChange={e => setMoisFiltre(e.target.value)}
+                      style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+                      <option value="tout">Tous les mois</option>
+                      {MOIS_FULL.map((m,i) => <option key={i} value={String(i)}>{m}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -309,7 +320,7 @@ export default function DatabasePage() {
             <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, background:'linear-gradient(135deg,rgba(6,182,212,0.06),transparent)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <Filter size={13} color="#06b6d4"/>
-                <span style={{ fontSize:13, fontWeight:700, color:'#e0e0f0' }}>Tous les enregistrements</span>
+                <span style={{ fontSize:13, fontWeight:700, color:'#e0e0f0' }}>Tous les leads</span>
                 <span style={{ fontSize:11, background:'rgba(6,182,212,0.12)', color:'#06b6d4', padding:'2px 10px', borderRadius:20, fontWeight:700 }}>
                   {displayData.length} résultat{displayData.length !== 1 ? 's' : ''}
                 </span>
@@ -462,7 +473,7 @@ export default function DatabasePage() {
                           <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
                         </div>
                         <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
-                          {hasFilters ? 'Aucun résultat' : 'Aucun enregistrement'}
+                          {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
                         </div>
                         <div style={{ fontSize:12 }}>
                           {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des leads via la page Leads'}
@@ -478,7 +489,7 @@ export default function DatabasePage() {
             {displayData.length > 0 && (
               <div style={{ padding:'10px 20px', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>
-                  <span style={{ fontWeight:700, color:'#e0e0f0' }}>{displayData.length}</span> enregistrement{displayData.length !== 1 ? 's' : ''} affichés sur <span style={{ fontWeight:700 }}>{fichesByAnnee.length}</span> au total
+                  <span style={{ fontWeight:700, color:'#e0e0f0' }}>{displayData.length}</span> lead{displayData.length !== 1 ? 's' : ''} affichés sur <span style={{ fontWeight:700 }}>{fichesByAnnee.length}</span> au total
                 </span>
                 {hasFilters && (
                   <span style={{ fontSize:11, background:'rgba(247,144,9,0.1)', color:'#f79009', padding:'2px 10px', borderRadius:20, fontWeight:600 }}>
