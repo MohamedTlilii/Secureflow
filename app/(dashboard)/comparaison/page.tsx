@@ -285,28 +285,28 @@ export default function ComparaisonPage() {
             {/* ════════════════════════════════════════
                 INSIGHTS CÔTE À CÔTE
                 ════════════════════════════════════════ */}
-            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16,marginBottom:20}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:isMobile?8:16,marginBottom:20}}>
               {([
                 { year:prevYear, m:mPrev, color:'#3b6cf8', arr:fichesPrev },
                 { year:currYear, m:mCurr, color:'#12b76a', arr:fichesCurr },
               ] as const).map(({year,m,color,arr})=>{
                 const row = (label:string, value:string|number, c:string) => (
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 12px',borderRadius:9,background:`${c}08`,border:`1px solid ${c}25`}}>
-                    <span style={{fontSize:12,color:'rgba(255,255,255,0.85)',fontWeight:700}}>{label}</span>
-                    <span style={{fontSize:13,fontWeight:700,color:c}}>{typeof value==='number'?value.toFixed(0):value}</span>
+                  <div style={{display:'flex',flexDirection:'column',padding:isMobile?'5px 7px':'9px 12px',borderRadius:8,background:`${c}08`,border:`1px solid ${c}25`,gap:1}}>
+                    <span style={{fontSize:isMobile?9:11,color:'rgba(255,255,255,0.55)',fontWeight:600,lineHeight:1.2}}>{label}</span>
+                    <span style={{fontSize:isMobile?11:13,fontWeight:800,color:c,lineHeight:1}}>{typeof value==='number'?value.toFixed(0):value}</span>
                   </div>
                 );
                 const sep = (label:string) => (
-                  <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.55)',textTransform:'uppercase',letterSpacing:1.2,marginTop:10,marginBottom:2,paddingLeft:4}}>{label}</div>
+                  <div style={{fontSize:isMobile?8:10,fontWeight:700,color:'rgba(255,255,255,0.45)',textTransform:'uppercase',letterSpacing:1,marginTop:isMobile?6:10,marginBottom:2,paddingLeft:2}}>{label}</div>
                 );
                 return (
                   <div key={year} style={{padding:'1.5px',borderRadius:18,background:`linear-gradient(135deg,${color}40,${color}12)`}}>
-                    <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'16px':'22px',backdropFilter:'blur(20px)'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-                        <div style={{width:9,height:9,borderRadius:'50%',background:color,boxShadow:`0 0 10px ${color}99`,animation:'glowPulse 2s ease infinite'}}/>
-                        <div style={{fontSize:15,fontWeight:800,color}}>{year}</div>
+                    <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'16.5px',padding:isMobile?'10px 8px':'22px',backdropFilter:'blur(20px)'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:isMobile?5:8,marginBottom:isMobile?8:16}}>
+                        <div style={{width:isMobile?7:9,height:isMobile?7:9,borderRadius:'50%',background:color,boxShadow:`0 0 10px ${color}99`,animation:'glowPulse 2s ease infinite'}}/>
+                        <div style={{fontSize:isMobile?13:15,fontWeight:800,color}}>{year}</div>
                       </div>
-                      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                      <div style={{display:'flex',flexDirection:'column',gap:isMobile?4:6}}>
                         {sep('Leads')}
                         {row('Total fiches',          m.total,                                                              '#a78bfa')}
                         {row('Installations',          m.installe,                                                           '#12b76a')}
