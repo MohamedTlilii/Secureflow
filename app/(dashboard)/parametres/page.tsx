@@ -685,12 +685,6 @@ export default function ParametresPage() {
                     <div style={{ fontSize:13, color:'#fff', marginTop:3 }}>Gérez les listes du formulaire et des filtres</div>
                   </div>
                 </div>
-                <button onClick={save} disabled={!dirty || saving}
-                  style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 22px', borderRadius:13, border:'none', cursor: dirty ? 'pointer' : 'not-allowed', background: dirty ? 'linear-gradient(135deg,#6366f1,#a78bfa)' : 'rgba(255,255,255,0.06)', color: dirty ? '#fff' : 'rgba(255,255,255,0.3)', fontSize:13, fontWeight:800, boxShadow: dirty ? '0 4px 20px rgba(99,102,241,0.45)' : 'none', transition:'all 0.2s', whiteSpace:'nowrap' }}>
-                  {saving ? <><Loader size={14} style={{ animation:'spin 1s linear infinite' }}/> Sauvegarde…</>
-                   : dirty ? <><Save size={14}/> Sauvegarder</>
-                   : <><CheckCircle size={14}/> Sauvegardé</>}
-                </button>
               </div>
               {dirty && (
                 <div style={{ marginTop:14, padding:'9px 14px', borderRadius:10, background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', fontSize:12, color:'#f59e0b', display:'flex', alignItems:'center', gap:6 }}>
@@ -804,6 +798,16 @@ export default function ParametresPage() {
             </div>
           )}
         </div>
+        </div>
+
+        {/* Bouton Sauvegarder — bas de page */}
+        <div style={{ marginTop:24, display:'flex', justifyContent:'flex-end' }}>
+          <button onClick={save} disabled={!dirty || saving}
+            style={{ display:'flex', alignItems:'center', gap:8, padding:'12px 28px', borderRadius:13, border:'none', cursor: dirty ? 'pointer' : 'not-allowed', background: dirty ? 'linear-gradient(135deg,#6366f1,#a78bfa)' : 'rgba(255,255,255,0.06)', color: dirty ? '#fff' : 'rgba(255,255,255,0.3)', fontSize:14, fontWeight:800, boxShadow: dirty ? '0 4px 20px rgba(99,102,241,0.45)' : 'none', transition:'all 0.2s', whiteSpace:'nowrap' }}>
+            {saving ? <><Loader size={14} style={{ animation:'spin 1s linear infinite' }}/> Sauvegarde…</>
+             : dirty ? <><Save size={14}/> Sauvegarder</>
+             : <><CheckCircle size={14}/> Sauvegardé</>}
+          </button>
         </div>
 
         {/* FAB mobile */}
