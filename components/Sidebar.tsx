@@ -267,11 +267,11 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
   const anc = debutDate ? anciennete(debutDate) : null;
   return (
     <>
-      <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.12),transparent)', padding:'16px 14px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:11 }}>
+      <div style={{ background:'linear-gradient(135deg,rgba(129,140,248,0.12),transparent)', padding:'16px 14px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:11 }}>
         <Avatar size={44} emoji={user?.avatar}/>
         <div style={{ minWidth:0, flex:1 }}>
           <div style={{ fontSize:13.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
-          <div style={{ fontSize:11, color:'#12b76a', fontWeight:700, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
+          <div style={{ fontSize:11, color:'#818cf8', fontWeight:700, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
         </div>
         <button type="button" onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.9)', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -281,21 +281,21 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
       </div>
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:9 }}>
         {debutDate && (
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.12)' }}>
-          <div style={{ width:30, height:30, borderRadius:8, background:'rgba(18,183,106,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <Calendar size={14} color="#12b76a"/>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(129,140,248,0.06)', border:'1px solid rgba(129,140,248,0.12)' }}>
+          <div style={{ width:30, height:30, borderRadius:8, background:'rgba(129,140,248,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <Calendar size={14} color="#818cf8"/>
           </div>
           <div>
             <div style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
             <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
-            {anc && <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
+            {anc && <div style={{ fontSize:10.5, color:'#818cf8', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
           </div>
         </div>
         )}
         {stats && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {[
-              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#12b76a', bg:'rgba(18,183,106,0.06)',  border:'rgba(18,183,106,0.15)' },
+              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#3b6cf8', bg:'rgba(59,108,248,0.06)',  border:'rgba(59,108,248,0.15)' },
               { label:`⏳ En attente ${stats.annee}`, value:`${stats.enAttente.toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
             ].map(s => (
               <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
@@ -305,8 +305,10 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
             ))}
           </div>
         )}
-        <button type="button" onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px', borderRadius:10, border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.06)', color:'#ef4444', cursor:'pointer', fontSize:13, fontWeight:700 }}>
-          <LogOut size={15}/> Déconnexion
+        <button type="button" onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'8px', borderRadius:8, border:'none', background:'none', color:'rgba(255,255,255,0.4)', cursor:'pointer', fontSize:12, fontWeight:600 }}
+          onMouseEnter={e => (e.currentTarget.style.color='#ef4444')}
+          onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.4)')}>
+          <LogOut size={13}/> Déconnexion
         </button>
       </div>
     </>
