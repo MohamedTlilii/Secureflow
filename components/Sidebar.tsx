@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, BarChart2, Wallet, Users, Kanban,
-  Fuel, Database, Settings, LogOut, X, Calendar, UserCircle2,
+  Fuel, Database, Settings, LogOut, X, Calendar, UserCircle2, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -240,7 +240,7 @@ export default function Sidebar() {
 
 function LogoIcon({ size }: { size: number }) {
   return (
-    <span style={{ fontSize: Math.round(size * 1.1), fontWeight:900, color:'#fff', lineHeight:1, letterSpacing:-1 }}>$</span>
+    <TrendingUp size={size} color="#fff" style={{ filter:`drop-shadow(0 0 ${Math.round(size*0.4)}px rgba(18,183,106,0.9)) drop-shadow(0 0 ${Math.round(size*0.2)}px rgba(6,182,212,0.6))` }}/>
   );
 }
 
