@@ -682,7 +682,6 @@ export default function ParametresPage() {
                   </div>
                   <div>
                     <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#06b6d4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Paramètres</h1>
-                    <div style={{ fontSize:13, color:'#fff', marginTop:3 }}>Gérez les listes du formulaire et des filtres</div>
                   </div>
                 </div>
               </div>
