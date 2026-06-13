@@ -363,7 +363,7 @@ export default function DatabasePage() {
                 {/* Cards */}
                 {loading ? (
                   <div style={{ padding:'40px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'#fff' }}>
-                    <div style={{ width:24, height:24, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
+                    <div style={{ width:24, height:24, borderRadius:'50%', border:'2px solid rgba(244,114,182,0.15)', borderTopColor:'#f472b6', animation:'spin 0.9s linear infinite' }}/>
                     Chargement…
                   </div>
                 ) : displayData.length > 0 ? (
@@ -498,7 +498,7 @@ export default function DatabasePage() {
                       <tr>
                         <td colSpan={9} style={{ padding:60, textAlign:'center' }}>
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'#fff' }}>
-                            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
+                            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid rgba(244,114,182,0.15)', borderTopColor:'#f472b6', animation:'spin 0.9s linear infinite' }}/>
                             Chargement…
                           </div>
                         </td>

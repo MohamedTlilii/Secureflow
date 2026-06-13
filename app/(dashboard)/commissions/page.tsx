@@ -585,7 +585,7 @@ export default function CommissionsPage() {
 
               {loading?(
                 <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'60px 0',gap:12}}>
-                  <div style={{width:36,height:36,borderRadius:'50%',border:'3px solid rgba(18,183,106,0.15)',borderTopColor:'#12b76a',animation:'spin 0.8s linear infinite'}}/>
+                  <div style={{width:36,height:36,borderRadius:'50%',border:'3px solid rgba(245,158,11,0.15)',borderTopColor:'#f59e0b',animation:'spin 0.8s linear infinite'}}/>
                 </div>
               ):filteredHistorique.length===0?(
                 <div style={{textAlign:'center',padding:'60px 20px'}}>

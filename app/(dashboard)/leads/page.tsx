@@ -483,7 +483,7 @@ export default function SolutionExpressPage() {
             ════════════════════════════════════════ */}
         {loading ? (
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:16 }}>
-            <div style={{ width:48, height:48, borderRadius:'50%', border:'3px solid rgba(167,139,250,0.15)', borderTopColor:'#a78bfa', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(167,139,250,0.3)' }}/>
+            <div style={{ width:48, height:48, borderRadius:'50%', border:'3px solid rgba(129,140,248,0.15)', borderTopColor:'#818cf8', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(129,140,248,0.3)' }}/>
             <span style={{ fontSize:14, color:'#fff', letterSpacing:0.3 }}>Chargement des fiches…</span>
           </div>
         ) : groups.length === 0 ? (

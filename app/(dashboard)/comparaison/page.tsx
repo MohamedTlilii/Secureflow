@@ -256,7 +256,7 @@ export default function ComparaisonPage() {
             ════════════════════════════════════════ */}
         {loading?(
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'80px 0',flexDirection:'column',gap:16}}>
-            <div style={{width:44,height:44,borderRadius:'50%',border:'3px solid rgba(18,183,106,0.15)',borderTopColor:'#12b76a',animation:'spin 0.9s linear infinite'}}/>
+            <div style={{width:44,height:44,borderRadius:'50%',border:'3px solid rgba(59,130,246,0.15)',borderTopColor:'#3b82f6',animation:'spin 0.9s linear infinite'}}/>
           </div>
         ):(
           <>
