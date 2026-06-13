@@ -238,7 +238,7 @@ export default function DatabasePage() {
 
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                   {!isMobile && (
-                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.5)', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.08)', whiteSpace:'nowrap', textTransform:'capitalize' }}>
+                    <div style={{ fontSize:12, color:'#fff', fontWeight:700, background:'rgba(255,255,255,0.07)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.15)', whiteSpace:'nowrap', textTransform:'capitalize' }}>
                       {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </div>
                   )}
