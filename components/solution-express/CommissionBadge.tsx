@@ -29,9 +29,9 @@ export default function CommissionBadge({ fiche, onToggle }: CommissionBadgeProp
     );
   }
 
-  const color  = payee ? '#12b76a' : '#f79009';
-  const bgCss  = payee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.09)';
-  const bdrCss = payee ? 'rgba(18,183,106,0.3)' : 'rgba(247,144,9,0.3)';
+  const color  = payee ? '#3b6cf8' : '#f79009';
+  const bgCss  = payee ? 'rgba(59,108,248,0.1)' : 'rgba(247,144,9,0.09)';
+  const bdrCss = payee ? 'rgba(59,108,248,0.3)' : 'rgba(247,144,9,0.3)';
 
   return (
     <div

@@ -336,7 +336,7 @@ export default function DashboardPage() {
                     {key:'installe'as const,label:'Installé',color:'#22c55e'},
                     {key:'encours' as const,label:'En cours',color:'#f97316'},
                     {key:'annule'  as const,label:'Annulé',  color:'#be123c'},
-                    {key:'paye'    as const,label:'Payé',    color:'#12b76a'},
+                    {key:'paye'    as const,label:'Payé',    color:'#3b6cf8'},
                   ]).map(f=>(
                     <button key={f.key} onClick={()=>setChartFiltre(f.key)}
                       style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${chartFiltre===f.key?f.color:'#fff'}`,background:chartFiltre===f.key?`${f.color}25`:'transparent',color:chartFiltre===f.key?f.color:'#fff',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>

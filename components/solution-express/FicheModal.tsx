@@ -358,8 +358,8 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                    <input type="checkbox" checked={form.commissionPayee} onChange={e => set('commissionPayee', e.target.checked)} style={{ accentColor: '#12b76a', width: 16, height: 16 }} />
-                    <span style={{ color: form.commissionPayee ? '#12b76a' : '#d0d0f0', fontWeight: 600 }}>Commission payée</span>
+                    <input type="checkbox" checked={form.commissionPayee} onChange={e => set('commissionPayee', e.target.checked)} style={{ accentColor: '#3b6cf8', width: 16, height: 16 }} />
+                    <span style={{ color: form.commissionPayee ? '#3b6cf8' : '#d0d0f0', fontWeight: 600 }}>Commission payée</span>
                   </label>
                 </div>
                 {form.commissionPayee && (

@@ -295,7 +295,7 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
         {stats && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {[
-              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#22c55e', bg:'rgba(34,197,94,0.06)',  border:'rgba(34,197,94,0.15)' },
+              { label:`✓ Payé ${stats.annee}`,        value:`${stats.totalPaye.toFixed(0)} TND`,  color:'#3b6cf8', bg:'rgba(59,108,248,0.06)',  border:'rgba(59,108,248,0.15)' },
               { label:`⏳ En attente ${stats.annee}`, value:`${stats.enAttente.toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
             ].map(s => (
               <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>

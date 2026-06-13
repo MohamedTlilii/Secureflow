@@ -284,7 +284,7 @@ export default function PipelinePage() {
             ════════════════════════════════════════ */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}}>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {([['tout','Tout','#a78bfa'],['payee','✓ Payée','#12b76a'],['non_payee','⏳ Attente','#f79009'],['annulee','✕ Annulée','#be123c']] as const).map(([k,l,c])=>(
+            {([['tout','Tout','#a78bfa'],['payee','✓ Payée','#3b6cf8'],['non_payee','⏳ Attente','#f79009'],['annulee','✕ Annulée','#be123c']] as const).map(([k,l,c])=>(
               <button key={k} onClick={()=>setFiltreComm(k)}
                 style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${filtreComm===k?c:'rgba(255,255,255,0.1)'}`,background:filtreComm===k?`${c}25`:'transparent',color:filtreComm===k?c:'rgba(255,255,255,0.8)',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>
                 {l}
