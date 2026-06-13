@@ -1,13 +1,13 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter, Eye,
+  Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter, Eye, Phone, Mail,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
-import type { SolutionExpress, DbStats, Settings, StatusFiche } from '@/types';
+import type { SolutionExpress, DbStats, Settings, StatusFiche, EssenceMois } from '@/types';
 import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS, MOIS_FULL } from '@/types';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 
@@ -45,6 +45,7 @@ export default function DatabasePage() {
   const [loading,  setLoading]  = useState(true);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [moisFiltre,  setMoisFiltre]  = useState<string>('tout');
+  const [essences,    setEssences]    = useState<EssenceMois[]>([]);
   const [selected, setSelected] = useState<SolutionExpress | null>(null);
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'',
@@ -67,7 +68,7 @@ export default function DatabasePage() {
     setMounted(true);
   }, []);
 
-  /* ── Fetch ── */
+  /* ── Fetch leads / stats / settings ── */
   const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
@@ -100,6 +101,23 @@ export default function DatabasePage() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [fetchLeads, fetchDbStats, fetchSettings]);
 
+  /* ── Fetch essence when year filter or leads change ── */
+  useEffect(() => {
+    let cancelled = false;
+    const yrs = anneeFiltre === 'tout'
+      ? [...new Set(leads.map(f => String(new Date(f.dateVente ?? f.createdAt ?? Date.now()).getFullYear())))]
+      : [anneeFiltre];
+    if (!yrs.length) return;
+    (async () => {
+      try {
+        const results = await Promise.all(yrs.map(y => api.get<EssenceMois[]>(`/api/essence?annee=${y}`)));
+        if (!cancelled) setEssences(results.flatMap(r => r.data));
+      } catch { if (!cancelled) setEssences([]); }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anneeFiltre, leads.length]);
+
   /* ── Computed ── */
   const getYear = (f: SolutionExpress) =>
     String(new Date(f.dateVente ?? f.createdAt ?? Date.now()).getFullYear());
@@ -113,6 +131,18 @@ export default function DatabasePage() {
       r = r.filter(f => new Date(f.dateVente ?? f.createdAt ?? Date.now()).getMonth() === Number(moisFiltre));
     return r;
   }, [leads, anneeFiltre, moisFiltre]);
+
+  const essenceRecuFiltre = useMemo(() => {
+    let r = essences;
+    if (moisFiltre !== 'tout') r = r.filter(e => e.mois === Number(moisFiltre));
+    return r.filter(e => e.recu).reduce((sum, e) => sum + e.montantAttendu, 0);
+  }, [essences, moisFiltre]);
+
+  const essenceLabel = anneeFiltre === 'tout'
+    ? 'Essence reçu (total)'
+    : moisFiltre !== 'tout'
+      ? `Essence ${MOIS_FULL[Number(moisFiltre)].slice(0,4)}. ${anneeFiltre}`
+      : `Essence reçu ${anneeFiltre}`;
 
   const villesDispos = useMemo(() =>
     settings?.villes?.length ? [...settings.villes].sort() :
@@ -134,7 +164,6 @@ export default function DatabasePage() {
   [fichesByAnnee, filters]);
 
   const hasFilters = Object.values(filters).some(Boolean);
-
   const clearFilters = () => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'' });
 
   /* ── Delete ── */
@@ -150,8 +179,8 @@ export default function DatabasePage() {
   };
 
   /* ── Storage bar color ── */
-  const pct        = dbStats?.storagePercent ?? 0;
-  const barColor   = pct >= 80 ? '#f04438' : pct >= 50 ? '#f79009' : '#12b76a';
+  const pct      = dbStats?.storagePercent ?? 0;
+  const barColor = pct >= 80 ? '#f04438' : pct >= 50 ? '#f79009' : '#12b76a';
 
   /* ── Column header style ── */
   const thSt: React.CSSProperties = {
@@ -184,16 +213,14 @@ export default function DatabasePage() {
 
       <div style={{ position:'relative', zIndex:1, padding: isMobile ? '16px 12px 40px' : '28px 32px 40px' }}>
 
-        {/* ════════════════════════════════════════
-            HEADER glassmorphism
-            ════════════════════════════════════════ */}
+        {/* ════════ HEADER ════════ */}
         <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#06b6d460,#3b6cf830,#a78bfa25)', marginBottom:20, animation:'fadeSlideUp 0.4s ease both' }}>
           <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile ? '18px 16px' : '28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', top:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(6,182,212,0.15) 0%,transparent 70%)', pointerEvents:'none' }}/>
             <div style={{ position:'absolute', bottom:-50, right:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
             <div style={{ position:'relative', zIndex:1 }}>
 
-              {/* Titre + sélecteur année */}
+              {/* Titre + sélecteurs */}
               <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0, marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
                   <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#06b6d4,#0891b2)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(6,182,212,0.5)', flexShrink:0 }}>
@@ -233,9 +260,9 @@ export default function DatabasePage() {
               {/* Stats cards */}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap:10 }}>
                 {[
-                  { label:'Total fiches',  value:fichesByAnnee.length,                       color:'#06b6d4' },
-                  { label:'Résultats',     value:displayData.length,                          color:'#12b76a' },
-                  { label:'Filtrés',       value:fichesByAnnee.length - displayData.length,   color:'#f79009' },
+                  { label:'Total fiches', value:fichesByAnnee.length,                     color:'#06b6d4' },
+                  { label:'Résultats',    value:displayData.length,                        color:'#12b76a' },
+                  { label:'Filtrés',      value:fichesByAnnee.length - displayData.length, color:'#f79009' },
                 ].map((s,i) => (
                   <div key={i} style={{ background:`${s.color}12`, borderRadius:12, padding:'12px 16px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.06}s ease both` }}>
                     <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>{s.label}</div>
@@ -249,14 +276,11 @@ export default function DatabasePage() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════
-            STOCKAGE — card moderne
-            ════════════════════════════════════════ */}
+        {/* ════════ STOCKAGE ════════ */}
         {dbStats && (
           <div style={{ padding:'1.5px', borderRadius:18, background:`linear-gradient(135deg,${barColor}50,#06b6d425,#a78bfa15)`, marginBottom:20, animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
             <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile ? '16px' : '20px 24px', backdropFilter:'blur(20px)' }}>
 
-              {/* Header storage */}
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
                 <div style={{ width:40, height:40, borderRadius:11, background:`${barColor}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                   <HardDrive size={18} color={barColor}/>
@@ -268,7 +292,6 @@ export default function DatabasePage() {
                 <div style={{ marginLeft:'auto', fontSize:22, fontWeight:900, color:barColor }}>{pct}%</div>
               </div>
 
-              {/* Barre animée */}
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
                   <span style={{ color:'rgba(255,255,255,0.5)' }}>{dbStats.storageMB} MB utilisés</span>
@@ -284,12 +307,12 @@ export default function DatabasePage() {
                 )}
               </div>
 
-              {/* Compteurs collections */}
+              {/* Compteurs — suivent le filtre année/mois */}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap:8 }}>
                 {[
-                  { label:'Leads',            value:dbStats.solutionExpress, color:'#12b76a', Icon:Building2, suffix:''      },
-                  { label:'Utilisateurs',     value:dbStats.users,           color:'#3b6cf8', Icon:DbIcon,    suffix:''      },
-                  { label:`Essence reçu ${new Date().getFullYear()}`, value:dbStats.essenceRecu, color:'#f59e0b', Icon:HardDrive, suffix:' TND' },
+                  { label:'Leads',          value:fichesByAnnee.length,  color:'#12b76a', Icon:Building2, suffix:''      },
+                  { label:'Utilisateurs',   value:dbStats.users,          color:'#3b6cf8', Icon:DbIcon,    suffix:''      },
+                  { label:essenceLabel,     value:essenceRecuFiltre,      color:'#f59e0b', Icon:HardDrive, suffix:' TND'  },
                 ].map(({ label, value, color, Icon, suffix },i) => (
                   <div key={i} style={{ background:`${color}08`, borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:10, border:`1px solid ${color}18`, transition:'transform 0.15s' }}
                     onMouseEnter={e => (e.currentTarget.style.transform='translateY(-2px)')}
@@ -297,10 +320,10 @@ export default function DatabasePage() {
                     <div style={{ width:32, height:32, borderRadius:9, background:`${color}14`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <Icon size={15} color={color}/>
                     </div>
-                    <div>
-                      <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.6 }}>{label}</div>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{label}</div>
                       <div style={{ fontSize:18, fontWeight:900, color, lineHeight:1.2 }}>
-                        <AnimatedNumber value={value} decimals={0} color={color} suffix={suffix}/>
+                        <AnimatedNumber value={value} decimals={suffix===' TND'?0:0} color={color} suffix={suffix}/>
                       </div>
                     </div>
                   </div>
@@ -310,13 +333,11 @@ export default function DatabasePage() {
           </div>
         )}
 
-        {/* ════════════════════════════════════════
-            TABLEAU avec filtres inline dans <thead>
-            ════════════════════════════════════════ */}
+        {/* ════════ LISTE / TABLEAU ════════ */}
         <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#06b6d440,#3b6cf825,#a78bfa15)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
           <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
 
-            {/* Header tableau */}
+            {/* Header */}
             <div style={{ padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, background:'linear-gradient(135deg,rgba(6,182,212,0.06),transparent)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <Filter size={13} color="#06b6d4"/>
@@ -335,155 +356,237 @@ export default function DatabasePage() {
               )}
             </div>
 
-            {/* Tableau scrollable */}
-            <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', minWidth: isMobile ? 700 : 0 }}>
-                <thead>
-                  <tr>
-                    {/* Prénom */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>PRÉNOM</div>
-                      <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.prenom} onChange={e => setF('prenom', e.target.value)}/>
-                    </th>
-                    {/* Nom */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>NOM</div>
-                      <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.nom} onChange={e => setF('nom', e.target.value)}/>
-                    </th>
-                    {/* Email */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>EMAIL</div>
-                      <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.email} onChange={e => setF('email', e.target.value)}/>
-                    </th>
-                    {/* Téléphone */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>TÉLÉPHONE</div>
-                      <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.telephone} onChange={e => setF('telephone', e.target.value)}/>
-                    </th>
-                    {/* Entreprise */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ENTREPRISE</div>
-                      <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.entreprise} onChange={e => setF('entreprise', e.target.value)}/>
-                    </th>
-                    {/* Ville */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>VILLE</div>
-                      <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
-                        <option value="">Toutes</option>
-                        {villesDispos.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                    </th>
-                    {/* Type */}
-                    <th style={thSt}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>TYPE</div>
-                      <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.typeClient} onChange={e => setF('typeClient', e.target.value)}>
-                        <option value="">Tous</option>
-                        <option value="b2b">B2B</option>
-                        <option value="b2c">B2C</option>
-                      </select>
-                    </th>
-                    {/* Statut */}
-                    <th style={{ ...thSt, minWidth:140 }}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>STATUT</div>
-                      <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.status} onChange={e => setF('status', e.target.value)}>
-                        <option value="">Tous</option>
-                        {VALID_STATUTS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                      </select>
-                    </th>
-                    {/* Actions */}
-                    <th style={{ ...thSt, textAlign:'center', minWidth:80 }}>
-                      <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ACTIONS</div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={9} style={{ padding:60, textAlign:'center' }}>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'rgba(255,255,255,0.5)' }}>
-                          <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
-                          Chargement…
-                        </div>
-                      </td>
-                    </tr>
-                  ) : displayData.length > 0 ? displayData.map((item, i) => (
-                    <tr key={item.id}
-                      style={{ transition:'background 0.15s', animation:`fadeSlideUp 0.3s ${Math.min(i*0.03,0.5)}s ease both` }}
-                      onMouseEnter={e => (e.currentTarget.style.background='rgba(6,182,212,0.04)')}
-                      onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+            {/* ── MOBILE : filtres rapides + cards ── */}
+            {isMobile ? (
+              <div style={{ padding:'12px' }}>
 
-                      <td style={tdSt}>
-                        <div style={{ fontWeight:600 }}>{item.prenom || '—'}</div>
-                      </td>
-                      <td style={tdSt}>{item.nom || '—'}</td>
-                      <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {item.email || '—'}
-                      </td>
-                      <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)' }}>
-                        {item.telephone || '—'}
-                      </td>
-                      <td style={tdSt}>
-                        {item.entreprise ? (
-                          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                            <Building2 size={11} color="#12b76a"/>
-                            <span style={{ fontWeight:600, color:'#e0e0f0', maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.entreprise}</span>
+                {/* Filtres rapides mobile */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+                  <input className="db-inp" style={inpSt} placeholder="Prénom / Nom..." value={filters.prenom}
+                    onChange={e => { setF('prenom', e.target.value); setF('nom', e.target.value); }}/>
+                  <input className="db-inp" style={inpSt} placeholder="Entreprise..." value={filters.entreprise}
+                    onChange={e => setF('entreprise', e.target.value)}/>
+                  <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
+                    <option value="">Toutes les villes</option>
+                    {villesDispos.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.status} onChange={e => setF('status', e.target.value)}>
+                    <option value="">Tous les statuts</option>
+                    {VALID_STATUTS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                  </select>
+                </div>
+
+                {/* Cards */}
+                {loading ? (
+                  <div style={{ padding:'40px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'rgba(255,255,255,0.5)' }}>
+                    <div style={{ width:24, height:24, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
+                    Chargement…
+                  </div>
+                ) : displayData.length > 0 ? (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {displayData.map((item, i) => (
+                      <div key={item.id}
+                        style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:'14px', animation:`fadeSlideUp 0.3s ${Math.min(i*0.03,0.5)}s ease both` }}>
+                        {/* Nom + statut */}
+                        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:8 }}>
+                          <div>
+                            <div style={{ fontWeight:800, color:'#e0e0f0', fontSize:15, lineHeight:1.2 }}>
+                              {item.prenom || ''} {item.nom || ''}
+                            </div>
+                            {item.entreprise && (
+                              <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:3 }}>
+                                <Building2 size={10} color="#12b76a"/>
+                                <span style={{ fontSize:12, fontWeight:600, color:'#12b76a' }}>{item.entreprise}</span>
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <span style={{ color:'rgba(255,255,255,0.3)', fontStyle:'italic', fontSize:12 }}>Particulier</span>
-                        )}
-                      </td>
-                      <td style={tdSt}>
-                        <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
-                          <MapPin size={11} color="#3b6cf8"/> {item.ville || '—'}
+                          <span style={{ background:`${STATUS_COLOR[item.status]}20`, color:STATUS_COLOR[item.status], borderRadius:8, padding:'4px 10px', fontSize:10, fontWeight:800, whiteSpace:'nowrap', flexShrink:0, boxShadow:`0 0 6px ${STATUS_COLOR[item.status]}20` }}>
+                            {STATUS_LABEL[item.status]}
+                          </span>
                         </div>
-                      </td>
-                      <td style={tdSt}>
-                        <span style={{ background: item.typeClient==='b2b' ? 'rgba(59,108,248,0.18)' : 'rgba(167,139,250,0.18)', color: item.typeClient==='b2b' ? '#3b6cf8' : '#a78bfa', borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800, textTransform:'uppercase' }}>
-                          {item.typeClient}
-                        </span>
-                      </td>
-                      <td style={tdSt}>
-                        <span style={{ background:`${STATUS_COLOR[item.status]}20`, color:STATUS_COLOR[item.status], borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800, boxShadow:`0 0 6px ${STATUS_COLOR[item.status]}20`, whiteSpace:'nowrap' }}>
-                          {STATUS_LABEL[item.status]}
-                        </span>
-                      </td>
-                      <td style={{ ...tdSt, textAlign:'center' }}>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                        {/* Ville + type */}
+                        <div style={{ display:'flex', gap:8, marginBottom:8, flexWrap:'wrap', alignItems:'center' }}>
+                          {item.ville && (
+                            <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
+                              <MapPin size={10} color="#3b6cf8"/>{item.ville}
+                            </div>
+                          )}
+                          <span style={{ background: item.typeClient==='b2b' ? 'rgba(59,108,248,0.18)' : 'rgba(167,139,250,0.18)', color: item.typeClient==='b2b' ? '#3b6cf8' : '#a78bfa', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:800, textTransform:'uppercase' }}>
+                            {item.typeClient}
+                          </span>
+                        </div>
+                        {/* Email + téléphone */}
+                        <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:10 }}>
+                          {item.email && (
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.4)' }}>
+                              <Mail size={9} color="rgba(255,255,255,0.3)"/>{item.email}
+                            </div>
+                          )}
+                          {item.telephone && (
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.4)' }}>
+                              <Phone size={9} color="rgba(255,255,255,0.3)"/>{item.telephone}
+                            </div>
+                          )}
+                        </div>
+                        {/* Actions */}
+                        <div style={{ display:'flex', gap:8 }}>
                           <button onClick={() => setSelected(item)}
-                            style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
-                            onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(6,182,212,0.12)'; t.style.borderColor='rgba(6,182,212,0.4)'; t.style.transform='scale(1.1)'; }}
-                            onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
-                            title="Voir">
-                            <Eye size={13} color="#06b6d4"/>
+                            style={{ flex:1, height:36, borderRadius:9, border:'1px solid rgba(6,182,212,0.3)', background:'rgba(6,182,212,0.08)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, color:'#06b6d4', fontSize:12, fontWeight:700 }}>
+                            <Eye size={13}/>Voir
                           </button>
                           <button onClick={() => handleDelete(item)}
-                            style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
-                            onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(240,68,56,0.12)'; t.style.borderColor='rgba(240,68,56,0.4)'; t.style.transform='scale(1.1)'; }}
-                            onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
-                            title="Supprimer">
-                            <Trash2 size={13} color="#ef4444"/>
+                            style={{ flex:1, height:36, borderRadius:9, border:'1px solid rgba(240,68,56,0.3)', background:'rgba(240,68,56,0.08)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, color:'#ef4444', fontSize:12, fontWeight:700 }}>
+                            <Trash2 size={13}/>Supprimer
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  )) : (
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding:'40px 0', textAlign:'center', color:'rgba(255,255,255,0.35)' }}>
+                    <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
+                      <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
+                      {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
+                    </div>
+                    <div style={{ fontSize:12 }}>
+                      {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des leads via la page Leads'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── DESKTOP : tableau ── */
+              <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                  <thead>
                     <tr>
-                      <td colSpan={9} style={{ padding:'52px 0', textAlign:'center', color:'rgba(255,255,255,0.35)' }}>
-                        <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
-                          <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
-                        </div>
-                        <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
-                          {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
-                        </div>
-                        <div style={{ fontSize:12 }}>
-                          {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des leads via la page Leads'}
-                        </div>
-                      </td>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>PRÉNOM</div>
+                        <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.prenom} onChange={e => setF('prenom', e.target.value)}/>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>NOM</div>
+                        <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.nom} onChange={e => setF('nom', e.target.value)}/>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>EMAIL</div>
+                        <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.email} onChange={e => setF('email', e.target.value)}/>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>TÉLÉPHONE</div>
+                        <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.telephone} onChange={e => setF('telephone', e.target.value)}/>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ENTREPRISE</div>
+                        <input className="db-inp" style={inpSt} placeholder="Filtrer..." value={filters.entreprise} onChange={e => setF('entreprise', e.target.value)}/>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>VILLE</div>
+                        <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
+                          <option value="">Toutes</option>
+                          {villesDispos.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </th>
+                      <th style={thSt}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>TYPE</div>
+                        <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.typeClient} onChange={e => setF('typeClient', e.target.value)}>
+                          <option value="">Tous</option>
+                          <option value="b2b">B2B</option>
+                          <option value="b2c">B2C</option>
+                        </select>
+                      </th>
+                      <th style={{ ...thSt, minWidth:140 }}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>STATUT</div>
+                        <select className="db-sel" style={{ ...inpSt, cursor:'pointer' }} value={filters.status} onChange={e => setF('status', e.target.value)}>
+                          <option value="">Tous</option>
+                          {VALID_STATUTS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                        </select>
+                      </th>
+                      <th style={{ ...thSt, textAlign:'center', minWidth:80 }}>
+                        <div style={{ fontSize:10, marginBottom:6, letterSpacing:0.8 }}>ACTIONS</div>
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={9} style={{ padding:60, textAlign:'center' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'rgba(255,255,255,0.5)' }}>
+                            <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
+                            Chargement…
+                          </div>
+                        </td>
+                      </tr>
+                    ) : displayData.length > 0 ? displayData.map((item, i) => (
+                      <tr key={item.id}
+                        style={{ transition:'background 0.15s', animation:`fadeSlideUp 0.3s ${Math.min(i*0.03,0.5)}s ease both` }}
+                        onMouseEnter={e => (e.currentTarget.style.background='rgba(6,182,212,0.04)')}
+                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                        <td style={tdSt}><div style={{ fontWeight:600 }}>{item.prenom || '—'}</div></td>
+                        <td style={tdSt}>{item.nom || '—'}</td>
+                        <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.email || '—'}</td>
+                        <td style={{ ...tdSt, color:'rgba(255,255,255,0.5)' }}>{item.telephone || '—'}</td>
+                        <td style={tdSt}>
+                          {item.entreprise ? (
+                            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                              <Building2 size={11} color="#12b76a"/>
+                              <span style={{ fontWeight:600, color:'#e0e0f0', maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.entreprise}</span>
+                            </div>
+                          ) : (
+                            <span style={{ color:'rgba(255,255,255,0.3)', fontStyle:'italic', fontSize:12 }}>Particulier</span>
+                          )}
+                        </td>
+                        <td style={tdSt}>
+                          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
+                            <MapPin size={11} color="#3b6cf8"/> {item.ville || '—'}
+                          </div>
+                        </td>
+                        <td style={tdSt}>
+                          <span style={{ background: item.typeClient==='b2b' ? 'rgba(59,108,248,0.18)' : 'rgba(167,139,250,0.18)', color: item.typeClient==='b2b' ? '#3b6cf8' : '#a78bfa', borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800, textTransform:'uppercase' }}>
+                            {item.typeClient}
+                          </span>
+                        </td>
+                        <td style={tdSt}>
+                          <span style={{ background:`${STATUS_COLOR[item.status]}20`, color:STATUS_COLOR[item.status], borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800, boxShadow:`0 0 6px ${STATUS_COLOR[item.status]}20`, whiteSpace:'nowrap' }}>
+                            {STATUS_LABEL[item.status]}
+                          </span>
+                        </td>
+                        <td style={{ ...tdSt, textAlign:'center' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                            <button onClick={() => setSelected(item)}
+                              style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
+                              onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(6,182,212,0.12)'; t.style.borderColor='rgba(6,182,212,0.4)'; t.style.transform='scale(1.1)'; }}
+                              onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
+                              title="Voir"><Eye size={13} color="#06b6d4"/></button>
+                            <button onClick={() => handleDelete(item)}
+                              style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
+                              onMouseEnter={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(240,68,56,0.12)'; t.style.borderColor='rgba(240,68,56,0.4)'; t.style.transform='scale(1.1)'; }}
+                              onMouseLeave={e => { const t = e.currentTarget as HTMLElement; t.style.background='rgba(255,255,255,0.04)'; t.style.borderColor='rgba(255,255,255,0.08)'; t.style.transform='scale(1)'; }}
+                              title="Supprimer"><Trash2 size={13} color="#ef4444"/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={9} style={{ padding:'52px 0', textAlign:'center', color:'rgba(255,255,255,0.35)' }}>
+                          <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
+                            <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
+                          </div>
+                          <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
+                            {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
+                          </div>
+                          <div style={{ fontSize:12 }}>
+                            {hasFilters ? 'Modifie ou efface les filtres' : 'Ajoute des leads via la page Leads'}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Footer compteur */}
             {displayData.length > 0 && (
@@ -520,4 +623,3 @@ export default function DatabasePage() {
     </div>
   );
 }
-
