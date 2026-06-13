@@ -166,53 +166,85 @@ export default function UltraFiche({
 
         {/* ─── PIPELINE STEPPER ───────────────────── */}
         {fiche.status !== 'installation_annulee' && (
-          <div style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto' }}>
-            {PIPELINE.map((s, i) => {
-              const idx = PIPELINE.indexOf(fiche.status);
-              const done = i < idx;
-              const curr = i === idx;
-              const c    = PIPE_COLOR[s];
-              return (
-                <div key={s} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  <button
-                    onClick={() => { if (!curr) onChangeStatus(fiche, s); }}
-                    title={STATUS_LABEL[s]}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                      background: 'none', border: 'none', cursor: curr ? 'default' : 'pointer', padding: '2px 6px',
-                    }}
-                  >
-                    <div style={{
-                      width: 28, height: 28, borderRadius: '50%',
-                      background: curr ? c : done ? c + '50' : 'rgba(255,255,255,0.06)',
-                      border: `2px solid ${curr ? c : done ? c + '60' : 'rgba(255,255,255,0.1)'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s',
-                      boxShadow: curr ? `0 0 12px ${c}50` : 'none',
-                    }}>
-                      {done ? <Check size={12} color="#fff" /> : (
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: curr ? '#fff' : 'rgba(255,255,255,0.2)' }} />
+          <div style={{ padding: isMobile ? '10px 14px' : '12px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            {isMobile ? (
+              /* Mobile : grille 3 colonnes + bouton Annuler */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+                  {PIPELINE.map(s => {
+                    const idx  = PIPELINE.indexOf(fiche.status);
+                    const sidx = PIPELINE.indexOf(s);
+                    const done = sidx < idx;
+                    const curr = s === fiche.status;
+                    const c    = PIPE_COLOR[s];
+                    return (
+                      <button key={s} onClick={() => { if (!curr) onChangeStatus(fiche, s); }}
+                        style={{
+                          padding: '8px 4px', borderRadius: 10, textAlign: 'center',
+                          border: `1px solid ${curr ? c : done ? c+'50' : 'rgba(255,255,255,0.08)'}`,
+                          background: curr ? c+'22' : done ? c+'0a' : 'rgba(255,255,255,0.02)',
+                          color: curr ? c : done ? c+'99' : 'rgba(255,255,255,0.35)',
+                          fontSize: 10, fontWeight: curr ? 800 : 500,
+                          cursor: curr ? 'default' : 'pointer', lineHeight: 1.3,
+                          boxShadow: curr ? `0 0 10px ${c}35` : 'none',
+                          transition: 'all 0.15s',
+                        }}>
+                        {done ? '✓ ' : curr ? '● ' : ''}{STATUS_LABEL[s]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!readOnly && (
+                  <button onClick={() => onChangeStatus(fiche, 'installation_annulee')}
+                    style={{ width: '100%', padding: '8px', borderRadius: 9, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+                    ✕ Annuler l&apos;installation
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* Desktop : stepper horizontal amélioré */
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto' }}>
+                {PIPELINE.map((s, i) => {
+                  const idx  = PIPELINE.indexOf(fiche.status);
+                  const done = i < idx;
+                  const curr = i === idx;
+                  const c    = PIPE_COLOR[s];
+                  return (
+                    <div key={s} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                      <button onClick={() => { if (!curr) onChangeStatus(fiche, s); }} title={STATUS_LABEL[s]}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: curr ? 'default' : 'pointer', padding: '2px 8px' }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: curr ? c : done ? c+'45' : 'rgba(255,255,255,0.05)',
+                          border: `2px solid ${curr ? c : done ? c+'60' : 'rgba(255,255,255,0.1)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.2s',
+                          boxShadow: curr ? `0 0 14px ${c}55` : 'none',
+                        }}>
+                          {done ? <Check size={13} color="#fff" /> : (
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: curr ? '#fff' : 'rgba(255,255,255,0.18)' }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: curr ? 800 : 400, color: curr ? c : done ? 'rgba(255,255,255,0.5)' : '#4b4b6e', whiteSpace: 'nowrap' }}>
+                          {STATUS_LABEL[s]}
+                        </span>
+                      </button>
+                      {i < PIPELINE.length - 1 && (
+                        <div style={{ height: 2, width: 24, background: i < PIPELINE.indexOf(fiche.status) ? color+'55' : 'rgba(255,255,255,0.07)', flexShrink: 0, borderRadius: 1 }} />
                       )}
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: curr ? 700 : 400, color: curr ? c : done ? '#8b8b9e' : '#4b4b6e', whiteSpace: 'nowrap' }}>
-                      {STATUS_LABEL[s]}
-                    </span>
-                  </button>
-                  {i < PIPELINE.length - 1 && (
-                    <div style={{ height: 1.5, width: 20, background: i < PIPELINE.indexOf(fiche.status) ? color + '60' : 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
-                  )}
-                </div>
-              );
-            })}
-            {/* Annulation button */}
-            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-              <button
-                onClick={() => onChangeStatus(fiche, 'installation_annulee')}
-                style={{ padding: '4px 10px', borderRadius: 7, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
-              >
-                Annuler
-              </button>
-            </div>
+                  );
+                })}
+                {!readOnly && (
+                  <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                    <button onClick={() => onChangeStatus(fiche, 'installation_annulee')}
+                      style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+                      ✕ Annuler
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

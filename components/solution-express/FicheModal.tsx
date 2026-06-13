@@ -1,6 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const h = () => setM(window.innerWidth < 640);
+    h(); window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return m;
+}
 import { X, Shield, Wifi, Smartphone } from 'lucide-react';
 import type { Settings, StatusFiche } from '@/types';
 import { VALID_STATUTS, STATUS_LABEL } from '@/types';
@@ -72,6 +82,7 @@ interface FicheModalProps {
 }
 
 export default function FicheModal({ mode, form, setForm, settings, saving, onSave, onClose }: FicheModalProps) {
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState(0);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -95,19 +106,24 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)',
-        zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        zIndex: 2000, display: 'flex',
+        alignItems: isMobile ? 'flex-end' : 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 0 : 16,
         animation: 'fadeIn 0.15s ease',
       }}
     >
       <div style={{
-        background: '#0b0b22', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 20,
-        width: '100%', maxWidth: 580, maxHeight: '90vh', overflow: 'hidden',
+        background: '#0b0b22', border: '1px solid rgba(167,139,250,0.2)',
+        borderRadius: isMobile ? '20px 20px 0 0' : 20,
+        width: '100%', maxWidth: isMobile ? '100%' : 580,
+        maxHeight: isMobile ? '95vh' : '90vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(167,139,250,0.1)',
       }}>
 
         {/* Header */}
-        <div style={{ padding: '18px 22px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ padding: isMobile ? '14px 16px 0' : '18px 22px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>
               {mode === 'edit' ? 'Modifier la fiche' : 'Nouvelle fiche'}
@@ -133,12 +149,12 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 16px' : '18px 22px' }}>
 
           {/* ── Tab 0 : Contact ── */}
           {tab === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 {(['prenom', 'nom', 'telephone', 'email'] as const).map(k => (
                   <div key={k}>
                     <label style={lbl}>{k === 'prenom' ? 'Prénom' : k === 'nom' ? 'Nom' : k === 'telephone' ? 'Téléphone' : 'Email'}</label>
@@ -172,7 +188,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 <label style={lbl}>Entreprise</label>
                 <input value={form.entreprise} onChange={e => set('entreprise', e.target.value)} style={inp} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Type de commerce</label>
                   <select value={form.typeCommerce} onChange={e => set('typeCommerce', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
@@ -202,7 +218,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 <label style={lbl}>Adresse</label>
                 <input value={form.adresse} onChange={e => set('adresse', e.target.value)} style={inp} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Source</label>
                   <input value={form.sourceText} onChange={e => set('sourceText', e.target.value)} style={inp} placeholder="Google, Référence…" />
@@ -218,7 +234,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
           {/* ── Tab 2 : Système ── */}
           {tab === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Qualification système</label>
                   <select value={form.qualificationSysteme} onChange={e => set('qualificationSysteme', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
@@ -263,7 +279,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: sv.color, marginBottom: 10 }}>
                       <ServiceIcon icon={sv.icon} size={13} color={sv.color} /> {sv.label}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
                       <div>
                         <label style={lbl}>Fournisseur actuel</label>
                         <select value={fv.actuel || ''} onChange={e => set('fournisseurs', { ...fournisseurs, [pid]: { ...fv, actuel: e.target.value } })} style={{ ...inp, cursor: 'pointer' }}>
@@ -283,7 +299,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 );
               })}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Statut</label>
                   <select value={form.status} onChange={e => set('status', e.target.value as StatusFiche)} style={{ ...inp, cursor: 'pointer' }}>
@@ -310,7 +326,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
           {/* ── Tab 3 : Commission ── */}
           {tab === 3 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Commission fixe (TND)</label>
                   <input type="number" min="0" step="0.01"
@@ -335,7 +351,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 </div>
               </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+<div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Date de vente</label>
                   <DatePicker value={form.dateVente} onChange={v => set('dateVente', v)} placeholder="Choisir une date…" />
@@ -370,7 +386,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 22px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ padding: isMobile ? '10px 16px' : '12px 22px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setTab(p => Math.max(0, p - 1))} disabled={tab === 0}
               style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: tab === 0 ? '#4b4b6e' : '#d0d0f0', cursor: tab === 0 ? 'not-allowed' : 'pointer', fontSize: 12 }}>
