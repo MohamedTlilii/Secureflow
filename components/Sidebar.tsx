@@ -127,7 +127,7 @@ export default function Sidebar() {
       {/* Top header */}
       <header style={{ position:'fixed', top:0, left:0, right:0, zIndex:200, background:'rgba(2,6,20,0.97)', borderBottom:'1px solid rgba(18,183,106,0.18)', backdropFilter:'blur(40px)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', height:56, boxShadow:'0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(18,183,106,0.1)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(135deg,#12b76a,#3b6cf8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(18,183,106,0.45)', flexShrink:0 }}>
+          <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(135deg,#12b76a,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(18,183,106,0.45)', flexShrink:0 }}>
             <LogoIcon size={19}/>
           </div>
           <div>
@@ -185,12 +185,12 @@ export default function Sidebar() {
         <div style={{ position:'absolute', bottom:-40, left:-20, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
 
         {/* Logo */}
-        <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(255,30,30,0.15)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
-          <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#ff2d2d,#ff6b6b)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(255,45,45,0.6)' : '0 4px 16px rgba(255,45,45,0.4)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
+        <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(18,183,106,0.12)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
+          <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#12b76a,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(18,183,106,0.5)' : '0 4px 16px rgba(18,183,106,0.35)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
             <LogoIcon size={21}/>
           </div>
           <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
-            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#fff 20%,#ff4444,#ff0000)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, filter:'drop-shadow(0 0 8px rgba(255,50,50,0.8))' }}>SecureFlow</div>
+            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#06b6d4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5 }}>SecureFlow</div>
           </div>
         </div>
 
@@ -243,10 +243,7 @@ export default function Sidebar() {
 
 function LogoIcon({ size }: { size: number }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', lineHeight:1, gap:1 }}>
-      <span style={{ fontSize: Math.round(size * 0.85), fontWeight:900, color:'#fff', letterSpacing:-1, lineHeight:1 }}>$</span>
-      <span style={{ fontSize: Math.round(size * 0.38), fontWeight:800, color:'rgba(255,255,255,0.85)', letterSpacing:2, lineHeight:1 }}>TND</span>
-    </div>
+    <span style={{ fontSize: Math.round(size * 1.1), fontWeight:900, color:'#fff', lineHeight:1, letterSpacing:-1 }}>$</span>
   );
 }
 
