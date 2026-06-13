@@ -299,7 +299,7 @@ export default function DashboardPage() {
                     <div style={{height:'100%',borderRadius:6,background:'linear-gradient(90deg,#3b6cf8,#12b76a)',width:`${convRate}%`,transition:'width 1.2s ease',boxShadow:'0 0 12px rgba(18,183,106,0.4)',display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:6,overflow:'hidden'}}>
                       {convRate>8&&<span style={{fontSize:10,fontWeight:700,color:'#fff',whiteSpace:'nowrap'}}>{convRate}%</span>}
                     </div>
-                    <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.4)'}}>100%</span>
+                    <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',fontSize:10,fontWeight:700,color:'#fff'}}>100%</span>
                   </div>
                 </div>
                 {!isMobile&&(
@@ -339,7 +339,7 @@ export default function DashboardPage() {
                     {key:'paye'    as const,label:'Payé',    color:'#12b76a'},
                   ]).map(f=>(
                     <button key={f.key} onClick={()=>setChartFiltre(f.key)}
-                      style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${chartFiltre===f.key?f.color:'rgba(255,255,255,0.1)'}`,background:chartFiltre===f.key?`${f.color}25`:'transparent',color:chartFiltre===f.key?f.color:'rgba(255,255,255,0.4)',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>
+                      style={{fontSize:10,padding:'4px 10px',borderRadius:7,border:`1px solid ${chartFiltre===f.key?f.color:'#fff'}`,background:chartFiltre===f.key?`${f.color}25`:'transparent',color:chartFiltre===f.key?f.color:'#fff',cursor:'pointer',fontWeight:700,transition:'all 0.2s'}}>
                       {f.label}
                     </button>
                   ))}
@@ -347,9 +347,9 @@ export default function DashboardPage() {
               </div>
               <ResponsiveContainer width="100%" height={isMobile?120:160}>
                 <BarChart data={evolutionData} barSize={isMobile?8:14} barGap={2} margin={{top:16,right:0,left:-20,bottom:0}}>
-                  <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.75)',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
-                  <YAxis tick={{fill:'rgba(255,255,255,0.75)',fontSize:10}} axisLine={false} tickLine={false} allowDecimals={false}/>
-                  <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:12}} cursor={{fill:'rgba(255,255,255,0.03)'}}
+                  <XAxis dataKey="name" tick={{fill:'#fff',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
+                  <YAxis tick={{fill:'#fff',fontSize:10}} axisLine={false} tickLine={false} allowDecimals={false}/>
+                  <Tooltip contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:12}} cursor={{fill:'#fff'}}
                     formatter={(v:unknown,n:string)=>[v as number,n]}/>
                   {chartFiltre==='total'?(
                     <>
@@ -457,7 +457,7 @@ export default function DashboardPage() {
                           </div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,gap:8}}>
-                              <span style={{fontSize:13,color:'rgba(255,255,255,0.7)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{label}</span>
+                              <span style={{fontSize:13,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{label}</span>
                               <span style={{fontSize:13,fontWeight:700,color,flexShrink:0}}>{count}</span>
                             </div>
                             <ProgressBar value={count} max={totalSE} color={color}/>
@@ -466,7 +466,7 @@ export default function DashboardPage() {
                       );
                     })}
                   </div>
-                ):<div style={{color:'rgba(255,255,255,0.3)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun produit</div>}
+                ):<div style={{color:'#fff',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun produit</div>}
               </div>
             </div>
 
@@ -485,14 +485,14 @@ export default function DashboardPage() {
                       return (
                         <div key={k} style={{display:'flex',alignItems:'center',gap:10}}>
                           <div style={{width:8,height:8,borderRadius:'50%',background:color,flexShrink:0,boxShadow:`0 0 6px ${color}80`}}/>
-                          <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.9)'}}>{leadTypeLbl[k]||k}</span>
+                          <span style={{flex:1,fontSize:13,color:'#fff'}}>{leadTypeLbl[k]||k}</span>
                           <span style={{fontSize:13,fontWeight:700,color}}>{count}</span>
                           <ProgressBar value={count} max={totalSE} color={color}/>
                         </div>
                       );
                     })}
                   </div>
-                ):<div style={{color:'rgba(255,255,255,0.3)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun type</div>}
+                ):<div style={{color:'#fff',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun type</div>}
               </div>
             </div>
 
@@ -509,13 +509,13 @@ export default function DashboardPage() {
                         onMouseEnter={e=>e.currentTarget.style.transform='translateX(3px)'}
                         onMouseLeave={e=>e.currentTarget.style.transform=''}>
                         <div style={{width:22,height:22,borderRadius:6,background:'rgba(97,218,251,0.1)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#61DAFB',flexShrink:0}}>{i+1}</div>
-                        <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.9)'}}>{ville}</span>
-                        <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.8)'}}>{count}</span>
+                        <span style={{flex:1,fontSize:13,color:'#fff'}}>{ville}</span>
+                        <span style={{fontSize:13,fontWeight:700,color:'#fff'}}>{count}</span>
                         <ProgressBar value={count} max={totalSE} color="#61DAFB"/>
                       </div>
                     ))}
                   </div>
-                ):<div style={{color:'rgba(255,255,255,0.3)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune ville</div>}
+                ):<div style={{color:'#fff',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune ville</div>}
               </div>
             </div>
           </div>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
                       onMouseEnter={e=>{e.currentTarget.style.background='rgba(247,144,9,0.12)';e.currentTarget.style.transform='translateY(-1px)';}}
                       onMouseLeave={e=>{e.currentTarget.style.background='rgba(247,144,9,0.06)';e.currentTarget.style.transform='';}}>
                       <div style={{width:26,height:26,borderRadius:7,background:'rgba(247,144,9,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#f79009',flexShrink:0}}>{i+1}</div>
-                      <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.9)',lineHeight:1.3}}>{commerceLbl[k]||k}</span>
+                      <span style={{flex:1,fontSize:13,color:'#fff',lineHeight:1.3}}>{commerceLbl[k]||k}</span>
                       <span style={{fontSize:15,fontWeight:700,color:'#f79009',flexShrink:0}}>{count}</span>
                     </div>
                   ))}
@@ -559,7 +559,7 @@ export default function DashboardPage() {
                       onMouseEnter={e=>{e.currentTarget.style.background='rgba(18,183,106,0.12)';e.currentTarget.style.transform='translateY(-1px)';}}
                       onMouseLeave={e=>{e.currentTarget.style.background='rgba(18,183,106,0.06)';e.currentTarget.style.transform='';}}>
                       <div style={{width:26,height:26,borderRadius:7,background:'rgba(18,183,106,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#12b76a',flexShrink:0}}>{i+1}</div>
-                      <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.9)',lineHeight:1.3}}>{commerceLbl[k]||k}</span>
+                      <span style={{flex:1,fontSize:13,color:'#fff',lineHeight:1.3}}>{commerceLbl[k]||k}</span>
                       <span style={{fontSize:15,fontWeight:700,color:'#12b76a',flexShrink:0}}>{count}</span>
                     </div>
                   ))}
@@ -603,7 +603,7 @@ export default function DashboardPage() {
                     );
                   })}
                 </div>
-              ):<div style={{color:'rgba(255,255,255,0.3)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun lead</div>}
+              ):<div style={{color:'#fff',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun lead</div>}
             </div>
           </div>
           </>

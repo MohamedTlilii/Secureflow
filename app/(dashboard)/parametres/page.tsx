@@ -126,7 +126,7 @@ function SimpleSection({ items, color, placeholder, onAdd, onRemove }: {
         </button>
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-        {items.length === 0 && <span style={{ color:'rgba(255,255,255,0.3)', fontSize:12, fontStyle:'italic' }}>Aucune entrée — ajoutez-en une ci-dessus</span>}
+        {items.length === 0 && <span style={{ color:'#fff', fontSize:12, fontStyle:'italic' }}>Aucune entrée — ajoutez-en une ci-dessus</span>}
         {items.map((v, i) => <Tag key={i} label={v} color={color} onRemove={() => onRemove(i)}/>)}
       </div>
     </div>
@@ -164,7 +164,7 @@ function KeyLabelSection({ items, color, placeholder, onAdd, onRemove, getItemCo
         </button>
       </div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-        {items.length === 0 && <span style={{ color:'rgba(255,255,255,0.3)', fontSize:12, fontStyle:'italic' }}>Aucune entrée</span>}
+        {items.length === 0 && <span style={{ color:'#fff', fontSize:12, fontStyle:'italic' }}>Aucune entrée</span>}
         {items.map((it, i) => <Tag key={it.key} label={it.label} color={getItemColor ? getItemColor(it) : color} onRemove={() => onRemove(i)}/>)}
       </div>
     </div>
@@ -193,20 +193,20 @@ function ObjectifSection({ objectifs, onAdd, onRemove }: {
     <div>
       <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap', alignItems:'flex-end' }}>
         <div>
-          <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Année</div>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Année</div>
           <input type="number" min="2020" max="2099" step="1" value={annee} onChange={e => setAnnee(e.target.value)}
             style={{ width:90, padding:'9px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
             onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
           />
         </div>
         <div>
-          <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Objectif</div>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Objectif</div>
           <input type="number" min="0" value={montant} onChange={e => setMontant(e.target.value)} onKeyDown={e => e.key==='Enter' && add()} placeholder="Ex: 5000"
             style={{ width:140, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
             onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
           />
         </div>
-        <span style={{ alignSelf:'center', fontSize:12, color:'rgba(255,255,255,0.4)', paddingBottom:2 }}>TND</span>
+        <span style={{ alignSelf:'center', fontSize:12, color:'#fff', paddingBottom:2 }}>TND</span>
         <button onClick={add}
           style={{ display:'flex', alignItems:'center', gap:6, padding:'9px 18px', borderRadius:10, border:`1px solid ${color}44`, background:`${color}18`, color, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background=`${color}30`; (e.currentTarget as HTMLElement).style.borderColor=color; }}
@@ -216,14 +216,14 @@ function ObjectifSection({ objectifs, onAdd, onRemove }: {
       </div>
 
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        {entries.length === 0 && <div style={{ color:'rgba(255,255,255,0.3)', fontSize:12, fontStyle:'italic' }}>Aucun objectif — ajoutez-en un ci-dessus</div>}
+        {entries.length === 0 && <div style={{ color:'#fff', fontSize:12, fontStyle:'italic' }}>Aucun objectif — ajoutez-en un ci-dessus</div>}
         {entries.map(([yr, mt]) => (
           <div key={yr} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.18)' }}>
             <div style={{ fontSize:15, fontWeight:800, color:'#12b76a', minWidth:48 }}>{yr}</div>
             <div style={{ flex:1 }} />
             <div style={{ fontSize:14, fontWeight:800, color:'#fff' }}>{mt.toLocaleString()} TND</div>
             <button onClick={() => onRemove(yr)}
-              style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, display:'flex', alignItems:'center', transition:'color 0.15s' }}
+              style={{ background:'none', border:'none', cursor:'pointer', color:'#fff', padding:4, borderRadius:6, display:'flex', alignItems:'center', transition:'color 0.15s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color='#ef4444')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.3)')}>
               <X size={15}/>
@@ -311,7 +311,7 @@ function ServiceSection({ services, onUpdate, isMobile }: {
                 <button onClick={() => saveEdit(idx)}
                   style={{ background:editColor, border:'none', borderRadius:8, cursor:'pointer', color:'#fff', padding:'6px 14px', fontSize:12, fontWeight:800, flexShrink:0 }}>OK</button>
                 <button onClick={() => setEditingIdx(null)}
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)', padding:4, display:'flex', alignItems:'center' }}>
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#fff', padding:4, display:'flex', alignItems:'center' }}>
                   <X size={14}/>
                 </button>
               </div>
@@ -335,7 +335,7 @@ function ServiceSection({ services, onUpdate, isMobile }: {
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.35)')}>
                   <Trash2 size={13}/>
                 </button>
-                <ChevronRight size={14} style={{ color:'rgba(255,255,255,0.4)', transform: expanded===idx ? 'rotate(90deg)' : 'none', transition:'transform 0.2s', flexShrink:0 }}/>
+                <ChevronRight size={14} style={{ color:'#fff', transform: expanded===idx ? 'rotate(90deg)' : 'none', transition:'transform 0.2s', flexShrink:0 }}/>
               </div>
             )}
 
@@ -346,7 +346,7 @@ function ServiceSection({ services, onUpdate, isMobile }: {
                 {/* Fournisseurs */}
                 <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:20 }}>
                   <div>
-                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, color:'rgba(255,255,255,0.5)', marginBottom:10 }}>Fournisseurs — Actuel</div>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, color:'#fff', marginBottom:10 }}>Fournisseurs — Actuel</div>
                     <KeyLabelSection
                       items={svc.actuel || []}
                       color={svc.color}
@@ -379,7 +379,7 @@ function ServiceSection({ services, onUpdate, isMobile }: {
           <div style={{ fontSize:12, fontWeight:700, color:'#a78bfa', marginBottom:14, textTransform:'uppercase', letterSpacing:0.8 }}>Nouveau service</div>
           {/* Icônes */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:8, fontWeight:600 }}>Icône</div>
+            <div style={{ fontSize:11, color:'#fff', marginBottom:8, fontWeight:600 }}>Icône</div>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
               {ICON_OPTIONS.map(({ key, Icon, label }) => {
                 const sel     = newIcon === key;
@@ -396,14 +396,14 @@ function ServiceSection({ services, onUpdate, isMobile }: {
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'flex-end', flexWrap:'wrap' }}>
             <div style={{ flex:1, minWidth:160 }}>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Nom du service</div>
+              <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Nom du service</div>
               <input value={newLabel} autoFocus onChange={e => setNewLabel(e.target.value)} onKeyDown={e => e.key==='Enter' && addService()} placeholder="Ex: Abonnement TV..."
                 style={{ width:'100%', padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', boxSizing:'border-box', transition:'border-color 0.2s' }}
                 onFocus={e => (e.target.style.borderColor='#a78bfa')} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
               />
             </div>
             <div>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Couleur</div>
+              <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Couleur</div>
               <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
                 style={{ width:50, height:40, borderRadius:8, border:'1px solid rgba(255,255,255,0.12)', background:'none', cursor:'pointer', padding:2 }}/>
             </div>
@@ -412,7 +412,7 @@ function ServiceSection({ services, onUpdate, isMobile }: {
               <Plus size={13}/> Créer
             </button>
             <button onClick={() => { setAdding(false); setNewLabel(''); setNewIcon('shield'); }}
-              style={{ display:'flex', alignItems:'center', padding:'10px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'none', color:'rgba(255,255,255,0.4)', cursor:'pointer' }}>
+              style={{ display:'flex', alignItems:'center', padding:'10px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'none', color:'#fff', cursor:'pointer' }}>
               <X size={13}/>
             </button>
           </div>
@@ -480,7 +480,7 @@ function ProfilSection() {
 
       {/* Avatar */}
       <div>
-        <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:10, fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>Avatar</div>
+        <div style={{ fontSize:11, color:'#fff', marginBottom:10, fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>Avatar</div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
           {PROFILE_AVATARS.map(a => (
             <button key={a} type="button" onClick={() => setAvatar(a === avatar ? '' : a)}
@@ -492,7 +492,7 @@ function ProfilSection() {
         {avatar && (
           <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ fontSize:22 }}>{avatar}</span>
-            <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)' }}>sélectionné</span>
+            <span style={{ fontSize:12, color:'#fff' }}>sélectionné</span>
             <button type="button" onClick={() => setAvatar('')}
               style={{ background:'none', border:'1px solid rgba(239,68,68,0.25)', borderRadius:6, cursor:'pointer', color:'rgba(239,68,68,0.7)', fontSize:11, fontWeight:600, padding:'2px 8px', transition:'all 0.15s' }}>
               Retirer
@@ -509,14 +509,14 @@ function ProfilSection() {
           ['Email',        email,     setEmail,     'email', 'ton@email.com'],
         ] as [string, string, (v:string)=>void, string, string][]).map(([label, val, setter, type, ph]) => (
           <div key={label}>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>{label}</div>
+            <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>{label}</div>
             <input type={type} value={val} onChange={e => setter(e.target.value)} placeholder={ph} style={inputStyle}
               onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
             />
           </div>
         ))}
         <div>
-          <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Date de début</div>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Date de début</div>
           <input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
             style={{ ...inputStyle, colorScheme:'dark' }}
             onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
@@ -527,19 +527,19 @@ function ProfilSection() {
       {/* Mot de passe */}
       <div>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, paddingTop:8, borderTop:'1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:0.8 }}>Changer le mot de passe</div>
+          <div style={{ fontSize:11, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:0.8 }}>Changer le mot de passe</div>
           <span style={{ fontSize:10, color:'#fff' }}>— optionnel</span>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
             <div style={{ flex:1, minWidth:150 }}>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Nouveau mot de passe</div>
+              <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Nouveau mot de passe</div>
               <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="••••••••" style={inputStyle}
                 onFocus={e => (e.target.style.borderColor=color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
               />
             </div>
             <div style={{ flex:1, minWidth:150 }}>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Confirmer</div>
+              <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Confirmer</div>
               <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••"
                 style={{ ...inputStyle, borderColor: confirmPwd && newPwd!==confirmPwd ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.12)' }}
                 onFocus={e => (e.target.style.borderColor=confirmPwd&&newPwd!==confirmPwd?'rgba(239,68,68,0.6)':color)}
@@ -641,12 +641,12 @@ export default function ParametresPage() {
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh', flexDirection:'column', gap:16 }}>
       <div style={{ width:44, height:44, borderRadius:'50%', border:'3px solid rgba(167,139,250,0.15)', borderTopColor:'#a78bfa', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(167,139,250,0.3)' }}/>
-      <div style={{ color:'rgba(255,255,255,0.5)', fontSize:13 }}>Chargement des paramètres…</div>
+      <div style={{ color:'#fff', fontSize:13 }}>Chargement des paramètres…</div>
     </div>
   );
 
   if (!settings) return (
-    <div style={{ textAlign:'center', padding:40, color:'rgba(255,255,255,0.5)' }}>
+    <div style={{ textAlign:'center', padding:40, color:'#fff' }}>
       <AlertCircle size={32} style={{ marginBottom:12 }}/><div>Impossible de charger les paramètres</div>
     </div>
   );
@@ -682,7 +682,7 @@ export default function ParametresPage() {
                   </div>
                   <div>
                     <h1 style={{ margin:0, fontSize: isMobile ? 20 : 26, fontWeight:900, letterSpacing:-0.5, background:'linear-gradient(135deg,#fff 30%,#06b6d4)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Paramètres</h1>
-                    <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:3 }}>Gérez les listes du formulaire et des filtres</div>
+                    <div style={{ fontSize:13, color:'#fff', marginTop:3 }}>Gérez les listes du formulaire et des filtres</div>
                   </div>
                 </div>
                 <button onClick={save} disabled={!dirty || saving}
@@ -767,12 +767,12 @@ export default function ParametresPage() {
           )}
           {activeTab === 'commissionDefaut' && (
             <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-              <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)' }}>
+              <div style={{ fontSize:13, color:'#fff' }}>
                 Ces montants seront pré-remplis automatiquement quand tu crées une nouvelle fiche. Tu pourras toujours les modifier dans le formulaire.
               </div>
               <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
                 <div>
-                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Commission fixe par défaut</div>
+                  <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Commission fixe par défaut</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <input type="number" min="0" step="0.01"
                       value={settings.commissionFixeDefaut ?? 0}
@@ -780,11 +780,11 @@ export default function ParametresPage() {
                       style={{ width:140, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
                       onFocus={e => (e.target.style.borderColor=tab.color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
                     />
-                    <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>TND</span>
+                    <span style={{ fontSize:12, color:'#fff', fontWeight:600 }}>TND</span>
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginBottom:6, fontWeight:600 }}>Commission extra par défaut</div>
+                  <div style={{ fontSize:11, color:'#fff', marginBottom:6, fontWeight:600 }}>Commission extra par défaut</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <input type="number" min="0" step="0.01"
                       value={settings.commissionExtraDefaut ?? 0}
@@ -792,7 +792,7 @@ export default function ParametresPage() {
                       style={{ width:140, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
                       onFocus={e => (e.target.style.borderColor=tab.color)} onBlur={e => (e.target.style.borderColor='rgba(255,255,255,0.12)')}
                     />
-                    <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>TND</span>
+                    <span style={{ fontSize:12, color:'#fff', fontWeight:600 }}>TND</span>
                   </div>
                 </div>
               </div>

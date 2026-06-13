@@ -106,7 +106,7 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
       <div style={{padding:14}}>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:6}}>
           {['L','M','M','J','V','S','D'].map((d,i)=>(
-            <div key={i} style={{textAlign:'center',fontSize:10,color:'rgba(255,255,255,0.8)',fontWeight:700,padding:'3px 0'}}>{d}</div>
+            <div key={i} style={{textAlign:'center',fontSize:10,color:'#fff',fontWeight:700,padding:'3px 0'}}>{d}</div>
           ))}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3}}>
@@ -142,7 +142,7 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
             );
           })}
         </div>
-        <div style={{display:'flex',gap:12,marginTop:12,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.07)',fontSize:10,color:'rgba(255,255,255,0.8)',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:12,marginTop:12,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.07)',fontSize:10,color:'#fff',flexWrap:'wrap'}}>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#12b76a',display:'inline-block'}}/> Payée</span>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#f79009',display:'inline-block'}}/> En attente</span>
           <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:7,height:7,borderRadius:'50%',background:'#be123c',display:'inline-block'}}/> Annulée</span>
@@ -373,7 +373,7 @@ export default function CommissionsPage() {
                 <div style={{fontSize:isMobile?20:26,fontWeight:900,color:'#12b76a',lineHeight:1}}>
                   <AnimatedNumber value={totalGagne} decimals={0} color="#12b76a" suffix=" TND"/>
                 </div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:5}}>
+                <div style={{fontSize:11,color:'#fff',marginTop:5}}>
                   {activesForStats.length} vente{activesForStats.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(activesForStats.length,1))}
                 </div>
               </div>
@@ -387,7 +387,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={totalPaye} decimals={0} color="#61DAFB" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{activesForStats.filter(c=>c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{activesForStats.filter(c=>c.commissionPayee).length} ventes</div>
             </div>
           </div>
 
@@ -398,7 +398,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={enAttente} decimals={0} color="#f79009" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{activesForStats.filter(c=>!c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{activesForStats.filter(c=>!c.commissionPayee).length} ventes</div>
             </div>
           </div>
 
@@ -409,7 +409,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={maximum} decimals={0} color="#a78bfa" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>meilleure</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>meilleure</div>
             </div>
           </div>
 
@@ -420,7 +420,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={minimum} decimals={0} color="#8b8b9e" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>plus petite</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>plus petite</div>
             </div>
           </div>
 
@@ -431,7 +431,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={totalAnnule} decimals={0} color="#be123c" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:5}}>{annuleeForStats.length} vente{annuleeForStats.length!==1?'s':''}</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{annuleeForStats.length} vente{annuleeForStats.length!==1?'s':''}</div>
             </div>
           </div>
         </div>
@@ -439,7 +439,7 @@ export default function CommissionsPage() {
         {/* Objectif annuel */}
         {annee!=='tout'&&objectif>0&&(
           <div style={{marginBottom:16,background:'rgba(18,183,106,0.05)',borderRadius:12,padding:'12px 18px',border:'1px solid rgba(18,183,106,0.15)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'rgba(255,255,255,0.5)',marginBottom:4}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#fff',marginBottom:4}}>
               <span style={{fontWeight:700}}>Objectif {MOIS_FULL[calMois.month]} {annee}</span>
               <span style={{fontSize:12}}>
                 {totalPaye>0&&<span style={{color:'#12b76a',fontWeight:800}}>{totalPaye.toFixed(0)}</span>}
@@ -447,7 +447,7 @@ export default function CommissionsPage() {
                 {enAttente>0&&<span style={{color:'#f79009',fontWeight:800}}>{enAttente.toFixed(0)}</span>}
                 {enAttente>0&&totalAnnule>0&&<span style={{color:'#fff'}}> + </span>}
                 {totalAnnule>0&&<span style={{color:'#be123c',fontWeight:800}}>{totalAnnule.toFixed(0)}</span>}
-                {totalPaye===0&&enAttente===0&&totalAnnule===0&&<span style={{color:'rgba(255,255,255,0.8)'}}>0</span>}
+                {totalPaye===0&&enAttente===0&&totalAnnule===0&&<span style={{color:'#fff'}}>0</span>}
                 <span style={{color:'#fff',fontWeight:800}}> / {objectif} TND — </span>
                 <span style={{color:objPct>=100?'#12b76a':'#f79009',fontWeight:800}}>{objPct}%</span>
               </span>
@@ -479,10 +479,10 @@ export default function CommissionsPage() {
             </div>
             <ResponsiveContainer width="100%" height={isMobile?120:160}>
               <BarChart data={chartData} barSize={isMobile?14:22} margin={{top:0,right:0,bottom:0,left:0}}>
-                <XAxis dataKey="name" tick={{fill:'rgba(255,255,255,0.4)',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
+                <XAxis dataKey="name" tick={{fill:'#fff',fontSize:isMobile?8:10}} axisLine={false} tickLine={false}/>
                 <YAxis hide/>
                 <Tooltip
-                  cursor={{fill:'rgba(255,255,255,0.04)'}}
+                  cursor={{fill:'#fff'}}
                   contentStyle={{background:'rgba(2,8,16,0.97)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,fontSize:12}}
                   content={({active,payload})=>{
                     if(!active||!payload?.length) return null;
@@ -538,7 +538,7 @@ export default function CommissionsPage() {
                     <Calendar size={12} color="#12b76a"/>
                     {selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
                   </div>
-                  <button onClick={()=>{setSelDate(null);setSelVentes([]);}} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.8)',fontSize:18,lineHeight:1}}>×</button>
+                  <button onClick={()=>{setSelDate(null);setSelVentes([]);}} style={{background:'none',border:'none',cursor:'pointer',color:'#fff',fontSize:18,lineHeight:1}}>×</button>
                 </div>
                 <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:8}}>
                   {selVentes.map(c=>{
@@ -552,7 +552,7 @@ export default function CommissionsPage() {
                           <div style={{fontSize:12,fontWeight:700,color:'#c0c0e0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                             {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                           </div>
-                          {c.ville&&<div style={{fontSize:10,color:'rgba(255,255,255,0.8)',marginTop:2}}>{c.ville}</div>}
+                          {c.ville&&<div style={{fontSize:10,color:'#fff',marginTop:2}}>{c.ville}</div>}
                           {ann&&c.motifAnnulation&&<div style={{fontSize:9,color:'#be123c',marginTop:2,fontWeight:700}}>✕ {c.motifAnnulation}</div>}
                         </div>
                         <div style={{textAlign:'right',flexShrink:0}}>
@@ -563,7 +563,7 @@ export default function CommissionsPage() {
                     );
                   })}
                   <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',paddingTop:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Total du jour</span>
+                    <span style={{fontSize:11,color:'#fff'}}>Total du jour</span>
                     <span style={{fontSize:15,fontWeight:800,color:'#12b76a'}}>{fmtMoney(selVentes.filter(c=>c.status!=='installation_annulee').reduce((s,c)=>s+(c.commissionTotale||0),0))}</span>
                   </div>
                 </div>
@@ -577,7 +577,7 @@ export default function CommissionsPage() {
               <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.07)',background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div style={{fontSize:13,fontWeight:700,color:'#c0c0e0'}}>Historique des commissions</div>
                 {filteredHistorique.length>0&&(
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.04)',padding:'3px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.08)',fontWeight:700}}>
+                  <div style={{fontSize:11,color:'#fff',background:'rgba(255,255,255,0.04)',padding:'3px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.08)',fontWeight:700}}>
                     <span style={{color:'#c0c0e0',fontWeight:800}}>{filteredHistorique.length}</span> vente{filteredHistorique.length!==1?'s':''}
                   </div>
                 )}
@@ -592,7 +592,7 @@ export default function CommissionsPage() {
                   <div style={{width:60,height:60,borderRadius:18,background:'rgba(18,183,106,0.06)',border:'1px solid rgba(18,183,106,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
                     <Wallet size={28} color="#12b76a" style={{opacity:0.4}}/>
                   </div>
-                  <div style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Aucune commission</div>
+                  <div style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:4}}>Aucune commission</div>
                   <div style={{fontSize:12,color:'#fff'}}>
                     {MOIS_FULL[calMois.month]} {calMois.year}
                   </div>
@@ -616,7 +616,7 @@ export default function CommissionsPage() {
                               {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                             </div>
                             {c.typeClient==='b2b'&&c.entreprise&&(`${c.prenom||''} ${c.nom||''}`.trim())&&(
-                              <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                              <div style={{fontSize:11,color:'#fff',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                                 {`${c.prenom||''} ${c.nom||''}`.trim()}
                               </div>
                             )}
@@ -632,8 +632,8 @@ export default function CommissionsPage() {
                           {/* Fixe + Extra desktop */}
                           {!isMobile&&!annulee&&(c.commissionFixe>0||c.commissionExtra>0)&&(
                             <div style={{textAlign:'right',flexShrink:0}}>
-                              {c.commissionFixe>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Fixe : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
-                              {c.commissionExtra>0&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>Extra : <strong style={{color:'rgba(255,255,255,0.7)'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
+                              {c.commissionFixe>0&&<div style={{fontSize:11,color:'#fff'}}>Fixe : <strong style={{color:'#fff'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
+                              {c.commissionExtra>0&&<div style={{fontSize:11,color:'#fff'}}>Extra : <strong style={{color:'#fff'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
                             </div>
                           )}
                           {/* Montant */}
@@ -694,26 +694,26 @@ export default function CommissionsPage() {
                   <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:resumeFiche.typeClient==='b2b'?'rgba(59,108,248,0.15)':'rgba(167,139,250,0.15)',color:resumeFiche.typeClient==='b2b'?'#3b6cf8':'#a78bfa',border:`1px solid ${resumeFiche.typeClient==='b2b'?'rgba(59,108,248,0.3)':'rgba(167,139,250,0.3)'}`}}>
                     {resumeFiche.typeClient==='b2b'?'🏢 B2B':'👤 B2C'}
                   </span>
-                  {resumeFiche.typeCommerce&&<span style={{fontSize:11,color:'rgba(255,255,255,0.5)',fontWeight:700}}>{commerceLbl[resumeFiche.typeCommerce]||resumeFiche.typeCommerce}</span>}
-                  {resumeFiche.ville&&<span style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}>· {resumeFiche.ville}</span>}
+                  {resumeFiche.typeCommerce&&<span style={{fontSize:11,color:'#fff',fontWeight:700}}>{commerceLbl[resumeFiche.typeCommerce]||resumeFiche.typeCommerce}</span>}
+                  {resumeFiche.ville&&<span style={{fontSize:11,color:'#fff'}}>· {resumeFiche.ville}</span>}
                 </div>
                 {resumeFiche.status&&(
                   <span style={{fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:20,background:`${STATUS_CLR[resumeFiche.status]}20`,color:STATUS_CLR[resumeFiche.status],border:`1px solid ${STATUS_CLR[resumeFiche.status]}40`,display:'inline-block',width:'fit-content'}}>
                     {STATUS_LBL[resumeFiche.status]||resumeFiche.status}
                   </span>
                 )}
-                {resumeFiche.qualificationSysteme&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}><span style={{fontWeight:700}}>Système : </span>{qualifLbl[resumeFiche.qualificationSysteme]||resumeFiche.qualificationSysteme}</div>}
-                {resumeFiche.dateVente&&<div style={{fontSize:11,color:'rgba(255,255,255,0.8)'}}><span style={{fontWeight:700}}>Date de vente : </span>{fmtDate(resumeFiche.dateVente)}</div>}
+                {resumeFiche.qualificationSysteme&&<div style={{fontSize:11,color:'#fff'}}><span style={{fontWeight:700}}>Système : </span>{qualifLbl[resumeFiche.qualificationSysteme]||resumeFiche.qualificationSysteme}</div>}
+                {resumeFiche.dateVente&&<div style={{fontSize:11,color:'#fff'}}><span style={{fontWeight:700}}>Date de vente : </span>{fmtDate(resumeFiche.dateVente)}</div>}
               </div>
               <button onClick={()=>setResumeFiche(null)}
-                style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.8)',fontSize:22,lineHeight:1,flexShrink:0}}
+                style={{background:'none',border:'none',cursor:'pointer',color:'#fff',fontSize:22,lineHeight:1,flexShrink:0}}
                 onMouseEnter={e=>e.currentTarget.style.color='#ef4444'}
                 onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.4)'}>×</button>
             </div>
             {/* Résumé */}
             <div style={{overflowY:'auto',flex:1,padding:20}}>
               {resumeFiche.summary
-                ?<pre style={{fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.7)',lineHeight:1.75,whiteSpace:'pre-wrap',wordBreak:'break-word',margin:0}}>{resumeFiche.summary}</pre>
+                ?<pre style={{fontFamily:'inherit',fontSize:13,color:'#fff',lineHeight:1.75,whiteSpace:'pre-wrap',wordBreak:'break-word',margin:0}}>{resumeFiche.summary}</pre>
                 :<div style={{textAlign:'center',color:'#fff',fontSize:13,padding:'40px 0'}}>Aucun résumé</div>
               }
             </div>

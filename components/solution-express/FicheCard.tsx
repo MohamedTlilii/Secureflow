@@ -154,7 +154,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
               {displayName}
             </div>
             {fiche.entreprise && fiche.typeClient === 'b2b' && clientName !== '—' && (
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              <div style={{ fontSize:11, color:'#fff', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                 {clientName}
               </div>
             )}
@@ -206,7 +206,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
           return (
             <div key={sv.id} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3 }}>
               <SvcIcon icon={sv.icon} size={9} color={sv.color}/>
-              {act && <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>{act}</span>}
+              {act && <span style={{ fontSize:11, color:'#fff' }}>{act}</span>}
               {act && pro && <span style={{ fontSize:11, color:sv.color, fontWeight:700 }}>→ {pro}</span>}
               {!act && pro && <span style={{ fontSize:11, color:sv.color, fontWeight:700 }}>→ {pro}</span>}
             </div>
@@ -216,7 +216,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
 
         {/* ── Qualification ── */}
         {fiche.qualificationSysteme && fiche.qualificationSysteme !== 'inconnu' && fiche.qualificationSysteme !== 'pas_de_systeme' && (
-          <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginBottom:7, background:'rgba(255,255,255,0.04)', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:7, background:'rgba(255,255,255,0.04)', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
             🔒 {settings.qualificationSysteme.find(q=>q.key===fiche.qualificationSysteme)?.label ?? fiche.qualificationSysteme}
           </div>
         )}
@@ -238,17 +238,17 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
         {/* ── Contact ── */}
         <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8, marginTop:4 }}>
           {fiche.telephone && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(255,255,255,0.5)' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#fff' }}>
               <Phone size={10}/> {fiche.telephone}
             </span>
           )}
           {fiche.email && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.4)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
               <Mail size={10}/> {fiche.email}
             </span>
           )}
           {fiche.ville && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'rgba(255,255,255,0.4)' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#fff' }}>
               <MapPin size={10}/> {fiche.ville}
             </span>
           )}
@@ -258,7 +258,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
             </span>
           )}
           {fiche.dateVente && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'rgba(255,255,255,0.3)' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
               <Calendar size={10}/> {fmtDate(fiche.dateVente)}
             </span>
           )}

@@ -396,7 +396,7 @@ export default function SolutionExpressPage() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: showFilt ? 14 : 0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <Filter size={13} color="rgba(255,255,255,0.5)"/>
-                <span style={{ fontSize:11, color:'rgba(255,255,255,0.6)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Filtres</span>
+                <span style={{ fontSize:11, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Filtres</span>
                 {filtersActive && <span style={{ fontSize:10, background:'rgba(167,139,250,0.12)', color:'#a78bfa', padding:'2px 8px', borderRadius:20, fontWeight:700 }}>Actifs</span>}
               </div>
               <div style={{ display:'flex', gap:8 }}>
@@ -407,7 +407,7 @@ export default function SolutionExpressPage() {
                   </button>
                 )}
                 <button onClick={() => setShowFilt(p => !p)}
-                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, cursor:'pointer', color:'rgba(255,255,255,0.6)', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:700 }}>
+                  style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, cursor:'pointer', color:'#fff', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:700 }}>
                   {showFilt ? <><ChevronUp size={14}/> Cacher</> : <><ChevronDown size={14}/> Afficher</>}
                 </button>
               </div>
@@ -464,7 +464,7 @@ export default function SolutionExpressPage() {
           />
           {search && (
             <button onClick={() => setSearch('')}
-              style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, cursor:'pointer', color:'rgba(255,255,255,0.6)', padding:'3px 6px', display:'flex', alignItems:'center' }}>
+              style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, cursor:'pointer', color:'#fff', padding:'3px 6px', display:'flex', alignItems:'center' }}>
               <X size={12}/>
             </button>
           )}
@@ -472,7 +472,7 @@ export default function SolutionExpressPage() {
 
         {/* Compteur résultats */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-          <span style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontWeight:700 }}>
+          <span style={{ fontSize:13, color:'#fff', fontWeight:700 }}>
             <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>{totalVisible}</span> fiche{totalVisible !== 1 ? 's' : ''}{filtersActive ? ' trouvée' : ' au total'}
           </span>
           {filtersActive && <span style={{ fontSize:11, background:'rgba(167,139,250,0.1)', color:'#a78bfa', padding:'2px 12px', borderRadius:20, fontWeight:700 }}>Filtres actifs</span>}
@@ -484,7 +484,7 @@ export default function SolutionExpressPage() {
         {loading ? (
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:16 }}>
             <div style={{ width:48, height:48, borderRadius:'50%', border:'3px solid rgba(167,139,250,0.15)', borderTopColor:'#a78bfa', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(167,139,250,0.3)' }}/>
-            <span style={{ fontSize:14, color:'rgba(255,255,255,0.8)', letterSpacing:0.3 }}>Chargement des fiches…</span>
+            <span style={{ fontSize:14, color:'#fff', letterSpacing:0.3 }}>Chargement des fiches…</span>
           </div>
         ) : groups.length === 0 ? (
           <div style={{ textAlign:'center', padding:'80px 20px' }}>
@@ -492,7 +492,7 @@ export default function SolutionExpressPage() {
               <Building2 size={32} color="#a78bfa" style={{ opacity:0.6 }}/>
             </div>
             <p style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Aucun lead trouvé</p>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.8)', marginBottom:20 }}>Essayez d'ajuster vos filtres</p>
+            <p style={{ fontSize:13, color:'#fff', marginBottom:20 }}>Essayez d'ajuster vos filtres</p>
             <button onClick={openAdd}
               style={{ padding:'10px 24px', borderRadius:12, background:'linear-gradient(135deg,#2215d4,#a78bfa)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:7 }}>
               <Plus size={14}/> Créer un lead
@@ -573,7 +573,7 @@ export default function SolutionExpressPage() {
             </select>
             <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
               <button onClick={() => setMotifPending(null)}
-                style={{ padding:'9px 16px', borderRadius:10, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.5)', fontSize:13, cursor:'pointer' }}>
+                style={{ padding:'9px 16px', borderRadius:10, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'#fff', fontSize:13, cursor:'pointer' }}>
                 Annuler
               </button>
               <button onClick={confirmAnnulation}

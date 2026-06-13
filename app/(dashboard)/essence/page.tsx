@@ -387,7 +387,7 @@ export default function EssencePage() {
         {loading?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:320,gap:16}}>
             <div style={{width:48,height:48,borderRadius:'50%',border:'3px solid rgba(245,158,11,0.15)',borderTopColor:'#f59e0b',animation:'spin 0.8s linear infinite',boxShadow:'0 0 20px rgba(245,158,11,0.3)'}}/>
-            <span style={{fontSize:14,color:'rgba(255,255,255,0.8)',letterSpacing:0.3}}>Chargement…</span>
+            <span style={{fontSize:14,color:'#fff',letterSpacing:0.3}}>Chargement…</span>
           </div>
         ):(
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -434,7 +434,7 @@ export default function EssencePage() {
                     {MOIS_FULL[m.mois]}{annee==='tout'?` ${m.annee}`:''}
                   </div>
                   {m.dateReception&&(
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',marginTop:3}}>
+                    <div style={{fontSize:11,color:'#fff',marginTop:3}}>
                       Reçu le {new Date(m.dateReception).toLocaleDateString('fr-FR')}
                     </div>
                   )}
@@ -461,7 +461,7 @@ export default function EssencePage() {
                     </div>
                   )}
                   {m.note&&(
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.8)',fontStyle:'italic',marginTop:3}}>💬 {m.note}</div>
+                    <div style={{fontSize:11,color:'#fff',fontStyle:'italic',marginTop:3}}>💬 {m.note}</div>
                   )}
                 </div>
 
@@ -484,10 +484,10 @@ export default function EssencePage() {
               </div>
             ))}
             {annee==='tout'&&yearSummary.length===0&&(
-              <div style={{textAlign:'center',padding:'60px 0',color:'rgba(255,255,255,0.8)',fontSize:14}}>Aucune donnée</div>
+              <div style={{textAlign:'center',padding:'60px 0',color:'#fff',fontSize:14}}>Aucune donnée</div>
             )}
             {data.length===0&&annee!=='tout'&&(
-              <div style={{textAlign:'center',padding:'80px 0',color:'rgba(255,255,255,0.3)',fontSize:14}}>
+              <div style={{textAlign:'center',padding:'80px 0',color:'#fff',fontSize:14}}>
                 Aucune donnée pour {annee==='tout'?'toutes les années':annee}
               </div>
             )}

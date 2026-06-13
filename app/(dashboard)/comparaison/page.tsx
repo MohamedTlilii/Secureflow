@@ -201,12 +201,12 @@ export default function ComparaisonPage() {
 
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(59,108,248,0.12)',border:'1px solid rgba(59,108,248,0.3)',textAlign:'center',minWidth:72}}>
-                    <div style={{fontSize:9,color:'rgba(255,255,255,0.9)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Précédent</div>
+                    <div style={{fontSize:9,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Précédent</div>
                     <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#3b6cf8',lineHeight:1}}>{prevYear}</div>
                   </div>
                   <div style={{fontSize:13,color:'#fff',fontWeight:700}}>vs</div>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(18,183,106,0.12)',border:'1px solid rgba(18,183,106,0.3)',textAlign:'center',minWidth:72}}>
-                    <div style={{fontSize:9,color:'rgba(255,255,255,0.9)',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Actuel</div>
+                    <div style={{fontSize:9,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Actuel</div>
                     <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#12b76a',lineHeight:1}}>{currYear}</div>
                     {selectedYear===realYear&&(
                       <div style={{fontSize:8,color:'#12b76a',fontWeight:700,marginTop:4,letterSpacing:0.3,opacity:0.8}}>En cours</div>
@@ -275,7 +275,7 @@ export default function ComparaisonPage() {
                       <AnimatedNumber value={curr} decimals={0} color={color} suffix={suffix}/>
                     </div>
                     <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'#fff',fontWeight:600}}>
-                      {prevYear} : <span style={{color:prev>0?color:'rgba(255,255,255,0.7)',fontWeight:700}}>{prev.toFixed(0)}{suffix}</span>
+                      {prevYear} : <span style={{color:prev>0?color:'#fff',fontWeight:700}}>{prev.toFixed(0)}{suffix}</span>
                     </div>
                   </div>
                 </div>
@@ -338,7 +338,7 @@ export default function ComparaisonPage() {
                   <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:320,height:320,borderRadius:'50%',background:`radial-gradient(circle,${scoreColor}12 0%,transparent 70%)`,pointerEvents:'none'}}/>
                   <div style={{position:'relative'}}>
                     <div style={{fontSize:44,marginBottom:12}}>{scoreEmoji}</div>
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.7)',fontWeight:700,textTransform:'uppercase',letterSpacing:2,marginBottom:10}}>Performance globale</div>
+                    <div style={{fontSize:11,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:2,marginBottom:10}}>Performance globale</div>
                     <div style={{fontSize:isMobile?44:60,fontWeight:900,color:scoreColor,lineHeight:1,marginBottom:12,textShadow:`0 0 40px ${scoreColor}60`}}>
                       {globalScore===null?'—':`${globalScore>0?'+':''}${globalScore}%`}
                     </div>

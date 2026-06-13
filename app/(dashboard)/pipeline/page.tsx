@@ -296,7 +296,7 @@ export default function PipelinePage() {
         {loading?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:320,gap:16}}>
             <div style={{width:48,height:48,borderRadius:'50%',border:'3px solid rgba(167,139,250,0.15)',borderTopColor:'#a78bfa',animation:'spin 0.8s linear infinite',boxShadow:'0 0 20px rgba(167,139,250,0.3)'}}/>
-            <span style={{fontSize:14,color:'rgba(255,255,255,0.8)'}}>Chargement…</span>
+            <span style={{fontSize:14,color:'#fff'}}>Chargement…</span>
           </div>
         ):(
           <div style={{display:'flex',gap:12,alignItems:'flex-start',paddingBottom:24,overflowX:'auto',scrollSnapType:isMobile?'x mandatory':'none',WebkitOverflowScrolling:'touch'}}>
@@ -317,7 +317,7 @@ export default function PipelinePage() {
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                     <div style={{display:'flex',alignItems:'center',gap:7}}>
                       <div style={{width:8,height:8,borderRadius:'50%',background:stage.color,boxShadow:`0 0 6px ${stage.color}80`}}/>
-                      <span style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,0.9)',textTransform:'uppercase',letterSpacing:0.6}}>{stage.label}</span>
+                      <span style={{fontSize:11,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:0.6}}>{stage.label}</span>
                     </div>
                     <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'#fff',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
                       {colItems.length}
@@ -364,7 +364,7 @@ export default function PipelinePage() {
                               </div>
                               <div style={{flex:1,minWidth:0}}>
                                 <div style={{display:'flex',alignItems:'center',gap:5}}>
-                                  <div style={{fontSize:13,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'rgba(255,255,255,0.9)',flex:1,minWidth:0}}>
+                                  <div style={{fontSize:13,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'#fff',flex:1,minWidth:0}}>
                                     {dName(f)}
                                   </div>
                                   {f.typeClient&&(
@@ -449,7 +449,7 @@ export default function PipelinePage() {
                     })}
 
                     {colItems.length===0&&(
-                      <div style={{textAlign:'center',padding:'24px 0',color:'rgba(255,255,255,0.7)',fontSize:12,borderRadius:10,border:`2px dashed ${isOver?stage.color:'rgba(255,255,255,0.06)'}`,transition:'border-color 0.2s',background:isOver?`${stage.color}04`:'transparent'}}>
+                      <div style={{textAlign:'center',padding:'24px 0',color:'#fff',fontSize:12,borderRadius:10,border:`2px dashed ${isOver?stage.color:'#fff'}`,transition:'border-color 0.2s',background:isOver?`${stage.color}04`:'transparent'}}>
                         {isOver?'Déposer ici':'Vide'}
                       </div>
                     )}

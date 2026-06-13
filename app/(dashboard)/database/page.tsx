@@ -362,7 +362,7 @@ export default function DatabasePage() {
 
                 {/* Cards */}
                 {loading ? (
-                  <div style={{ padding:'40px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'rgba(255,255,255,0.5)' }}>
+                  <div style={{ padding:'40px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'#fff' }}>
                     <div style={{ width:24, height:24, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
                     Chargement…
                   </div>
@@ -431,7 +431,7 @@ export default function DatabasePage() {
                     <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
                       <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
                     </div>
-                    <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:'#fff', marginBottom:4 }}>
                       {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
                     </div>
                     <div style={{ fontSize:12 }}>
@@ -497,7 +497,7 @@ export default function DatabasePage() {
                     {loading ? (
                       <tr>
                         <td colSpan={9} style={{ padding:60, textAlign:'center' }}>
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'rgba(255,255,255,0.5)' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'#fff' }}>
                             <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid rgba(6,182,212,0.15)', borderTopColor:'#06b6d4', animation:'spin 0.9s linear infinite' }}/>
                             Chargement…
                           </div>
@@ -519,7 +519,7 @@ export default function DatabasePage() {
                               <span style={{ fontWeight:600, color:'#e0e0f0', maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.entreprise}</span>
                             </div>
                           ) : (
-                            <span style={{ color:'rgba(255,255,255,0.3)', fontStyle:'italic', fontSize:12 }}>Particulier</span>
+                            <span style={{ color:'#fff', fontStyle:'italic', fontSize:12 }}>Particulier</span>
                           )}
                         </td>
                         <td style={tdSt}>
@@ -558,7 +558,7 @@ export default function DatabasePage() {
                           <div style={{ width:52, height:52, borderRadius:14, background:'rgba(6,182,212,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', border:'1px solid rgba(6,182,212,0.1)' }}>
                             <DbIcon size={24} color="#06b6d4" style={{ opacity:0.4 }}/>
                           </div>
-                          <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.5)', marginBottom:4 }}>
+                          <div style={{ fontSize:14, fontWeight:600, color:'#fff', marginBottom:4 }}>
                             {hasFilters ? 'Aucun résultat' : 'Aucun lead'}
                           </div>
                           <div style={{ fontSize:12 }}>
