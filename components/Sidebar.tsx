@@ -156,11 +156,11 @@ export default function Sidebar() {
           const active = isActive(to);
           return (
             <Link key={to} href={to} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 2px', borderRadius:10, color, textDecoration:'none', position:'relative' }}>
-              {active && <div style={{ position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)', width:20, height:2.5, borderRadius:2, background:`linear-gradient(90deg,${color},${color}aa)`, boxShadow:`0 0 10px ${color}99` }}/>}
-              <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : `${color}12`, transform: active ? 'scale(1.12)' : 'scale(1)', transition:'all 0.2s', border:`1px solid ${active ? `${color}40` : `${color}25`}` }}>
-                <Icon size={18} style={{ filter: `drop-shadow(0 0 ${active ? '6px' : '3px'} ${color}${active ? 'bb' : '88'})` }}/>
+              {active && <div style={{ position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)', width:20, height:2.5, borderRadius:2, background:color }}/>}
+              <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : 'transparent', transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
+                <Icon size={18}/>
               </div>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.85 }}>{label.split(' ')[0]}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.8 }}>{label.split(' ')[0]}</span>
             </Link>
           );
         })}
@@ -184,24 +184,13 @@ export default function Sidebar() {
         <div style={{ position:'absolute', top:-60, left:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.13) 0%,transparent 70%)', pointerEvents:'none' }}/>
         <div style={{ position:'absolute', bottom:-40, left:-20, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
 
-        {/* Logo */}
-        <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(18,183,106,0.1)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
-          <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#12b76a,#3b6cf8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(18,183,106,0.55)' : '0 4px 16px rgba(18,183,106,0.38)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
-            <LogoSVG id="sb" size={21}/>
-          </div>
-          <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
-            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5 }}>SecureFlow</div>
-            <div style={{ fontSize:9.5, fontWeight:700, color:'rgba(18,183,106,0.7)', letterSpacing:0.5, marginTop:1 }}>Solution Express</div>
-          </div>
-        </div>
-
         {/* Nav */}
         <nav style={{ flex:1, padding:'10px 8px', display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden', position:'relative' }}>
           {NAV.map(({ to, Icon, label, color }, idx) => {
             const active = isActive(to);
             return (
-              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color, background: active ? `${color}16` : `${color}0c`, border:`1px solid ${active ? `${color}35` : `${color}20`}`, fontSize:12.5, fontWeight:700, transition:'all 0.18s ease', textDecoration:'none', boxShadow: active ? `0 0 16px ${color}18,inset 0 0 12px ${color}08` : 'none' }}>
-                <div style={{ minWidth:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, filter: `drop-shadow(0 0 ${active ? '6px' : '3px'} ${color}${active ? 'bb' : '77'})`, transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
+              <Link key={to} href={to} title={label} style={{ display:'flex', alignItems:'center', gap:13, padding:'9px 12px', borderRadius:10, color, background: active ? `${color}18` : 'transparent', border:`1px solid ${active ? `${color}40` : 'transparent'}`, fontSize:12.5, fontWeight:700, transition:'all 0.18s ease', textDecoration:'none' }}>
+                <div style={{ minWidth:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
                   <Icon size={17}/>
                 </div>
                 <span style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-6px)', transition:`opacity 0.22s ease ${idx * 0.025}s,transform 0.22s ease ${idx * 0.025}s`, whiteSpace:'nowrap', overflow:'hidden', pointerEvents: expanded ? 'auto' : 'none' }}>
