@@ -128,7 +128,7 @@ export default function Sidebar() {
       <header style={{ position:'fixed', top:0, left:0, right:0, zIndex:200, background:'rgba(2,6,20,0.97)', borderBottom:'1px solid rgba(18,183,106,0.18)', backdropFilter:'blur(40px)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', height:56, boxShadow:'0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(18,183,106,0.1)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:34, height:34, borderRadius:11, background:'linear-gradient(135deg,#12b76a,#3b6cf8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(18,183,106,0.45)', flexShrink:0 }}>
-            <LogoSVG id="mh" size={19}/>
+            <LogoIcon size={19}/>
           </div>
           <div>
             <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, lineHeight:1 }}>SecureFlow</div>
@@ -187,7 +187,7 @@ export default function Sidebar() {
         {/* Logo */}
         <div style={{ padding:'18px 17px 16px', borderBottom:'1px solid rgba(255,30,30,0.15)', display:'flex', alignItems:'center', gap:11, flexShrink:0, position:'relative' }}>
           <div style={{ minWidth:36, height:36, borderRadius:12, background:'linear-gradient(135deg,#ff2d2d,#ff6b6b)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: expanded ? '0 6px 28px rgba(255,45,45,0.6)' : '0 4px 16px rgba(255,45,45,0.4)', flexShrink:0, transition:'box-shadow 0.35s ease' }}>
-            <LogoSVG id="sb" size={21}/>
+            <LogoIcon size={21}/>
           </div>
           <div style={{ opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-8px)', transition:'opacity 0.25s ease,transform 0.25s ease', whiteSpace:'nowrap', overflow:'hidden' }}>
             <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#fff 20%,#ff4444,#ff0000)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, filter:'drop-shadow(0 0 8px rgba(255,50,50,0.8))' }}>SecureFlow</div>
@@ -241,21 +241,12 @@ export default function Sidebar() {
 
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-function LogoSVG({ id, size }: { id: string; size: number }) {
+function LogoIcon({ size }: { size: number }) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} style={{ overflow:'visible' }}>
-      <defs>
-        <linearGradient id={`${id}_lg1`} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#12b76a"/><stop offset="100%" stopColor="#61DAFB"/>
-        </linearGradient>
-        <linearGradient id={`${id}_lg2`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#61DAFB" stopOpacity="0.95"/><stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.75"/>
-        </linearGradient>
-      </defs>
-      <polygon points="94,50 72,88 28,88 6,50 28,12 72,12" fill="none" stroke={`url(#${id}_lg1)`} strokeWidth="3.5" strokeLinejoin="round"/>
-      <polyline points="22,76 36,61 50,49 64,37 77,24" fill="none" stroke={`url(#${id}_lg1)`} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z" fill={`url(#${id}_lg2)`}/>
-    </svg>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', lineHeight:1, gap:1 }}>
+      <span style={{ fontSize: Math.round(size * 0.85), fontWeight:900, color:'#fff', letterSpacing:-1, lineHeight:1 }}>$</span>
+      <span style={{ fontSize: Math.round(size * 0.38), fontWeight:800, color:'rgba(255,255,255,0.85)', letterSpacing:2, lineHeight:1 }}>TND</span>
+    </div>
   );
 }
 
