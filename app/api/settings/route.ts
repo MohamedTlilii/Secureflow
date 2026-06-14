@@ -49,12 +49,14 @@ export async function PUT(req: NextRequest) {
       create: { ...DEFAULT_SETTINGS, ...data, id: 'global' },
     });
 
-    // Persiste le nouveau champ via SQL brut
+    // Persiste le nouveau champ via SQL brut (colonne peut ne pas exister encore)
     if (produitsAvecQualification !== undefined) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE "Settings" SET "produitsAvecQualification" = $1::jsonb WHERE id = 'global'`,
-        JSON.stringify(produitsAvecQualification)
-      );
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Settings" SET "produitsAvecQualification" = $1::jsonb WHERE id = 'global'`,
+          JSON.stringify(produitsAvecQualification)
+        );
+      } catch { /* colonne pas encore créée — db push requis */ }
     }
 
     return NextResponse.json({
