@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter, Eye, Phone, Mail,
+  FileDown, ExternalLink,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
@@ -49,7 +50,8 @@ export default function DatabasePage() {
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'',
   });
-  const [mounted, setMounted] = useState(false);
+  const [mounted,     setMounted]     = useState(false);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
   const starsRef = useRef<Star[]>([]);
   const partsRef = useRef<Particle[]>([]);
 
@@ -135,6 +137,39 @@ const villesDispos = useMemo(() =>
 
   const hasFilters = Object.values(filters).some(Boolean);
   const clearFilters = () => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'' });
+
+  /* ── PDF ── */
+  const handlePDF = async (openInTab: boolean) => {
+    if (displayData.length === 0) return toast.error('Aucun lead à exporter');
+    setPdfLoading(true);
+    try {
+      const { pdf }           = await import('@react-pdf/renderer');
+      const { buildLeadsDoc } = await import('@/components/LeadsPDF');
+      const label = anneeFiltre === 'tout'
+        ? 'Toutes les années'
+        : moisFiltre !== 'tout'
+          ? `${MOIS_FULL[Number(moisFiltre)]} ${anneeFiltre}`
+          : anneeFiltre;
+      const blob = await pdf(buildLeadsDoc(displayData, label)).toBlob();
+      const url  = URL.createObjectURL(blob);
+      if (openInTab) {
+        window.open(url, '_blank');
+      } else {
+        const a = document.createElement('a');
+        a.href     = url;
+        a.download = `leads-${anneeFiltre}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur génération PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   /* ── Delete ── */
   const handleDelete = async (item: SolutionExpress) => {
@@ -299,14 +334,28 @@ const villesDispos = useMemo(() =>
                   {displayData.length} résultat{displayData.length !== 1 ? 's' : ''}
                 </span>
               </div>
-              {hasFilters && (
-                <button onClick={clearFilters}
-                  style={{ fontSize:11, color:'#ef4444', background:'rgba(240,68,56,0.08)', border:'1px solid rgba(240,68,56,0.2)', borderRadius:20, padding:'4px 12px', cursor:'pointer', fontWeight:700, transition:'background 0.15s' }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background='rgba(240,68,56,0.15)')}
-                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background='rgba(240,68,56,0.08)')}>
-                  ✕ Effacer filtres
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                {hasFilters && (
+                  <button onClick={clearFilters}
+                    style={{ fontSize:11, color:'#ef4444', background:'rgba(240,68,56,0.08)', border:'1px solid rgba(240,68,56,0.2)', borderRadius:20, padding:'4px 12px', cursor:'pointer', fontWeight:700, transition:'background 0.15s' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background='rgba(240,68,56,0.15)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background='rgba(240,68,56,0.08)')}>
+                    ✕ Effacer filtres
+                  </button>
+                )}
+                <button onClick={() => handlePDF(false)} disabled={pdfLoading}
+                  style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, color:'#12b76a', background:'rgba(18,183,106,0.08)', border:'1px solid rgba(18,183,106,0.2)', borderRadius:20, padding:'4px 13px', cursor:pdfLoading?'wait':'pointer', opacity:pdfLoading?0.6:1, transition:'background 0.15s' }}
+                  onMouseEnter={e => { if(!pdfLoading)(e.currentTarget as HTMLElement).style.background='rgba(18,183,106,0.16)'; }}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background='rgba(18,183,106,0.08)')}>
+                  <FileDown size={12}/>{pdfLoading ? 'Génération…' : 'Télécharger PDF'}
                 </button>
-              )}
+                <button onClick={() => handlePDF(true)} disabled={pdfLoading}
+                  style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, color:'#3b6cf8', background:'rgba(59,108,248,0.08)', border:'1px solid rgba(59,108,248,0.2)', borderRadius:20, padding:'4px 13px', cursor:pdfLoading?'wait':'pointer', opacity:pdfLoading?0.6:1, transition:'background 0.15s' }}
+                  onMouseEnter={e => { if(!pdfLoading)(e.currentTarget as HTMLElement).style.background='rgba(59,108,248,0.16)'; }}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background='rgba(59,108,248,0.08)')}>
+                  <ExternalLink size={12}/>Voir PDF
+                </button>
+              </div>
             </div>
 
             {/* ── MOBILE : filtres rapides + cards ── */}
