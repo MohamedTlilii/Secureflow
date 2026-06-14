@@ -25,6 +25,7 @@ const EMPTY_FILTERS: Filters = {
   status: '', typeClient: '', leadType: '', ville: '',
   typeCommerce: '', commission: '', service: '', qualifSysteme: '',
 };
+const PAGE_SIZE = 30;
 const SECTION_COLORS = [
   '#3b6cf8','#a78bfa','#12b76a','#f97316',
   '#06b6d4','#f59e0b','#ef4444','#ec4899','#84cc16',
@@ -85,6 +86,7 @@ export default function SolutionExpressPage() {
   const [motifPending, setMotifPending] = useState<{ fiche: SolutionExpress } | null>(null);
   const [motifChoice,  setMotifChoice]  = useState('');
   const [mounted,      setMounted]      = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const starsRef  = useRef<Star[]>([]);
   const partsRef  = useRef<Particle[]>([]);
@@ -272,6 +274,9 @@ export default function SolutionExpressPage() {
     }
   }), [filtered, sortBy]);
 
+  useEffect(() => setVisibleCount(PAGE_SIZE), [filters, search, annee, sortBy]);
+  const paginatedSorted = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+
   const allYears = leadsStats.annees.map(String);
 
   const usedServiceIds = useMemo(() => {
@@ -285,7 +290,7 @@ export default function SolutionExpressPage() {
   [fiches, annee]);
 
   const groups = useMemo(() => {
-    const inYear = annee === 'tout' ? sorted : sorted.filter(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear()) === annee);
+    const inYear = annee === 'tout' ? paginatedSorted : paginatedSorted.filter(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear()) === annee);
     if (annee === 'tout') {
       const map: Record<string, SolutionExpress[]> = {};
       inYear.forEach(f => { const y = String(new Date(f.dateVente ?? f.createdAt).getFullYear()); if (!map[y]) map[y] = []; map[y].push(f); });
@@ -534,6 +539,18 @@ export default function SolutionExpressPage() {
                 </div>
               </div>
             ))}
+            {visibleCount < sorted.length && (
+              <div style={{ display:'flex', justifyContent:'center', paddingTop:8 }}>
+                <button
+                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                  style={{ padding:'11px 32px', borderRadius:12, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.35)', color:'#a0b4ff', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.25)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.12)'; }}
+                >
+                  Afficher plus · {sorted.length - visibleCount} restant{sorted.length - visibleCount !== 1 ? 's' : ''}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
