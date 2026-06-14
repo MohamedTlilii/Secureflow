@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-
-const MOIS_COURT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+import { MOIS_LABELS } from '@/types';
 const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
 
 export async function GET(req: NextRequest) {
   const sp         = new URL(req.url).searchParams;
   const anneeParam = sp.get('annee')    ?? 'tout';
   const filtre     = sp.get('filtre')   ?? 'tout';
-  const calAnnee   = parseInt(sp.get('calAnnee') ?? String(new Date().getFullYear()), 10);
-  const calMois    = parseInt(sp.get('calMois')  ?? String(new Date().getMonth()), 10);
+  const calAnnee = parseInt(sp.get('calAnnee') ?? String(new Date().getFullYear()), 10);
+  const calMois  = parseInt(sp.get('calMois')  ?? '-1', 10); // -1 = toute l'année
 
   try {
     const user = await getCurrentUser(req);
@@ -23,15 +22,15 @@ export async function GET(req: NextRequest) {
     const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
     const objectifAnnuel = (settings?.objectifAnnuel ?? {}) as Record<string, number>;
 
-    const getDate = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt);
+    const getDate = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente) : null;
 
     const cur    = new Date().getFullYear();
     const withComm = all.filter(f => (f.commissionTotale || 0) > 0 || (f.commissionFixe || 0) > 0);
-    const annees   = [...new Set([cur, ...withComm.map(f => getDate(f).getFullYear())])].sort((a, b) => b - a);
+    const annees   = [...new Set([cur, ...withComm.filter(f => f.dateVente).map(f => getDate(f)!.getFullYear())])].sort((a, b) => b - a);
 
     const byAnnee = anneeParam === 'tout'
       ? withComm
-      : withComm.filter(c => String(getDate(c).getFullYear()) === anneeParam);
+      : withComm.filter(c => getDate(c)?.getFullYear() === Number(anneeParam));
 
     const filtered = byAnnee.filter(c => {
       if (filtre === 'payee')     return c.commissionPayee;
@@ -40,14 +39,16 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    // Historique du mois courant
-    const filteredHistorique = filtered.filter(c => {
-      const d = getDate(c);
-      return d.getFullYear() === calAnnee && d.getMonth() === calMois;
-    });
+    // Historique : mois spécifique ou toute l'année (calMois = -1)
+    const filteredHistorique = calMois >= 0
+      ? filtered.filter(c => {
+          const d = getDate(c);
+          return d !== null && d.getFullYear() === calAnnee && d.getMonth() === calMois;
+        })
+      : filtered;
 
-    // Stats (pour année = toutes les années ; pour année sélectionnée = mois courant)
-    const baseStats       = anneeParam === 'tout' ? filtered : filteredHistorique;
+    // Stats sur la période sélectionnée (mois spécifique ou année complète)
+    const baseStats       = calMois >= 0 ? filteredHistorique : filtered;
     const activesForStats = baseStats.filter(c => c.status !== 'installation_annulee');
     const annuleeForStats = baseStats.filter(c => c.status === 'installation_annulee');
     const actives = filtre === 'annulee' ? annuleeForStats : activesForStats;
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
     let chartData;
     if (anneeParam === 'tout') {
       chartData = annees.map((yr, i) => {
-        const yrF       = filtered.filter(c => String(getDate(c).getFullYear()) === String(yr));
+        const yrF       = filtered.filter(c => getDate(c)?.getFullYear() === yr);
         const activeYrF = filtre === 'annulee' ? yrF : yrF.filter(c => c.status !== 'installation_annulee');
         const barColor  = filtre === 'payee' ? '#3b6cf8' : filtre === 'non_payee' ? '#f79009' : filtre === 'annulee' ? '#be123c' : YEAR_COLORS[i % YEAR_COLORS.length];
         return {
@@ -88,12 +89,12 @@ export async function GET(req: NextRequest) {
       });
     } else {
       chartData = [...filteredHistorique]
-        .sort((a, b) => getDate(a).getTime() - getDate(b).getTime())
+        .sort((a, b) => getDate(a)!.getTime() - getDate(b)!.getTime())
         .map(c => {
           const d       = getDate(c);
           const annulee = c.status === 'installation_annulee';
           return {
-            name:    `${d.getDate()} ${MOIS_COURT[d.getMonth()]}`,
+            name:    `${d!.getDate()} ${MOIS_LABELS[d!.getMonth()]}`,
             total:   c.commissionTotale || 0,
             color:   annulee ? '#be123c' : c.commissionPayee ? '#3b6cf8' : '#f79009',
             annulee,
@@ -107,7 +108,8 @@ export async function GET(req: NextRequest) {
     // Calendar data (all days in the year that have commissions)
     const calendarData: Record<string, { total: number; payee: number; attente: number; annulee: number }> = {};
     filtered.forEach(c => {
-      const d   = getDate(c);
+      const d = getDate(c);
+      if (!d) return;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!calendarData[key]) calendarData[key] = { total: 0, payee: 0, attente: 0, annulee: 0 };
       if (c.status !== 'installation_annulee') calendarData[key].total += c.commissionTotale || 0;
@@ -116,9 +118,11 @@ export async function GET(req: NextRequest) {
       else if (c.status !== 'installation_annulee') calendarData[key].attente += c.commissionTotale || 0;
     });
 
-    const totalMois = Object.entries(calendarData)
-      .filter(([k]) => k.startsWith(`${calAnnee}-${String(calMois + 1).padStart(2, '0')}`))
-      .reduce((s, [, v]) => s + v.total, 0);
+    const totalMois = calMois >= 0
+      ? Object.entries(calendarData)
+          .filter(([k]) => k.startsWith(`${calAnnee}-${String(calMois + 1).padStart(2, '0')}`))
+          .reduce((s, [, v]) => s + v.total, 0)
+      : 0;
 
     return NextResponse.json({
       totalGagne, totalPaye, enAttente, totalAnnule,

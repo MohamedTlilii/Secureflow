@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { Settings } from '@/types';
-import { DEFAULT_SETTINGS } from '@/types';
+import { DEFAULT_SETTINGS, MOIS_LABELS } from '@/types';
 
 /* ─── cosmos ──────────────────────────────────────────────── */
 const PART_COLORS = ['#12b76a','#3b6cf8','#61DAFB','#a78bfa','#34d399'];
@@ -28,7 +28,6 @@ function useIsMobile() {
   return m;
 }
 
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
 /* ─── métriques ───────────────────────────────────────────── */
 interface Metrics {
@@ -110,7 +109,7 @@ export default function ComparaisonPage() {
   const hasCurrData = mCurr.total > 0;
 
   const bestMonthStr = (idx: number, val: number) =>
-    idx >= 0 && val > 0 ? `${MONTHS_FR[idx]} · ${val.toFixed(0)} TND` : '—';
+    idx >= 0 && val > 0 ? `${MOIS_LABELS[idx]} · ${val.toFixed(0)} TND` : '—';
 
   const scoreColor = globalScore===null?'#8b8b9e':globalScore>0?'#12b76a':globalScore<0?'#ef4444':'#8b8b9e';
   const scoreEmoji = globalScore===null?'📊':globalScore>20?'🚀':globalScore>0?'📈':globalScore===0?'➡️':'📉';

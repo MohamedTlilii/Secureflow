@@ -18,13 +18,13 @@ export async function GET(req: NextRequest) {
       select: { status: true, typeClient: true, produits: true, commissionPayee: true, dateVente: true, createdAt: true },
     });
 
-    const getYear  = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt).getFullYear();
-    const getMonth = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt).getMonth();
+    const getYear  = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente).getFullYear() : null;
+    const getMonth = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente).getMonth() : null;
 
     const cur    = new Date().getFullYear();
-    const annees = [...new Set([cur, ...all.map(getYear)])].sort((a, b) => b - a);
+    const annees = [...new Set([cur, ...all.filter(f => f.dateVente).map(f => getYear(f)!)])].sort((a, b) => b - a);
 
-    let fiches = anneeParam === 'tout' ? all : all.filter(f => String(getYear(f)) === anneeParam);
+    let fiches = anneeParam === 'tout' ? all : all.filter(f => getYear(f) === Number(anneeParam));
     if (anneeParam !== 'tout' && moisParam !== 'tout') fiches = fiches.filter(f => getMonth(f) === Number(moisParam));
     if (filtreComm === 'payee')     fiches = fiches.filter(f => f.commissionPayee);
     if (filtreComm === 'non_payee') fiches = fiches.filter(f => !f.commissionPayee && f.status !== 'installation_annulee');

@@ -33,6 +33,7 @@ const ALLOWED_FIELDS = new Set([
   'leadType','typeCommerce','qualificationSysteme','status','produits',
   'fournisseurs','notes','summary','dateVente','commissionFixe',
   'commissionExtra','commissionPayee','datePaiementCommission','motifAnnulation',
+  'urgencyScore','montantContrat','sexe','sourceText','sourceUrl','ancienneAdresse','adresse',
 ]);
 
 export async function POST(req: NextRequest) {

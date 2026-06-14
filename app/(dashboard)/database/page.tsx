@@ -7,7 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
-import type { SolutionExpress, DbStats, Settings, StatusFiche, EssenceMois } from '@/types';
+import type { SolutionExpress, DbStats, Settings, StatusFiche } from '@/types';
 import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS, MOIS_FULL } from '@/types';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 
@@ -45,7 +45,6 @@ export default function DatabasePage() {
   const [loading,  setLoading]  = useState(true);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [moisFiltre,  setMoisFiltre]  = useState<string>('tout');
-  const [essences,    setEssences]    = useState<EssenceMois[]>([]);
   const [selected, setSelected] = useState<SolutionExpress | null>(null);
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'', status:'',
@@ -101,50 +100,21 @@ export default function DatabasePage() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [fetchLeads, fetchDbStats, fetchSettings]);
 
-  /* ── Fetch essence when year filter or leads change ── */
-  useEffect(() => {
-    let cancelled = false;
-    const yrs = anneeFiltre === 'tout'
-      ? [...new Set(leads.map(f => String(new Date(f.dateVente ?? f.createdAt ?? Date.now()).getFullYear())))]
-      : [anneeFiltre];
-    if (!yrs.length) return;
-    (async () => {
-      try {
-        const results = await Promise.all(yrs.map(y => api.get<EssenceMois[]>(`/api/essence?annee=${y}`)));
-        if (!cancelled) setEssences(results.flatMap(r => r.data));
-      } catch { if (!cancelled) setEssences([]); }
-    })();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anneeFiltre, leads.length]);
-
-  /* ── Computed ── */
+/* ── Computed ── */
   const getYear = (f: SolutionExpress) =>
-    String(new Date(f.dateVente ?? f.createdAt ?? Date.now()).getFullYear());
+    f.dateVente ? String(new Date(f.dateVente).getFullYear()) : null;
 
   const annees = useMemo(() =>
-    [...new Set(leads.map(getYear))].sort().reverse(), [leads]);
+    [...new Set(leads.filter(f => f.dateVente).map(f => getYear(f)!))].sort().reverse(), [leads]);
 
   const fichesByAnnee = useMemo(() => {
     let r = anneeFiltre === 'tout' ? leads : leads.filter(f => getYear(f) === anneeFiltre);
     if (anneeFiltre !== 'tout' && moisFiltre !== 'tout')
-      r = r.filter(f => new Date(f.dateVente ?? f.createdAt ?? Date.now()).getMonth() === Number(moisFiltre));
+      r = r.filter(f => f.dateVente && new Date(f.dateVente).getMonth() === Number(moisFiltre));
     return r;
   }, [leads, anneeFiltre, moisFiltre]);
 
-  const essenceRecuFiltre = useMemo(() => {
-    let r = essences;
-    if (moisFiltre !== 'tout') r = r.filter(e => e.mois === Number(moisFiltre));
-    return r.filter(e => e.recu).reduce((sum, e) => sum + e.montantAttendu, 0);
-  }, [essences, moisFiltre]);
-
-  const essenceLabel = anneeFiltre === 'tout'
-    ? 'Essence reçu (total)'
-    : moisFiltre !== 'tout'
-      ? `Essence ${MOIS_FULL[Number(moisFiltre)].slice(0,4)}. ${anneeFiltre}`
-      : `Essence reçu ${anneeFiltre}`;
-
-  const villesDispos = useMemo(() =>
+const villesDispos = useMemo(() =>
     settings?.villes?.length ? [...settings.villes].sort() :
     [...new Set(leads.map(f => f.ville).filter(Boolean))].sort(),
   [settings, leads]);
@@ -294,9 +264,8 @@ export default function DatabasePage() {
               {/* Compteurs — suivent le filtre année/mois */}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap:8 }}>
                 {[
-                  { label:'Leads',          value:fichesByAnnee.length,  color:'#12b76a', Icon:Building2, suffix:''      },
-                  { label:'Utilisateurs',   value:dbStats.users,          color:'#3b6cf8', Icon:DbIcon,    suffix:''      },
-                  { label:essenceLabel,     value:essenceRecuFiltre,      color:'#f59e0b', Icon:HardDrive, suffix:' TND'  },
+                  { label:'Leads',        value:fichesByAnnee.length, color:'#12b76a', Icon:Building2, suffix:'' },
+                  { label:'Utilisateurs', value:dbStats.users,        color:'#3b6cf8', Icon:DbIcon,    suffix:'' },
                 ].map(({ label, value, color, Icon, suffix },i) => (
                   <div key={i} style={{ background:`${color}08`, borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:10, border:`1px solid ${color}18`, transition:'transform 0.15s' }}
                     onMouseEnter={e => (e.currentTarget.style.transform='translateY(-2px)')}

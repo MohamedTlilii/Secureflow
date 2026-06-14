@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-
-const VALID_STATUTS = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'] as const;
-const MOIS_COURT    = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+import { VALID_STATUTS, MOIS_LABELS } from '@/types';
 
 export async function GET(req: NextRequest) {
   const sp           = new URL(req.url).searchParams;
@@ -19,16 +17,16 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const getDate = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt);
+    const getDate = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente) : null;
 
     const cur    = new Date().getFullYear();
-    const annees = [...new Set([cur, ...all.map(f => getDate(f).getFullYear())])].sort((a, b) => b - a);
+    const annees = [...new Set([cur, ...all.filter(f => f.dateVente).map(f => getDate(f)!.getFullYear())])].sort((a, b) => b - a);
 
     let fiches = anneeParam === 'tout'
       ? all
-      : all.filter(f => getDate(f).getFullYear() === Number(anneeParam));
+      : all.filter(f => getDate(f)?.getFullYear() === Number(anneeParam));
     if (anneeParam !== 'tout' && moisParam !== 'tout') {
-      fiches = fiches.filter(f => getDate(f).getMonth() === Number(moisParam));
+      fiches = fiches.filter(f => getDate(f)?.getMonth() === Number(moisParam));
     }
 
     const counts = Object.fromEntries(
@@ -65,7 +63,7 @@ export async function GET(req: NextRequest) {
     const byProduit = Object.entries(prodMap).sort((a, b) => b[1] - a[1]);
 
     const recent = [...fiches]
-      .sort((a, b) => getDate(b).getTime() - getDate(a).getTime())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 6);
 
     const fn = (f: (typeof all)[0]) => {
@@ -79,15 +77,15 @@ export async function GET(req: NextRequest) {
     let evolutionData;
     if (anneeParam === 'tout') {
       evolutionData = annees.map(yr => {
-        const yf = all.filter(f => getDate(f).getFullYear() === yr);
+        const yf = all.filter(f => getDate(f)?.getFullYear() === yr);
         return { name: String(yr), value: yf.filter(fn).length, installes: chartFiltre === 'total' ? yf.filter(f => f.status === 'installe').length : 0 };
       });
     } else {
-      const yf = all.filter(f => getDate(f).getFullYear() === Number(anneeParam));
+      const yf = all.filter(f => getDate(f)?.getFullYear() === Number(anneeParam));
       const moisList = moisParam !== 'tout' ? [Number(moisParam)] : Array.from({ length: 12 }, (_, i) => i);
       evolutionData = moisList.map(i => {
-        const mf = yf.filter(f => getDate(f).getMonth() === i);
-        return { name: MOIS_COURT[i], value: mf.filter(fn).length, installes: chartFiltre === 'total' ? mf.filter(f => f.status === 'installe').length : 0 };
+        const mf = yf.filter(f => getDate(f)?.getMonth() === i);
+        return { name: MOIS_LABELS[i], value: mf.filter(fn).length, installes: chartFiltre === 'total' ? mf.filter(f => f.status === 'installe').length : 0 };
       });
     }
 

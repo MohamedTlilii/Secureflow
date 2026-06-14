@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, BarChart2, Wallet, Users, Kanban,
-  Fuel, Database, Settings, LogOut, X, Calendar, UserCircle2, TrendingUp,
+  Fuel, Database, Settings, LogOut, X, Calendar, UserCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -101,7 +101,7 @@ export default function Sidebar() {
         const all = Array.isArray(res.data) ? res.data : [];
         if (!all.length) { setStats({ totalPaye: 0, enAttente: 0, annee: new Date().getFullYear() }); return; }
         const yr     = new Date().getFullYear();
-        const fiches = all.filter(f => new Date(f.dateVente ?? f.createdAt).getFullYear() === yr);
+        const fiches = all.filter(f => f.dateVente && new Date(f.dateVente).getFullYear() === yr);
         const totalPaye = fiches.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
         const enAttente = fiches.filter(f => f.status !== 'installation_annulee' && !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
         setStats({ totalPaye, enAttente, annee: yr });
@@ -248,7 +248,6 @@ function LogoIcon({ size }: { size: number }) {
       <path d="M24 11 Q27 12 26 15 Q23 16 22 14" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
       {/* Coin */}
       <circle cx="28" cy="9" r="3.5" fill="none" stroke="white" strokeWidth="1.8"/>
-      <text x="26.3" y="10.8" fontSize="4.5" fill="white" fontWeight="900" fontFamily="Arial">$</text>
     </svg>
   );
 }

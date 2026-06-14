@@ -13,12 +13,12 @@ export async function GET(req: NextRequest) {
       select: { status: true, dateVente: true, createdAt: true },
     });
 
-    const getYear = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt).getFullYear();
+    const getYear = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente).getFullYear() : null;
 
     const cur    = new Date().getFullYear();
-    const annees = [...new Set([cur, ...all.map(getYear)])].sort((a, b) => b - a);
+    const annees = [...new Set([cur, ...all.filter(f => f.dateVente).map(f => getYear(f)!)])].sort((a, b) => b - a);
 
-    const fiches = anneeParam === 'tout' ? all : all.filter(f => String(getYear(f)) === anneeParam);
+    const fiches = anneeParam === 'tout' ? all : all.filter(f => getYear(f) === Number(anneeParam));
 
     return NextResponse.json({
       totalFiches:   fiches.length,

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+import { MOIS_LABELS } from '@/types';
 
 function calcMetrics(arr: { status: string; commissionTotale: number; commissionFixe: number; commissionPayee: boolean }[]) {
   const actives  = arr.filter(f => f.status !== 'installation_annulee');
@@ -36,12 +35,13 @@ export async function GET(req: NextRequest) {
       select: { status: true, commissionTotale: true, commissionFixe: true, commissionPayee: true, dateVente: true, createdAt: true },
     });
 
-    const getYear  = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt).getFullYear();
-    const getMonth = (f: (typeof all)[0]) => new Date(f.dateVente ?? f.createdAt).getMonth();
+    const getYear  = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente).getFullYear() : null;
+    const getMonth = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente).getMonth() : null;
 
-    const realYear = new Date().getFullYear();
-    const allYears = [...new Set([realYear, ...all.map(getYear)])].sort((a, b) => b - a);
-    const minYear  = all.length > 0 ? Math.min(...all.map(getYear)) : realYear;
+    const realYear   = new Date().getFullYear();
+    const withDate   = all.filter(f => f.dateVente);
+    const allYears   = [...new Set([realYear, ...withDate.map(f => getYear(f)!)])].sort((a, b) => b - a);
+    const minYear    = withDate.length > 0 ? Math.min(...withDate.map(f => getYear(f)!)) : realYear;
 
     const fichesCurr = all.filter(f => getYear(f) === currYear);
     const fichesPrev = all.filter(f => getYear(f) === prevYear);
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     // Best month per year
     let bestMonthCurr = 0, bestMonthCurrVal = 0;
     let bestMonthPrev = 0, bestMonthPrevVal = 0;
-    MONTHS_FR.forEach((_, idx) => {
+    MOIS_LABELS.forEach((_, idx) => {
       const vCurr = fichesCurr.filter(f => f.status !== 'installation_annulee' && getMonth(f) === idx)
         .reduce((s, f) => s + (f.commissionTotale || 0), 0);
       const vPrev = fichesPrev.filter(f => f.status !== 'installation_annulee' && getMonth(f) === idx)
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Monthly chart data
-    const monthlyChartData = MONTHS_FR.map((name, idx) => {
+    const monthlyChartData = MOIS_LABELS.map((name, idx) => {
       const curr = fichesCurr.filter(f => f.status !== 'installation_annulee' && getMonth(f) === idx)
         .reduce((s, f) => s + (f.commissionTotale || 0), 0);
       const prev = fichesPrev.filter(f => f.status !== 'installation_annulee' && getMonth(f) === idx)

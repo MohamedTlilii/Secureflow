@@ -285,21 +285,17 @@ export default function SolutionExpressPage() {
     return s;
   }, [fiches]);
 
-  const fichesByAnnee = useMemo(() =>
-    annee === 'tout' ? fiches : fiches.filter(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear()) === annee),
-  [fiches, annee]);
-
   const groups = useMemo(() => {
-    const inYear = annee === 'tout' ? paginatedSorted : paginatedSorted.filter(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear()) === annee);
+    const inYear = annee === 'tout' ? paginatedSorted : paginatedSorted.filter(f => f.dateVente && String(new Date(f.dateVente).getFullYear()) === annee);
     if (annee === 'tout') {
       const map: Record<string, SolutionExpress[]> = {};
-      inYear.forEach(f => { const y = String(new Date(f.dateVente ?? f.createdAt).getFullYear()); if (!map[y]) map[y] = []; map[y].push(f); });
+      inYear.forEach(f => { const y = f.dateVente ? String(new Date(f.dateVente).getFullYear()) : 'Sans date'; if (!map[y]) map[y] = []; map[y].push(f); });
       return Object.keys(map).sort((a, b) => Number(b) - Number(a)).map((y, i) => ({ label: y, color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[y] }));
     }
     const map: Record<number, SolutionExpress[]> = {};
-    inYear.forEach(f => { const m = new Date(f.dateVente ?? f.createdAt).getMonth(); if (!map[m]) map[m] = []; map[m].push(f); });
+    inYear.forEach(f => { if (!f.dateVente) return; const m = new Date(f.dateVente).getMonth(); if (!map[m]) map[m] = []; map[m].push(f); });
     return Object.keys(map).map(Number).sort((a, b) => b - a).map((m, i) => ({ label: MOIS_FULL[m], color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[m] ?? [] }));
-  }, [sorted, annee]);
+  }, [paginatedSorted, annee]);
 
   /* ── Stats depuis le backend ── */
   const { totalFiches, totalInstalle, totalAnnule, totalPipeline } = leadsStats;

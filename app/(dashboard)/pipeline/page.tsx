@@ -158,8 +158,8 @@ export default function PipelinePage() {
 
   /* ── filtrage (pour kanban seulement) ── */
   const filtered = useMemo(() => {
-    let r = annee === 'tout' ? items : items.filter(f => getYear(f) === annee);
-    if (annee !== 'tout' && mois !== 'tout') r = r.filter(f => getMonth(f) === Number(mois));
+    let r = annee === 'tout' ? items : items.filter(f => f.dateVente && new Date(f.dateVente).getFullYear().toString() === annee);
+    if (annee !== 'tout' && mois !== 'tout') r = r.filter(f => f.dateVente && new Date(f.dateVente).getMonth() === Number(mois));
     if (filtreComm === 'payee')     r = r.filter(f => f.commissionPayee);
     if (filtreComm === 'non_payee') r = r.filter(f => !f.commissionPayee && f.status !== 'installation_annulee');
     if (filtreComm === 'annulee')   r = r.filter(f => f.status === 'installation_annulee');
