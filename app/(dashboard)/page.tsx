@@ -10,22 +10,23 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
-import { DEFAULT_SETTINGS, VALID_STATUTS, MOIS_FULL, STATUS_COLOR as STATUS_CLR, STATUS_LABEL as STATUS_LBL } from '@/types';
+import { DEFAULT_SETTINGS, MOIS_FULL, STATUS_COLOR as STATUS_CLR, STATUS_LABEL as STATUS_LBL } from '@/types';
 
 const LEAD_PALETTE = ['#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e'];
 const PART_COLORS  = ['#12b76a','#3b6cf8','#61DAFB','#a78bfa','#34d399'];
 const AV_COLORS    = ['#3b6cf8','#12b76a','#f79009','#be123c','#a764f8'];
 
-const getDateObj = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt);
-
-const topN = (arr: SolutionExpress[], key: keyof SolutionExpress): [string, number][] => {
-  const m: Record<string, number> = {};
-  arr.forEach(f => { const v = f[key] as string; if (v) m[v] = (m[v] || 0) + 1; });
-  return Object.entries(m).sort((a, b) => b[1] - a[1]);
-};
+interface DashStats {
+  totalSE: number; b2b: number; b2c: number; won: number; convRate: number;
+  counts: Record<string, number>; annees: number[];
+  byCity: [string,number][]; byLeadType: [string,number][];
+  byCommerce: [string,number][]; byCommerceB2C: [string,number][];
+  byProduit: [string,number][]; recent: SolutionExpress[];
+  evolutionData: { name:string; value:number; installes:number }[];
+}
 
 interface Star     { x:number; y:number; s:number; o:number; d:number }
 interface Particle { x:number; y:number; s:number; d:number; delay:number; color:string }
@@ -82,7 +83,7 @@ function ScoreRing({ value, max, color, label }: { value:number; max:number; col
 export default function DashboardPage() {
   const isMobile = useIsMobile();
 
-  const [seFiches,     setSeFiches]     = useState<SolutionExpress[]>([]);
+  const [stats,        setStats]        = useState<DashStats | null>(null);
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [anneeGlobal,  setAnneeGlobal]  = useState<string>(String(new Date().getFullYear()));
   const [dashMois,     setDashMois]     = useState<string>('tout');
@@ -106,27 +107,31 @@ export default function DashboardPage() {
     setMounted(true);
   }, []);
 
-  /* ── fetch ── */
-  const fetchAll = useCallback(async () => {
-    try {
-      const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/leads'),
-        api.get<Settings>('/api/settings'),
-      ]);
-      setSeFiches(Array.isArray(f.data)?f.data:[]);
-      setSettings(s.data??DEFAULT_SETTINGS);
-    } catch { toast.error('Impossible de charger les données'); }
-    finally { setLoading(false); }
+  /* ── fetch settings (pour labels) ── */
+  useEffect(() => {
+    api.get<Settings>('/api/settings').then(r => { if (r.data) setSettings(r.data); }).catch(() => {});
   }, []);
 
+  /* ── fetch stats depuis le backend ── */
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get<DashStats>('/api/dashboard/stats', {
+        params: { annee: anneeGlobal, mois: dashMois, chartFiltre },
+      });
+      setStats(data);
+    } catch (e) { toast.error(apiErrMsg(e, 'Impossible de charger les données')); }
+    finally { setLoading(false); }
+  }, [anneeGlobal, dashMois, chartFiltre]);
+
   useEffect(() => {
-    fetchAll();
-    const onVis = () => { if (!document.hidden) fetchAll(); };
+    fetchStats();
+    const onVis = () => { if (!document.hidden) fetchStats(); };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [fetchAll]);
+  }, [fetchStats]);
 
-  /* ── lookups ── */
+  /* ── lookups labels (depuis settings) ── */
   const leadTypeLbl = useMemo(() =>
     Object.fromEntries(settings.typeLead.map(t=>[t.key,t.label])),
     [settings.typeLead]);
@@ -135,87 +140,25 @@ export default function DashboardPage() {
     settings.typeLead.forEach((t,i) => { m[t.key] = LEAD_PALETTE[i%LEAD_PALETTE.length]; });
     return m;
   }, [settings.typeLead]);
-
-  /* ── filter ── */
-  const fiches = useMemo(() => {
-    let r = anneeGlobal === 'tout' ? seFiches : seFiches.filter(f => String(getDateObj(f).getFullYear()) === anneeGlobal);
-    if (anneeGlobal !== 'tout' && dashMois !== 'tout') r = r.filter(f => getDateObj(f).getMonth() === Number(dashMois));
-    return r;
-  }, [seFiches, anneeGlobal, dashMois]);
-
-  const annees = useMemo(() => {
-    const cur = new Date().getFullYear();
-    return [...new Set([cur, ...seFiches.map(f => getDateObj(f).getFullYear())])].sort((a, b) => b - a);
-  }, [seFiches]);
-
-  /* ── statuts ── */
-  const counts = useMemo(() =>
-    Object.fromEntries(VALID_STATUTS.map(s => [s, fiches.filter(f => f.status === s).length])) as Record<StatusFiche, number>,
-    [fiches]);
-  const totalSE  = fiches.length;
-  const b2b      = fiches.filter(f=>f.typeClient==='b2b').length;
-  const b2c      = fiches.filter(f=>f.typeClient==='b2c').length;
-  const won      = counts.installe;
-  const convRate = totalSE>0?Math.round((won/totalSE)*100):0;
-
-  /* ── top lists ── */
-  const byCity       = useMemo(() => topN(fiches, 'ville'),    [fiches]);
-  const byLeadType   = useMemo(() => topN(fiches, 'leadType'), [fiches]);
-  const commerceLbl  = useMemo(() =>
+  const commerceLbl = useMemo(() =>
     Object.fromEntries(settings.typeCommerce.map(t=>[t.key,t.label])),
     [settings.typeCommerce]);
-  const byCommerce   = useMemo(()=>{
-    const m: Record<string,number>={};
-    fiches.filter(f=>f.typeClient==='b2b'&&f.typeCommerce&&f.typeCommerce!=='autre').forEach(f=>{m[f.typeCommerce]=(m[f.typeCommerce]||0)+1;});
-    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
-  },[fiches]);
-  const byCommerceB2C= useMemo(()=>{
-    const m: Record<string,number>={};
-    fiches.filter(f=>f.typeClient==='b2c'&&f.typeCommerce&&f.typeCommerce!=='autre').forEach(f=>{m[f.typeCommerce]=(m[f.typeCommerce]||0)+1;});
-    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
-  },[fiches]);
-  /* find matching service by id OR label */
-  const findSvc = useCallback((p: string) =>
-    settings.services.find(x=>x.id===p) ?? settings.services.find(x=>x.label===p),
-    [settings.services]);
 
-  const byProduit = useMemo(()=>{
-    const m: Record<string,number>={};
-    fiches.forEach(f=>f.produits.forEach(p=>{
-      const svc=findSvc(p);
-      if(!svc) return;
-      m[svc.id]=(m[svc.id]||0)+1;
-    }));
-    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
-  },[fiches, findSvc]);
-
-
-  /* ── récents ── */
-  const recent = useMemo(()=>[...fiches].sort((a,b)=>new Date(b.dateVente??b.createdAt).getTime()-new Date(a.dateVente??a.createdAt).getTime()).slice(0,6),[fiches]);
-
-  /* ── évolution (par année ou par mois) ── */
-  const evolutionData = useMemo(()=>{
-    const fn=(f:SolutionExpress)=>
-      chartFiltre==='installe' ? f.status==='installe' :
-      chartFiltre==='encours'  ? f.status==='installation_en_cours' :
-      chartFiltre==='annule'   ? f.status==='installation_annulee' :
-      chartFiltre==='paye'     ? !!f.commissionPayee&&f.status!=='installation_annulee' :
-      true;
-    if(anneeGlobal==='tout'){
-      return annees.map(yr=>{
-        const yf=seFiches.filter(f=>getDateObj(f).getFullYear()===yr);
-        return {name:String(yr),value:yf.filter(fn).length,installes:chartFiltre==='total'?yf.filter(f=>f.status==='installe').length:0};
-      });
-    }
-    const yf=seFiches.filter(f=>String(getDateObj(f).getFullYear())===anneeGlobal);
-    const moisList = dashMois!=='tout'
-      ? [Number(dashMois)]
-      : MOIS_FULL.map((_,i)=>i);
-    return moisList.map(i=>{
-      const mf=yf.filter(f=>getDateObj(f).getMonth()===i);
-      return {name:MOIS_FULL[i].slice(0,3),value:mf.filter(fn).length,installes:chartFiltre==='total'?mf.filter(f=>f.status==='installe').length:0};
-    });
-  },[seFiches,anneeGlobal,annees,dashMois,chartFiltre]);
+  /* ── raccourcis depuis stats ── */
+  const annees       = stats?.annees       ?? [];
+  const totalSE      = stats?.totalSE      ?? 0;
+  const b2b          = stats?.b2b          ?? 0;
+  const b2c          = stats?.b2c          ?? 0;
+  const won          = stats?.won          ?? 0;
+  const convRate     = stats?.convRate     ?? 0;
+  const counts       = stats?.counts       ?? {} as Record<StatusFiche, number>;
+  const byCity       = stats?.byCity       ?? [];
+  const byLeadType   = stats?.byLeadType   ?? [];
+  const byCommerce   = stats?.byCommerce   ?? [];
+  const byCommerceB2C= stats?.byCommerceB2C?? [];
+  const byProduit    = stats?.byProduit    ?? [];
+  const recent       = stats?.recent       ?? [];
+  const evolutionData= stats?.evolutionData?? [];
 
 
   /* ────────────────── RENDER ────────────────── */

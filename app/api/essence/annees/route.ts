@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
     const rows = await prisma.essence.findMany({
       select: { annee: true },
       distinct: ['annee'],

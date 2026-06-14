@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BarChart2,
   Calendar, Wallet, CheckCircle, Target, XCircle,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
-import type { SolutionExpress, Settings } from '@/types';
+import type { Settings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 
 /* ─── cosmos ──────────────────────────────────────────────── */
@@ -30,29 +30,10 @@ function useIsMobile() {
 
 const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
-const getYear  = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getFullYear();
-const getMonth = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getMonth();
-
 /* ─── métriques ───────────────────────────────────────────── */
 interface Metrics {
   gained:number; paid:number; pending:number; installe:number; annulee:number;
   commMax:number; commMin:number; payRate:number; total:number;
-}
-function calcMetrics(arr: SolutionExpress[]): Metrics {
-  const actives  = arr.filter(f => f.status !== 'installation_annulee');
-  const withComm = actives.filter(f => (f.commissionTotale||0)>0||(f.commissionFixe||0)>0);
-  const gained   = actives.reduce((s,f)=>s+(f.commissionTotale||0), 0);
-  const paid     = actives.filter(f=>f.commissionPayee).reduce((s,f)=>s+(f.commissionTotale||0), 0);
-  const installe = actives.filter(f=>f.status==='installe').length;
-  const annulee  = arr.filter(f=>f.status==='installation_annulee').length;
-  const vals     = withComm.map(f=>f.commissionTotale||0).filter(v=>v>0);
-  return {
-    gained, paid, pending: Math.max(0, gained-paid), installe, annulee,
-    commMax: vals.length?Math.max(...vals):0,
-    commMin: vals.length?Math.min(...vals):0,
-    payRate: gained>0?Math.round((paid/gained)*100):0,
-    total: arr.length,
-  };
 }
 
 
@@ -63,10 +44,18 @@ function calcMetrics(arr: SolutionExpress[]): Metrics {
 export default function ComparaisonPage() {
   const isMobile = useIsMobile();
 
-  const [fiches,          setFiches]          = useState<SolutionExpress[]>([]);
+  interface CompStats {
+    metricsA: Metrics; metricsB: Metrics;
+    currYear: number; prevYear: number;
+    bestMonthCurr: number; bestMonthCurrVal: number;
+    bestMonthPrev: number; bestMonthPrevVal: number;
+    globalScore: number | null; monthlyChartData: {name:string;curr:number;prev:number}[]; allYears: number[]; minYear: number;
+  }
+
   const [settings,        setSettings]        = useState<Settings>(DEFAULT_SETTINGS);
   const [loading,         setLoading]         = useState(true);
   const [selectedYear,    setSelectedYear]    = useState(new Date().getFullYear());
+  const [compStats,       setCompStats]       = useState<CompStats | null>(null);
   const [mounted,         setMounted]         = useState(false);
   const starsRef = useRef<Star[]>([]);
   const partsRef = useRef<Particle[]>([]);
@@ -85,58 +74,44 @@ export default function ComparaisonPage() {
     setMounted(true);
   }, []);
 
-  /* ── fetch ── */
-  const fetchAll = useCallback(async () => {
-    try {
-      const [{ data: leads }, { data: cfg }] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/leads'),
-        api.get<Settings>('/api/settings'),
-      ]);
-      setFiches(Array.isArray(leads)?leads:[]);
-      if (cfg) setSettings(cfg);
-    } catch { toast.error('Erreur chargement'); }
-    finally { setLoading(false); }
+  /* ── fetch settings ── */
+  useEffect(() => {
+    api.get<Settings>('/api/settings').then(r => { if (r.data) setSettings(r.data); }).catch(() => {});
   }, []);
 
+  /* ── fetch stats ── */
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get<CompStats>('/api/comparaison/stats', {
+        params: { annee: selectedYear },
+      });
+      setCompStats(data);
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
+    finally { setLoading(false); }
+  }, [selectedYear]);
+
   useEffect(() => {
-    fetchAll();
-    const onVis = () => { if (!document.hidden) fetchAll(); };
+    fetchStats();
+    const onVis = () => { if (!document.hidden) fetchStats(); };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [fetchAll]);
+  }, [fetchStats]);
 
   const realYear = new Date().getFullYear();
   const currYear = selectedYear;
   const prevYear = selectedYear - 1;
 
-  const minYear = fiches.length > 0
-    ? Math.min(...fiches.map(f=>getYear(f)))
-    : realYear;
-
-  const fichesCurr = useMemo(()=>fiches.filter(f=>getYear(f)===currYear),[fiches,currYear]);
-  const fichesPrev = useMemo(()=>fiches.filter(f=>getYear(f)===prevYear),[fiches,prevYear]);
-
-  const mCurr = useMemo(()=>calcMetrics(fichesCurr),[fichesCurr]);
-  const mPrev = useMemo(()=>calcMetrics(fichesPrev),[fichesPrev]);
-
+  const mCurr = compStats?.metricsA ?? { gained:0, paid:0, pending:0, installe:0, annulee:0, commMax:0, commMin:0, payRate:0, total:0 };
+  const mPrev = compStats?.metricsB ?? { gained:0, paid:0, pending:0, installe:0, annulee:0, commMax:0, commMin:0, payRate:0, total:0 };
+  const minYear    = compStats?.minYear ?? realYear;
+  const globalScore = compStats?.globalScore ?? null;
   const hasPrevData = mPrev.total > 0;
   const hasCurrData = mCurr.total > 0;
 
-  /* ── meilleur mois ── */
-  const bestMonth = (arr: SolutionExpress[]) => {
-    let best = { idx:-1, val:0 };
-    MONTHS_FR.forEach((_,idx)=>{
-      const val = arr.filter(f=>f.status!=='installation_annulee'&&getMonth(f)===idx)
-                     .reduce((s,f)=>s+(f.commissionTotale||0), 0);
-      if(val>best.val) best={idx,val};
-    });
-    return best.idx>=0&&best.val>0?`${MONTHS_FR[best.idx]} · ${best.val.toFixed(0)} TND`:'—';
-  };
+  const bestMonthStr = (idx: number, val: number) =>
+    idx >= 0 && val > 0 ? `${MONTHS_FR[idx]} · ${val.toFixed(0)} TND` : '—';
 
-  /* ── score global ── */
-  const globalScore: number|null = mPrev.gained===0&&mCurr.gained===0 ? null
-    : mPrev.gained===0 ? 100
-    : Math.round(((mCurr.gained-mPrev.gained)/Math.abs(mPrev.gained))*100);
   const scoreColor = globalScore===null?'#8b8b9e':globalScore>0?'#12b76a':globalScore<0?'#ef4444':'#8b8b9e';
   const scoreEmoji = globalScore===null?'📊':globalScore>20?'🚀':globalScore>0?'📈':globalScore===0?'➡️':'📉';
 
@@ -287,9 +262,9 @@ export default function ComparaisonPage() {
                 ════════════════════════════════════════ */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:isMobile?8:16,marginBottom:20}}>
               {([
-                { year:prevYear, m:mPrev, color:'#3b6cf8', arr:fichesPrev },
-                { year:currYear, m:mCurr, color:'#12b76a', arr:fichesCurr },
-              ] as const).map(({year,m,color,arr})=>{
+                { year:prevYear, m:mPrev, color:'#3b6cf8', bestMth:bestMonthStr(compStats?.bestMonthPrev??-1, compStats?.bestMonthPrevVal??0) },
+                { year:currYear, m:mCurr, color:'#12b76a', bestMth:bestMonthStr(compStats?.bestMonthCurr??-1, compStats?.bestMonthCurrVal??0) },
+              ] as const).map(({year,m,color,bestMth})=>{
                 const row = (label:string, value:string|number, c:string) => (
                   <div style={{display:'flex',flexDirection:'column',padding:isMobile?'5px 7px':'9px 12px',borderRadius:8,background:`${c}08`,border:`1px solid ${c}25`,gap:1}}>
                     <span style={{fontSize:isMobile?9:11,color:'#fff',fontWeight:600,lineHeight:1.2}}>{label}</span>
@@ -321,7 +296,7 @@ export default function ComparaisonPage() {
                         {sep('Stats')}
                         {row('Commission Max',         m.commMax>0?`${m.commMax.toFixed(0)} TND`:'0 TND',                  '#f79009')}
                         {row('Commission Min',         m.commMin>0?`${m.commMin.toFixed(0)} TND`:'0 TND',                  '#fb7185')}
-                        {row('Meilleur mois',          bestMonth(arr),                                                      '#facc15')}
+                        {row('Meilleur mois',          bestMth,                                                             '#facc15')}
                       </div>
                     </div>
                   </div>

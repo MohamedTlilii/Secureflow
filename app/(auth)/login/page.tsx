@@ -7,6 +7,20 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 
+// ─── Logo (même que sidebar) ─────────────────────────────────────────────────
+function LogoIcon({ size }: { size: number }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size}
+      style={{ filter:'drop-shadow(0 0 8px rgba(18,183,106,0.95)) drop-shadow(0 0 18px rgba(6,182,212,0.6))' }}>
+      <circle cx="10" cy="6" r="4" fill="white"/>
+      <path d="M6 12 Q10 10 14 12 L13 22 H7 Z" fill="white"/>
+      <path d="M14 14 Q20 11 25 13" stroke="white" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+      <path d="M24 11 Q27 12 26 15 Q23 16 22 14" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="28" cy="9" r="3.5" fill="none" stroke="white" strokeWidth="1.8"/>
+    </svg>
+  );
+}
+
 // ─── Données statiques déterministes (pas de Math.random → pas de problème hydratation) ───
 
 const STARS = Array.from({ length: 90 }, (_, i) => ({
@@ -47,10 +61,6 @@ const PARTICLES = Array.from({ length: 26 }, (_, i) => ({
     : 'rgba(245,158,11,0.28)',
 }));
 
-const WORDS = ['Commissions', 'Carburant', 'Pipeline', 'Précis', 'Rentable', 'Automatisé', 'Sécurisé', 'Fiable'];
-
-const DATA_POINTS: [number, number][] = [[22, 76], [36, 61], [50, 49], [64, 37]];
-
 // ─── Composant accent coins ───────────────────────────────────────────────────
 
 function CornerAccents({ color }: { color: string }) {
@@ -78,7 +88,6 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false);
   const [focused,  setFocused]  = useState('');
   const [mounted,  setMounted]  = useState(false);
-  const [wordIdx,  setWordIdx]  = useState(0);
   const [btnHover, setBtnHover] = useState(false);
   const [tilt,     setTilt]     = useState({ x: 0, y: 0 });
   const [aurora,   setAurora]   = useState({ x: 50, y: 50 });
@@ -89,12 +98,6 @@ export default function LoginPage() {
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
-  }, []);
-
-  // Rotation des mots
-  useEffect(() => {
-    const t = setInterval(() => setWordIdx((i) => (i + 1) % WORDS.length), 1600);
-    return () => clearInterval(t);
   }, []);
 
   // Aurora souris (global)
@@ -134,7 +137,7 @@ export default function LoginPage() {
     try {
       await login(email.trim(), password);
       toast.success('Bienvenue !');
-      setTimeout(() => { window.location.replace('/'); }, 300);
+      setTimeout(() => { router.push('/'); }, 300);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         toast.error(err.response?.data?.message || 'Erreur de connexion');
@@ -192,14 +195,17 @@ export default function LoginPage() {
       `}</style>
 
       {/* Signature */}
-      <div style={{ position:'fixed', bottom:28, right:36, zIndex:2, pointerEvents:'none', display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-        <span style={{ fontFamily:"'Dancing Script', cursive", fontSize:28, fontWeight:700, color:'rgba(18,183,106,0.45)', lineHeight:1, letterSpacing:1, textShadow:'0 0 18px rgba(18,183,106,0.25)' }}>
-          Mohamed Tlili
-        </span>
-        <svg width="130" height="10" viewBox="0 0 130 10">
-          <path d="M4,7 C30,2 70,9 126,5" fill="none" stroke="rgba(18,183,106,0.35)" strokeWidth="1.4" strokeLinecap="round"/>
-          <circle cx="126" cy="5" r="2" fill="rgba(18,183,106,0.4)"/>
-        </svg>
+      <div style={{ position:'fixed', bottom:28, right:36, zIndex:2, pointerEvents:'none', display:'flex', alignItems:'center', gap:12 }}>
+        <LogoIcon size={34} />
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+          <span style={{ fontFamily:"'Dancing Script', cursive", fontSize:28, fontWeight:700, color:'rgba(18,183,106,0.45)', lineHeight:1, letterSpacing:1, textShadow:'0 0 18px rgba(18,183,106,0.25)' }}>
+            Mohamed Tlili
+          </span>
+          <svg width="130" height="10" viewBox="0 0 130 10">
+            <path d="M4,7 C30,2 70,9 126,5" fill="none" stroke="rgba(18,183,106,0.35)" strokeWidth="1.4" strokeLinecap="round"/>
+            <circle cx="126" cy="5" r="2" fill="rgba(18,183,106,0.4)"/>
+          </svg>
+        </div>
       </div>
 
       {/* Coins HUD */}
@@ -247,140 +253,36 @@ export default function LoginPage() {
         transition: 'opacity 1s cubic-bezier(0.23,1,0.32,1),transform 1s cubic-bezier(0.23,1,0.32,1)',
       }}>
 
-        {/* ══ LOGO ═════════════════════════════════════════════════════════════ */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ position: 'relative', width: 92, margin: '0 auto' }}>
-
-            {/* Anneaux pulsants */}
-            {[
-              { i: -24, d: '0s',   c: 'rgba(18,183,106,0.08)' },
-              { i: -13, d: '0.9s', c: 'rgba(18,183,106,0.15)' },
-              { i: -4,  d: '1.8s', c: 'rgba(18,183,106,0.26)' },
-            ].map((ring, ri) => (
-              <div key={ri} style={{ position: 'absolute', top: ring.i, bottom: ring.i, left: ring.i, right: ring.i, borderRadius: '22%', border: `1px solid ${ring.c}`, animation: `ringPulse 4s ${ring.d} ease-in-out infinite`, pointerEvents: 'none' }} />
-            ))}
-
-            {/* Boîte logo */}
-            <div style={{ width: 92, height: 92, borderRadius: 24, background: 'linear-gradient(145deg,#041612 0%,#073322 55%,#041612 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'logoPulse 3.5s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-
-              {/* SVG : Hexagone + Courbe commission + Goutte carburant */}
-              <svg viewBox="0 0 100 100" width="62" height="62" style={{ overflow: 'visible' }}>
-                <defs>
-                  <linearGradient id="lg1" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%"   stopColor="#12b76a" />
-                    <stop offset="100%" stopColor="#61DAFB" />
-                  </linearGradient>
-                  <linearGradient id="lg2" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%"   stopColor="#61DAFB" stopOpacity="0.95" />
-                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.75" />
-                  </linearGradient>
-                  <linearGradient id="lg3" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%"   stopColor="#12b76a" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#12b76a" stopOpacity="0.02" />
-                  </linearGradient>
-                  <filter id="gw" x="-30%" y="-30%" width="160%" height="160%">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="b" />
-                    <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-
-                {/* Hexagone externe */}
-                <polygon points="94,50 72,88 28,88 6,50 28,12 72,12"
-                  fill="none" stroke="url(#lg1)" strokeWidth="1.6"
-                  filter="url(#gw)"
-                  style={{ animation: 'hexPulse 4s ease-in-out infinite' }} />
-
-                {/* Hexagone interne (décor) */}
-                <polygon points="80,50 65,76 35,76 20,50 35,24 65,24"
-                  fill="none" stroke="rgba(18,183,106,0.13)" strokeWidth="0.8" />
-
-                {/* Zone sous la courbe */}
-                <polygon points="22,80 22,76 36,61 50,49 64,37 77,24 77,80"
-                  fill="url(#lg3)" />
-
-                {/* Courbe commission animée */}
-                <polyline points="22,76 36,61 50,49 64,37 77,24"
-                  fill="none" stroke="url(#lg1)" strokeWidth="2.2"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  filter="url(#gw)" strokeDasharray="74"
-                  style={{ animation: 'drawChart 5s 0.3s ease-in-out infinite' }} />
-
-                {/* Points de données */}
-                {DATA_POINTS.map(([x, y], idx) => (
-                  <circle key={idx} cx={x} cy={y} r="3" fill="#12b76a"
-                    filter="url(#gw)"
-                    style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `dotPulse 3s ${idx * 0.45}s ease-in-out infinite` }} />
-                ))}
-
-                {/* Goutte carburant */}
-                <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z"
-                  fill="url(#lg2)" filter="url(#gw)"
-                  style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: 'fuelBounce 2.8s ease-in-out infinite' }} />
-
-                {/* Reflet goutte */}
-                <path d="M74,17.5 C74,17.5 72.5,22 72.5,25"
-                  fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-
-            {/* Reflet sol */}
-            <div style={{ position: 'absolute', bottom: -14, left: '50%', transform: 'translateX(-50%)', width: 80, height: 14, background: 'radial-gradient(ellipse,rgba(18,183,106,0.38) 0%,transparent 70%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
-          </div>
-
-          {/* Titre */}
-          <div style={{ marginTop: 20, marginBottom: 5 }}>
-            <div style={{ fontSize: 27, fontWeight: 900, letterSpacing: '-0.5px', background: 'linear-gradient(135deg,#e8fff5 0%,#12b76a 25%,#61DAFB 65%,#a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              SecureFlow
-            </div>
-          </div>
-
-          {/* Mot animé */}
-          <div style={{ height: 24, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <span style={{ width: 28, height: 1.2, background: 'linear-gradient(90deg,transparent,rgba(18,183,106,0.38))', display: 'inline-block' }} />
-            <span key={wordIdx} style={{ display: 'inline-block', fontSize: 10.5, fontWeight: 800, letterSpacing: 3.5, textTransform: 'uppercase', background: 'linear-gradient(135deg,#12b76a,#61DAFB,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'wordFlash 1.6s cubic-bezier(0.23,1,0.32,1) forwards', whiteSpace: 'nowrap' }}>
-              {WORDS[wordIdx]}
-            </span>
-            <span style={{ width: 28, height: 1.2, background: 'linear-gradient(90deg,rgba(18,183,106,0.38),transparent)', display: 'inline-block' }} />
-          </div>
-        </div>
-
         {/* ══ CARD ═════════════════════════════════════════════════════════════ */}
-        <div style={{ padding: '1.5px', borderRadius: 27, background: 'linear-gradient(135deg,rgba(18,183,106,0.38) 0%,rgba(97,218,251,0.22) 40%,rgba(124,58,237,0.28) 80%,rgba(18,183,106,0.2) 100%)' }}>
+        <div style={{ padding: '1.5px', borderRadius: 22, background: 'linear-gradient(135deg,rgba(18,183,106,0.3) 0%,rgba(97,218,251,0.18) 50%,rgba(124,58,237,0.22) 100%)' }}>
           <div
             ref={cardRef}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
-            style={{ background: 'rgba(3,8,18,0.97)', borderRadius: 26, backdropFilter: 'blur(55px)', overflow: 'hidden', position: 'relative', transform: tiltTr, transition: tiltTrs, transformStyle: 'preserve-3d' }}
+            style={{ background: 'rgba(3,8,20,0.96)', borderRadius: 21, backdropFilter: 'blur(55px)', overflow: 'hidden', position: 'relative', transform: tiltTr, transition: tiltTrs, transformStyle: 'preserve-3d' }}
           >
             {/* Lumière holo */}
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(ellipse 55% 45% at ${50 + tilt.x * 42}% ${50 + tilt.y * 42}%,rgba(18,183,106,0.042) 0%,transparent 70%)`, transition: 'background 0.07s ease' }} />
-
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(ellipse 55% 45% at ${50 + tilt.x * 42}% ${50 + tilt.y * 42}%,rgba(18,183,106,0.038) 0%,transparent 70%)`, transition: 'background 0.07s ease' }} />
             {/* Top accent */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(18,183,106,0.72) 25%,rgba(97,218,251,0.5) 75%,transparent)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(18,183,106,0.7) 30%,rgba(97,218,251,0.45) 70%,transparent)', pointerEvents: 'none' }} />
 
-            {/* Header */}
-            <div style={{ padding: '22px 28px 18px', borderBottom: '1px solid rgba(255,255,255,0.038)', background: 'linear-gradient(135deg,rgba(18,183,106,0.045) 0%,rgba(97,218,251,0.025) 60%,transparent 100%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: 18.5, fontWeight: 900, color: '#f0f4ff', letterSpacing: '-0.3px' }}>Connexion</div>
-                  <div style={{ fontSize: 11, color: 'rgba(18,183,106,0.55)', marginTop: 3, fontWeight: 500, letterSpacing: 0.4 }}>Leads · Commissions · Carburant · Pipeline</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 20, background: 'rgba(18,183,106,0.07)', border: '1px solid rgba(18,183,106,0.2)' }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#12b76a', boxShadow: '0 0 8px #12b76a', animation: 'blink 1.9s ease-in-out infinite' }} />
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: '#12b76a', letterSpacing: 1, textTransform: 'uppercase' }}>Online</span>
+            <div style={{ padding: '36px 32px 32px', position: 'relative' }}>
+              {/* Titre card */}
+              <div style={{ marginBottom: 28, animation: 'fadeUp 0.5s 0.04s ease both' }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#f0f6ff', letterSpacing: '-0.4px', marginBottom: 6 }}>Connexion</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#12b76a', boxShadow: '0 0 7px #12b76a', animation: 'blink 1.9s ease-in-out infinite', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: 'rgba(18,183,106,0.55)', letterSpacing: 0.3 }}>Accès sécurisé</span>
                 </div>
               </div>
-            </div>
 
-            {/* Formulaire */}
-            <div style={{ padding: '26px 28px 30px', position: 'relative' }}>
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 22, position: 'relative', zIndex: 1 }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20, position: 'relative', zIndex: 1 }}>
 
                 {/* Email */}
-                <div style={{ animation: 'fadeUp 0.52s 0.08s ease both' }}>
-                  <label style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(97,218,251,0.4)', textTransform: 'uppercase', letterSpacing: 2.2, display: 'block', marginBottom: 9 }}>Adresse email</label>
+                <div style={{ animation: 'fadeUp 0.5s 0.1s ease both' }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'rgba(97,218,251,0.5)', textTransform: 'uppercase', letterSpacing: 2, display: 'block', marginBottom: 8 }}>Email</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#61DAFB' : 'rgba(255,255,255,0.14)', transition: 'all 0.28s', filter: focused === 'email' ? 'drop-shadow(0 0 5px rgba(97,218,251,0.9))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
+                    <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#61DAFB' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: focused === 'email' ? 'drop-shadow(0 0 5px rgba(97,218,251,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
                     <input
                       style={iStyle('email', '#61DAFB')}
                       type="email"
@@ -397,10 +299,10 @@ export default function LoginPage() {
                 </div>
 
                 {/* Mot de passe */}
-                <div style={{ animation: 'fadeUp 0.52s 0.17s ease both' }}>
-                  <label style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(18,183,106,0.4)', textTransform: 'uppercase', letterSpacing: 2.2, display: 'block', marginBottom: 9 }}>Mot de passe</label>
+                <div style={{ animation: 'fadeUp 0.5s 0.18s ease both' }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'rgba(18,183,106,0.5)', textTransform: 'uppercase', letterSpacing: 2, display: 'block', marginBottom: 8 }}>Mot de passe</label>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'password' ? '#12b76a' : 'rgba(255,255,255,0.14)', transition: 'all 0.28s', filter: focused === 'password' ? 'drop-shadow(0 0 5px rgba(18,183,106,0.9))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
+                    <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'password' ? '#12b76a' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: focused === 'password' ? 'drop-shadow(0 0 5px rgba(18,183,106,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
                     <input
                       style={{ ...iStyle('password', '#12b76a'), paddingRight: 46 }}
                       type={showPw ? 'text' : 'password'}
@@ -417,9 +319,9 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPw((p) => !p)}
-                      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.16)', padding: 4, borderRadius: 6, transition: 'all 0.22s', display: 'flex', zIndex: 2 }}
+                      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.18)', padding: 4, borderRadius: 6, transition: 'all 0.22s', display: 'flex', zIndex: 2 }}
                       onMouseEnter={(e) => { e.currentTarget.style.color = '#12b76a'; e.currentTarget.style.filter = 'drop-shadow(0 0 5px rgba(18,183,106,0.7))'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.16)'; e.currentTarget.style.filter = 'none'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.18)'; e.currentTarget.style.filter = 'none'; }}
                     >
                       {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -427,42 +329,39 @@ export default function LoginPage() {
                 </div>
 
                 {/* Bouton */}
-                <div style={{ animation: 'fadeUp 0.52s 0.26s ease both', marginTop: 2 }}>
+                <div style={{ animation: 'fadeUp 0.5s 0.26s ease both', marginTop: 4 }}>
                   <button
                     type="submit"
                     disabled={loading}
                     onMouseEnter={() => setBtnHover(true)}
                     onMouseLeave={() => setBtnHover(false)}
                     style={{
-                      width: '100%', padding: '16.5px', borderRadius: 15,
-                      fontSize: 14, fontWeight: 800, letterSpacing: 0.4,
+                      width: '100%', padding: '15px', borderRadius: 13,
+                      fontSize: 14, fontWeight: 800, letterSpacing: 0.3,
                       cursor: loading ? 'not-allowed' : 'pointer', border: 'none',
                       background: loading
-                        ? 'rgba(255,255,255,0.038)'
-                        : 'linear-gradient(135deg,#059669 0%,#12b76a 30%,#0ea5e9 70%,#61DAFB 100%)',
-                      color: loading ? 'rgba(255,255,255,0.22)' : '#fff',
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'linear-gradient(135deg,#059669 0%,#12b76a 35%,#0ea5e9 75%,#61DAFB 100%)',
+                      color: loading ? 'rgba(255,255,255,0.25)' : '#fff',
                       boxShadow: loading ? 'none' : btnHover
-                        ? '0 14px 50px rgba(18,183,106,0.68),0 0 100px rgba(18,183,106,0.2)'
-                        : '0 5px 32px rgba(18,183,106,0.44),0 0 80px rgba(18,183,106,0.12)',
-                      transform: !loading && btnHover ? 'translateY(-2px) scale(1.013)' : 'translateY(0) scale(1)',
-                      transition: 'all 0.32s cubic-bezier(0.23,1,0.32,1)',
+                        ? '0 12px 44px rgba(18,183,106,0.62),0 0 90px rgba(18,183,106,0.18)'
+                        : '0 4px 28px rgba(18,183,106,0.38)',
+                      transform: !loading && btnHover ? 'translateY(-2px) scale(1.012)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                       position: 'relative', overflow: 'hidden',
                     }}
                   >
                     {!loading && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)', animation: 'shimmer 3s ease-in-out infinite' }} />
-                    )}
-                    {!loading && (
-                      <div style={{ position: 'absolute', inset: 0, borderRadius: 15, background: 'linear-gradient(135deg,rgba(255,255,255,0.09) 0%,transparent 55%)', pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)', animation: 'shimmer 3s ease-in-out infinite' }} />
                     )}
                     {loading ? (
                       <>
-                        <div style={{ width: 17, height: 17, border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: 'rgba(255,255,255,0.75)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        <div style={{ width: 16, height: 16, border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: 'rgba(255,255,255,0.75)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                         Authentification...
                       </>
                     ) : (
-                      <>Accéder au tableau de bord <ArrowRight size={15} /></>
+                      <>Accéder <ArrowRight size={14} /></>
                     )}
                   </button>
                 </div>
@@ -470,22 +369,8 @@ export default function LoginPage() {
             </div>
 
             {/* Bas card */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(18,183,106,0.32),rgba(97,218,251,0.2),transparent)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(18,183,106,0.28),rgba(97,218,251,0.18),transparent)', pointerEvents: 'none' }} />
           </div>
-        </div>
-
-        {/* Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20, flexWrap: 'wrap', animation: 'fadeUp 0.52s 0.45s ease both' }}>
-          {[
-            { label: 'Leads',       c: 'rgba(18,183,106,0.68)',  b: 'rgba(18,183,106,0.14)',  bg: 'rgba(18,183,106,0.04)'  },
-            { label: 'Commissions', c: 'rgba(97,218,251,0.68)',  b: 'rgba(97,218,251,0.14)',  bg: 'rgba(97,218,251,0.04)'  },
-            { label: 'Pipeline',    c: 'rgba(167,139,250,0.68)', b: 'rgba(167,139,250,0.14)', bg: 'rgba(167,139,250,0.04)' },
-          ].map((badge, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4.5px 12px', borderRadius: 20, border: `1px solid ${badge.b}`, background: badge.bg }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: badge.c, boxShadow: `0 0 6px ${badge.c}` }} />
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: badge.c, letterSpacing: 0.8, textTransform: 'uppercase' }}>{badge.label}</span>
-            </div>
-          ))}
         </div>
 
       </div>

@@ -6,7 +6,7 @@ import {
   TrendingUp, Building2, CheckCircle, XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
 import { VALID_STATUTS, STATUS_LABEL, DEFAULT_SETTINGS, MOIS_FULL } from '@/types';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -113,9 +113,17 @@ export default function SolutionExpressPage() {
       ]);
       setFiches(Array.isArray(f.data) ? f.data : []);
       setSettings(s.data ?? DEFAULT_SETTINGS);
-    } catch { toast.error('Erreur chargement des données'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement des données')); }
     finally { setLoading(false); }
   }, []);
+
+  /* ── Stats depuis le backend ── */
+  const [leadsStats, setLeadsStats] = useState({ totalFiches:0, totalInstalle:0, totalAnnule:0, totalPipeline:0, annees:[] as number[] });
+  useEffect(() => {
+    api.get('/api/leads/stats', { params: { annee } })
+      .then(r => { if (r.data) setLeadsStats(r.data); })
+      .catch(() => {});
+  }, [annee]);
 
   useEffect(() => {
     fetchAll();
@@ -165,7 +173,7 @@ export default function SolutionExpressPage() {
         toast.success('Fiche créée !');
       }
       setModal(null); fetchAll();
-    } catch { toast.error('Erreur sauvegarde'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur sauvegarde')); }
     finally { setSaving(false); }
   };
 
@@ -175,7 +183,7 @@ export default function SolutionExpressPage() {
       await api.delete(`/api/leads/${id}`);
       if (selected?.id === id) setSelected(null);
       toast.success('Fiche supprimée'); fetchAll();
-    } catch { toast.error('Erreur suppression'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression')); }
   };
 
   const togglePaiement = async (fiche: SolutionExpress) => {
@@ -188,7 +196,7 @@ export default function SolutionExpressPage() {
     try {
       await api.put(`/api/leads/${fiche.id}`, { commissionPayee: next, datePaiementCommission: next ? new Date().toISOString() : null });
       fetchAll();
-    } catch { toast.error('Erreur paiement'); fetchAll(); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur paiement')); fetchAll(); }
     finally { toggleRef.current.delete(fiche.id); }
   };
 
@@ -200,7 +208,7 @@ export default function SolutionExpressPage() {
         if (selected?.id === fiche.id) setSelected(s => s ? { ...s, status: newStatus } : null);
         toast.success('Statut mis à jour'); fetchAll();
       })
-      .catch(() => toast.error('Erreur statut'));
+      .catch((e) => toast.error(apiErrMsg(e, 'Erreur statut')));
   };
 
   const confirmAnnulation = async () => {
@@ -210,7 +218,7 @@ export default function SolutionExpressPage() {
       setFiches(prev => prev.map(f => f.id === motifPending.fiche.id ? { ...f, status: 'installation_annulee', motifAnnulation: motifChoice } : f));
       if (selected?.id === motifPending.fiche.id) setSelected(s => s ? { ...s, status: 'installation_annulee', motifAnnulation: motifChoice } : null);
       toast.success('Annulation confirmée'); fetchAll();
-    } catch { toast.error('Erreur annulation'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur annulation')); }
     finally { setMotifPending(null); }
   };
 
@@ -220,7 +228,7 @@ export default function SolutionExpressPage() {
       await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
       if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
-    } catch { toast.error('Erreur ajout note'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur ajout note')); }
   }, [selected]);
 
   const deleteNote = useCallback(async (fiche: SolutionExpress, idx: number) => {
@@ -229,7 +237,7 @@ export default function SolutionExpressPage() {
       await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
       if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
-    } catch { toast.error('Erreur suppression note'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression note')); }
   }, [selected]);
 
   /* ── Filtrage + Tri ── */
@@ -264,9 +272,7 @@ export default function SolutionExpressPage() {
     }
   }), [filtered, sortBy]);
 
-  const allYears = useMemo(() =>
-    [...new Set(fiches.map(f => String(new Date(f.dateVente ?? f.createdAt).getFullYear())))].sort((a, b) => Number(b) - Number(a)),
-  [fiches]);
+  const allYears = leadsStats.annees.map(String);
 
   const usedServiceIds = useMemo(() => {
     const s = new Set<string>();
@@ -290,11 +296,8 @@ export default function SolutionExpressPage() {
     return Object.keys(map).map(Number).sort((a, b) => b - a).map((m, i) => ({ label: MOIS_FULL[m], color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[m] ?? [] }));
   }, [sorted, annee]);
 
-  /* ── Stats ── */
-  const totalFiches   = fichesByAnnee.length;
-  const totalInstalle = fichesByAnnee.filter(f => f.status === 'installe').length;
-  const totalAnnule   = fichesByAnnee.filter(f => f.status === 'installation_annulee').length;
-  const totalPipeline = fichesByAnnee.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
+  /* ── Stats depuis le backend ── */
+  const { totalFiches, totalInstalle, totalAnnule, totalPipeline } = leadsStats;
 
   const filtersActive  = Object.values(filters).some(Boolean) || !!search;
   const villesDispos   = useMemo(() => {

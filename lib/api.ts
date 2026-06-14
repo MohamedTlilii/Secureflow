@@ -23,3 +23,6 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const apiErrMsg = (err: unknown, fallback: string): string =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;

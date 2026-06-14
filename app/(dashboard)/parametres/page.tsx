@@ -8,6 +8,7 @@ import {
   Plus, X, Save, CheckCircle, AlertCircle, ChevronRight, Loader, Trash2, Edit2, UserCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { apiErrMsg } from '@/lib/api';
 import api from '@/lib/api';
 import type { Settings as SettingsType, Service } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
@@ -32,6 +33,9 @@ function useIsMobile() {
 
 function slugify(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+}
+function normalize(s: string) {
+  return s.toLowerCase().replace(/\s+/g,'').normalize('NFD').replace(/[̀-ͯ]/g,'');
 }
 
 /* ─── Tabs ─── */
@@ -108,7 +112,7 @@ function SimpleSection({ items, color, placeholder, onAdd, onRemove }: {
   const add = () => {
     const v = val.trim();
     if (!v) return;
-    if (items.includes(v)) { toast.error('Déjà dans la liste'); return; }
+    if (items.some(it => normalize(it) === normalize(v))) { toast.error('Déjà dans la liste'); return; }
     onAdd(v); setVal(''); ref.current?.focus();
   };
   return (
@@ -146,7 +150,7 @@ function KeyLabelSection({ items, color, placeholder, onAdd, onRemove, getItemCo
     if (!label) return;
     const key = slugify(label);
     if (!key) return;
-    if (items.some(it => it.key === key)) { toast.error('Déjà dans la liste'); return; }
+    if (items.some(it => it.key === key || normalize(it.label) === normalize(label))) { toast.error('Déjà dans la liste'); return; }
     onAdd({ key, label }); setVal(''); ref.current?.focus();
   };
   return (
@@ -458,6 +462,7 @@ function ProfilSection() {
   const save = async () => {
     if (newPwd && newPwd !== confirmPwd) { toast.error('Les mots de passe ne correspondent pas'); return; }
     if (newPwd && newPwd.length < 6)     { toast.error('Mot de passe trop court (min. 6 caractères)'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Email invalide'); return; }
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
@@ -603,7 +608,7 @@ export default function ParametresPage() {
   const fetchSettings = useCallback(() => {
     api.get<SettingsType>('/api/settings')
       .then(r => { setSettings(r.data); setOriginal(JSON.parse(JSON.stringify(r.data))); })
-      .catch(() => toast.error('Impossible de charger les paramètres'))
+      .catch((e) => toast.error(apiErrMsg(e, 'Impossible de charger les paramètres')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -622,7 +627,7 @@ export default function ParametresPage() {
       await api.put('/api/settings', settings);
       setOriginal(JSON.parse(JSON.stringify(settings)));
       toast.success('Paramètres sauvegardés !');
-    } catch { toast.error('Erreur lors de la sauvegarde'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur lors de la sauvegarde')); }
     finally { setSaving(false); }
   };
 

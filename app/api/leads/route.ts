@@ -62,6 +62,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(fiche, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: 'Erreur création' }, { status: 400 });
+    return NextResponse.json({ message: 'Erreur création' }, { status: 500 });
   }
 }

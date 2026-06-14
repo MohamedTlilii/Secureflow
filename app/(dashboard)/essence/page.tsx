@@ -11,7 +11,7 @@ import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { EssenceMois } from '@/types';
 import { MOIS_LABELS, MOIS_FULL } from '@/types';
@@ -86,6 +86,8 @@ export default function EssencePage() {
   const [editVal,   setEditVal]   = useState('');
   const [noteModal, setNoteModal] = useState<EssenceMois|null>(null);
   const [mounted,   setMounted]   = useState(false);
+  const [stats,     setStats]     = useState<EssenceStats>(DEF);
+  const [chartData, setChartData] = useState<{name:string;Attendu:number;Reçu:number;cumAtt:number;cumRec:number;recu:boolean}[]>([]);
 
   const starsRef  = useRef<Star[]>([]);
   const partsRef  = useRef<Particle[]>([]);
@@ -111,8 +113,8 @@ export default function EssencePage() {
       const r = await api.get<number[]>('/api/essence/annees');
       setAnnees(r.data);
       anneesRef.current = r.data;
-    } catch {
-      toast.error('Erreur chargement des années');
+    } catch (e) {
+      toast.error(apiErrMsg(e, 'Erreur chargement des années'));
       setLoading(false);
     }
   },[]);
@@ -131,18 +133,34 @@ export default function EssencePage() {
         const rd = await api.get<EssenceMois[]>(`/api/essence?annee=${yr}`);
         setData(rd.data);
       }
-    } catch { toast.error('Erreur chargement'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
     finally { setLoading(false); }
   },[]);
 
-  useEffect(()=>{ fetchAnnees().then(()=>fetchData(annee)); },[fetchAnnees]);// eslint-disable-line react-hooks/exhaustive-deps
+  /* ── fetch stats + chart ── */
+  const fetchStats = useCallback(async (yr: string) => {
+    try {
+      const { data: s } = await api.get<EssenceStats>('/api/essence/stats', { params: { annee: yr } });
+      setStats(s ?? DEF);
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchChart = useCallback(async (yr: string) => {
+    if (yr === 'tout') { setChartData([]); return; }
+    try {
+      const { data: r } = await api.get<{chartData:typeof chartData}>('/api/essence/chart', { params: { annee: yr } });
+      setChartData(r.chartData ?? []);
+    } catch { /* ignore */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(()=>{ fetchAnnees().then(()=>{ fetchData(annee); fetchStats(annee); fetchChart(annee); }); },[fetchAnnees]);// eslint-disable-line react-hooks/exhaustive-deps
   useEffect(()=>{
-    const h=()=>{ if(!document.hidden) fetchData(annee); };
+    const h=()=>{ if(!document.hidden){ fetchData(annee); fetchStats(annee); fetchChart(annee); } };
     document.addEventListener('visibilitychange',h);
     return ()=>document.removeEventListener('visibilitychange',h);
-  },[fetchData,annee]);
+  },[fetchData,fetchStats,fetchChart,annee]);
 
-  const handleAnneeChange=(yr:string)=>{ setAnnee(yr); fetchData(yr); };
+  const handleAnneeChange=(yr:string)=>{ setAnnee(yr); fetchData(yr); fetchStats(yr); fetchChart(yr); };
 
   const deleteAnnee=async(yr:number)=>{
     if(!confirm(`Supprimer toutes les données ${yr} ?`)) return;
@@ -154,7 +172,7 @@ export default function EssencePage() {
       toast.success(`Année ${yr} supprimée`);
       const newSel=String(new Date().getFullYear());
       setAnnee(newSel); fetchData(newSel);
-    } catch { toast.error('Erreur suppression'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression')); }
   };
 
   const patchData = (id:string, patch:Partial<EssenceMois>) =>
@@ -170,13 +188,14 @@ export default function EssencePage() {
       const res = await api.put<ToggleRes>(`/api/essence/${doc.id}`,{recu:newRecu});
       patchData(doc.id,{recu:newRecu,dateReception:newRecu?new Date().toISOString():null});
       toast.success(newRecu?'✅ Marqué reçu !':'Marqué en attente');
+      fetchStats(annee); fetchChart(annee);
       if(res.data?.nextAnnee&&annee!=='tout'){
         toast.success(`🎉 Passage à ${res.data.nextAnnee}`);
         await fetchAnnees();
         const yr=String(res.data.nextAnnee);
-        setAnnee(yr); fetchData(yr);
+        setAnnee(yr); fetchData(yr); fetchStats(yr); fetchChart(yr);
       }
-    } catch { toast.error('Erreur'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur mise à jour')); }
   };
 
   /* ── save note ── */
@@ -187,7 +206,7 @@ export default function EssencePage() {
       patchData(noteModal.id,{note});
       setNoteModal(null);
       toast.success('Note sauvegardée');
-    } catch { toast.error('Erreur'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur sauvegarde note')); }
   };
 
   /* ── inline montant ── */
@@ -199,8 +218,9 @@ export default function EssencePage() {
       patchData(doc.id,{montantAttendu:+v.toFixed(3)});
       setEditingId(null);
       toast.success('Montant mis à jour');
-    } catch {
-      toast.error('Erreur — montant non sauvegardé');
+      fetchStats(annee); fetchChart(annee);
+    } catch (e) {
+      toast.error(apiErrMsg(e, 'Erreur — montant non sauvegardé'));
       setEditingId(null);
     }
   };
@@ -227,28 +247,6 @@ export default function EssencePage() {
     const doc=data.find(m=>m.mois===prev.mois);
     return doc&&!doc.recu?doc:null;
   },[data,annee]);
-
-  /* ── chart data ── */
-  const chartData=useMemo(()=>{
-    if(annee==='tout') return [];
-    let ca=0,cr=0;
-    return [...data].sort((a,b)=>a.mois-b.mois).map(m=>{
-      ca+=m.montantAttendu;
-      cr+=m.recu?m.montantAttendu:0;
-      return { name:MOIS_LABELS[m.mois], Attendu:+m.montantAttendu.toFixed(2), Reçu:m.recu?+m.montantAttendu.toFixed(2):0, cumAtt:+ca.toFixed(2), cumRec:+cr.toFixed(2) };
-    });
-  },[data,annee]);
-
-  const stats = useMemo<EssenceStats>(()=>{
-    if(!data.length) return DEF;
-    const totalAttendu  = data.reduce((s,m)=>s+m.montantAttendu,0);
-    const totalRecu     = data.filter(m=>m.recu).reduce((s,m)=>s+m.montantAttendu,0);
-    const totalManquant = Math.max(0,totalAttendu-totalRecu);
-    const moisRecus     = data.filter(m=>m.recu).length;
-    const moisTotal     = data.length;
-    const pctRecu       = totalAttendu>0?Math.round((totalRecu/totalAttendu)*100):0;
-    return {totalAttendu,totalRecu,totalManquant,pctRecu,moisRecus,moisTotal};
-  },[data]);
 
   const pc=pctCol(stats.pctRecu);
   const curYear=new Date().getFullYear();

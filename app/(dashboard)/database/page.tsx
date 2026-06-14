@@ -5,7 +5,7 @@ import {
   Trash2, Database as DbIcon, MapPin, HardDrive, Building2, Filter, Eye, Phone, Mail,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { SolutionExpress, DbStats, Settings, StatusFiche, EssenceMois } from '@/types';
 import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS, MOIS_FULL } from '@/types';
@@ -175,7 +175,7 @@ export default function DatabasePage() {
       setLeads(prev => prev.filter(l => l.id !== item.id));
       toast.success('Supprimé');
       fetchDbStats();
-    } catch { toast.error('Erreur de suppression'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur de suppression')); }
   };
 
   /* ── Storage bar color ── */

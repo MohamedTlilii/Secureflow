@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Target, ArrowRight, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
@@ -107,8 +107,17 @@ export default function PipelinePage() {
     setMounted(true);
   }, []);
 
-  /* ── fetch ── */
+  /* ── stats interface ── */
+  interface PipeStats {
+    total:number; b2b:number; b2c:number; installe:number; annulees:number;
+    enCours:number; proposals:number; convRate:number;
+    stageCounts:Record<string,number>; serviceCounts:Record<string,number>; annees:number[];
+  }
+  const [pipeStats, setPipeStats] = useState<PipeStats | null>(null);
+
+  /* ── fetch leads (kanban) ── */
   const fetchAll = useCallback(async () => {
+    setLoading(true);
     try {
       const [f, s] = await Promise.all([
         api.get<SolutionExpress[]>('/api/leads'),
@@ -116,9 +125,19 @@ export default function PipelinePage() {
       ]);
       setItems(Array.isArray(f.data) ? f.data : []);
       setSettings(s.data ?? DEFAULT_SETTINGS);
-    } catch { toast.error('Erreur chargement'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
     finally { setLoading(false); }
   }, []);
+
+  /* ── fetch stats ── */
+  const fetchStats = useCallback(async () => {
+    try {
+      const { data } = await api.get<PipeStats>('/api/pipeline/stats', {
+        params: { annee, mois, filtreComm },
+      });
+      setPipeStats(data);
+    } catch { /* silently ignore */ }
+  }, [annee, mois, filtreComm]);
 
   useEffect(() => {
     fetchAll();
@@ -126,6 +145,8 @@ export default function PipelinePage() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [fetchAll]);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const svcMap = useMemo(() =>
     Object.fromEntries(settings.services.map(s=>[s.id,{label:s.label,color:s.color}])),
@@ -135,7 +156,7 @@ export default function PipelinePage() {
     Object.fromEntries(settings.typeLead.map(t=>[t.key,t.label])),
     [settings.typeLead]);
 
-  /* ── filtrage ── */
+  /* ── filtrage (pour kanban seulement) ── */
   const filtered = useMemo(() => {
     let r = annee === 'tout' ? items : items.filter(f => getYear(f) === annee);
     if (annee !== 'tout' && mois !== 'tout') r = r.filter(f => getMonth(f) === Number(mois));
@@ -145,26 +166,12 @@ export default function PipelinePage() {
     return r;
   }, [items, annee, mois, filtreComm]);
 
-  const annees = useMemo(() =>
-    [...new Set(items.map(getYear))].sort().reverse(),
-    [items]);
-
-  /* ── stats ── */
-  const total     = filtered.length;
-  const b2b       = filtered.filter(f=>f.typeClient==='b2b').length;
-  const b2c       = filtered.filter(f=>f.typeClient==='b2c').length;
-  const installe  = filtered.filter(f=>f.status==='installe').length;
-  const annulees  = filtered.filter(f=>f.status==='installation_annulee').length;
-  const enCours   = filtered.filter(f=>f.status==='installation_en_cours').length;
-  const proposals = filtered.filter(f=>f.status==='proposal').length;
-  const convRate  = total>0 ? Math.round((installe/total)*100) : 0;
-
-  const serviceCounts = useMemo(() => {
-    const map: Record<string,number> = {};
-    filtered.forEach(f=>(f.produits as string[]).forEach(p=>{ map[p]=(map[p]||0)+1; }));
-    return map;
-  }, [filtered]);
-  const activeServices = useMemo(()=>settings.services.filter(svc=>(serviceCounts[svc.id]||0)>0),[settings.services,serviceCounts]);
+  /* ── raccourcis stats depuis backend ── */
+  const annees     = (pipeStats?.annees ?? []).map(String);
+  const total      = pipeStats?.total      ?? 0;
+  const installe   = pipeStats?.installe   ?? 0;
+  const convRate   = pipeStats?.convRate   ?? 0;
+  const stageCounts = pipeStats?.stageCounts ?? {};
 
   /* ── drag & drop ── */
   const updateStatus = async (id: string, status: StatusFiche, motifAnnulation?: string) => {
@@ -172,7 +179,7 @@ export default function PipelinePage() {
       await api.put(`/api/leads/${id}`, { status, ...(motifAnnulation&&{motifAnnulation}) });
       setItems(prev=>prev.map(i=>i.id===id?{...i,status,...(motifAnnulation&&{motifAnnulation})}:i));
       toast.success(`→ ${STAGES.find(s=>s.key===status)?.label}`);
-    } catch { toast.error('Erreur mise à jour'); }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur mise à jour')); }
   };
 
   const onDrop = (targetKey: StatusFiche) => {
@@ -216,7 +223,7 @@ export default function PipelinePage() {
       <div style={{position:'relative',zIndex:1,padding:isMobile?'16px 12px 40px':'28px 32px 40px'}}>
 
         {/* ════════════════════════════════════════
-            HEADER glassmorphism (style Solution Express)
+            HEADER glassmorphism
             ════════════════════════════════════════ */}
         <div style={{padding:'1.5px',borderRadius:22,background:'linear-gradient(135deg,#a78bfa70,#3b6cf840,#12b76a25)',marginBottom:20,animation:'fadeSlideUp 0.4s ease both'}}>
           <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'20.5px',padding:isMobile?'18px 16px':'28px 32px',backdropFilter:'blur(40px)',position:'relative',overflow:'hidden'}}>
@@ -263,7 +270,7 @@ export default function PipelinePage() {
               {/* Stats cards compactes */}
               <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(6,1fr)',gap:10,marginBottom:16}}>
                 {STAGES.map((s,i)=>{
-                  const cnt=filtered.filter(f=>f.status===s.key).length;
+                  const cnt=stageCounts[s.key]??0;
                   return (
                     <div key={s.key} style={{background:`${s.color}10`,borderRadius:12,padding:'10px 14px',border:`1px solid ${s.color}25`,animation:`fadeSlideUp 0.4s ${i*0.05}s ease both`}}>
                       <div style={{fontSize:10,color:s.color,fontWeight:700,textTransform:'uppercase',letterSpacing:0.8,marginBottom:4}}>{s.label}</div>

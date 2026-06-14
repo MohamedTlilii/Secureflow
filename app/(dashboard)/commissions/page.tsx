@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { apiErrMsg } from '@/lib/api';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings } from '@/types';
@@ -42,16 +42,14 @@ function useIsMobile() {
 }
 
 /* ─── CalendrierModerne ───────────────────────────────────── */
-interface CalByDate {
-  total: number; payee: number; attente: number; annulee: number; items: SolutionExpress[];
-}
 interface CalendarProps {
-  commissions: SolutionExpress[];
+  calendarData: Record<string, {total:number;payee:number;attente:number;annulee:number}>;
+  totalMois: number;
   selectedDate: Date | null;
-  onSelectDate: (d: Date | null, items: SolutionExpress[]) => void;
+  onSelectDate: (d: Date | null) => void;
   onMonthChange?: (m: { year: number; month: number }) => void;
 }
-function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthChange }: CalendarProps) {
+function CalendrierModerne({ calendarData, totalMois, selectedDate, onSelectDate, onMonthChange }: CalendarProps) {
   const today = new Date();
   const [cur, setCur] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const prevMth = () => setCur(c=>({ year:c.month===0?c.year-1:c.year, month:c.month===0?11:c.month-1 }));
@@ -63,25 +61,6 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
   const firstDay    = new Date(cur.year, cur.month, 1).getDay();
   const offset      = firstDay===0?6:firstDay-1;
   const monthName   = new Date(cur.year, cur.month).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-
-  const byDate = useMemo(() => {
-    const map: Record<string, CalByDate> = {};
-    commissions.forEach(c => {
-      const d   = new Date(c.dateVente ?? c.createdAt);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      if (!map[key]) map[key] = { total:0, payee:0, attente:0, annulee:0, items:[] };
-      if (c.status !== 'installation_annulee') map[key].total += c.commissionTotale||0;
-      if (c.status === 'installation_annulee') map[key].annulee += 1;
-      if (c.commissionPayee)                        map[key].payee  += c.commissionTotale||0;
-      else if (c.status !== 'installation_annulee') map[key].attente += c.commissionTotale||0;
-      map[key].items.push(c);
-    });
-    return map;
-  }, [commissions]);
-
-  const totalMois = Object.entries(byDate)
-    .filter(([k])=>k.startsWith(`${cur.year}-${String(cur.month+1).padStart(2,'0')}`))
-    .reduce((s,[,v])=>s+v.total, 0);
 
   return (
     <div style={{background:'rgba(255,255,255,0.03)',borderRadius:16,overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)'}}>
@@ -115,12 +94,12 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
             const day  = i+1;
             const date = new Date(cur.year, cur.month, day);
             const key  = `${cur.year}-${String(cur.month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const data = byDate[key];
+            const data = calendarData[key];
             const isToday = date.toDateString()===today.toDateString();
             const isSel   = selectedDate?.toDateString()===date.toDateString();
             const has     = !!data;
             return (
-              <div key={day} onClick={()=>has?onSelectDate(date,data.items):onSelectDate(null,[])}
+              <div key={day} onClick={()=>has?onSelectDate(date):onSelectDate(null)}
                 style={{borderRadius:8,padding:'5px 3px',textAlign:'center',cursor:has?'pointer':'default',transition:'all 0.15s',minHeight:44,
                   background:isSel?'linear-gradient(135deg,#12b76a,#0e9558)':isToday?'rgba(59,108,248,0.12)':has?'rgba(18,183,106,0.07)':'transparent',
                   border:isSel?'2px solid #12b76a':isToday?'1px solid rgba(59,108,248,0.5)':has?'1px solid rgba(18,183,106,0.25)':'1px solid transparent',
@@ -159,7 +138,6 @@ function CalendrierModerne({ commissions, selectedDate, onSelectDate, onMonthCha
 export default function CommissionsPage() {
   const isMobile = useIsMobile();
 
-  const [fiches,       setFiches]       = useState<SolutionExpress[]>([]);
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [annee,        setAnnee]        = useState<string>(String(new Date().getFullYear()));
   const [filtre,       setFiltre]       = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
@@ -171,8 +149,9 @@ export default function CommissionsPage() {
   const [loading,      setLoading]      = useState(true);
   const [mounted,      setMounted]      = useState(false);
 
-  const starsRef = useRef<Star[]>([]);
-  const partsRef = useRef<Particle[]>([]);
+  const starsRef    = useRef<Star[]>([]);
+  const partsRef    = useRef<Particle[]>([]);
+  const monthCache  = useRef<Record<string, CommStats>>({});
 
   /* ── cosmos ── */
   useEffect(() => {
@@ -188,25 +167,10 @@ export default function CommissionsPage() {
     setMounted(true);
   }, []);
 
-  /* ── fetch ── */
-  const fetchAll = useCallback(async () => {
-    try {
-      const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/leads'),
-        api.get<Settings>('/api/settings'),
-      ]);
-      setFiches(Array.isArray(f.data) ? f.data : []);
-      setSettings(s.data ?? DEFAULT_SETTINGS);
-    } catch { toast.error('Erreur chargement'); }
-    finally { setLoading(false); }
-  }, []);
-
+  /* ── fetch settings (labels uniquement) ── */
   useEffect(() => {
-    fetchAll();
-    const onVis = () => { if (!document.hidden) fetchAll(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [fetchAll]);
+    api.get<Settings>('/api/settings').then(r => { if (r.data) setSettings(r.data); }).catch(() => {});
+  }, []);
 
   /* ── helpers labels ── */
   const commerceLbl = useMemo(() =>
@@ -216,6 +180,48 @@ export default function CommissionsPage() {
     Object.fromEntries(settings.qualificationSysteme.map(q=>[q.key,q.label])),
     [settings.qualificationSysteme]);
 
+  /* ── Stats depuis le backend ── */
+  interface ChartBar { name:string; total:number; color?:string; count?:number; cPayee?:number; cAttente?:number; cAnnulee?:number; annulee?:boolean; fullNom?:string; motif?:string; payee?:boolean }
+  interface CommStats {
+    totalGagne:number; totalPaye:number; enAttente:number; totalAnnule:number;
+    maximum:number; minimum:number; pctPaye:number;
+    objectif:number; objPct:number;
+    nActives:number; nPayees:number; nAttente:number; nAnnulees:number;
+    annees:number[]; chartData:ChartBar[]; calendarData:Record<string,{total:number;payee:number;attente:number;annulee:number}>;
+    historique:SolutionExpress[]; totalMois:number;
+  }
+  const [commStats, setCommStats] = useState<CommStats | null>(null);
+
+  useEffect(() => { monthCache.current = {}; }, [annee, filtre]);
+
+  const fetchStats = useCallback(async (force = false) => {
+    const key = `${calMois.year}-${calMois.month}`;
+    if (!force && monthCache.current[key]) {
+      setCommStats(monthCache.current[key]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await api.get<CommStats>('/api/commissions/stats', {
+        params: { annee, filtre, calAnnee: calMois.year, calMois: calMois.month },
+      });
+      monthCache.current[key] = data;
+      setCommStats(data);
+      if (selVentes.length) {
+        const ids = new Set(selVentes.map(v => v.id));
+        setSelVentes((data.historique ?? []).filter(x => ids.has(x.id)));
+      }
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
+    finally { setLoading(false); }
+  }, [annee, filtre, calMois]);
+
+  useEffect(() => {
+    fetchStats();
+    const onVis = () => { if (!document.hidden) fetchStats(true); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [fetchStats]);
+
   /* ── toggle paiement ── */
   const togglePaiement = async (f: SolutionExpress) => {
     try {
@@ -224,76 +230,29 @@ export default function CommissionsPage() {
         datePaiementCommission: !f.commissionPayee ? new Date().toISOString() : null,
       });
       toast.success(!f.commissionPayee?'✓ Commission payée !':'Marquée non payée');
-      const res = await api.get<SolutionExpress[]>('/api/leads');
-      const fresh = Array.isArray(res.data) ? res.data : [];
-      setFiches(fresh);
-      if (selVentes.length) {
-        const ids = new Set(selVentes.map(v=>v.id));
-        setSelVentes(fresh.filter(x=>ids.has(x.id)));
-      }
-    } catch { toast.error('Erreur'); }
+      fetchStats(true);
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur paiement')); }
   };
 
-  /* ── computed ── */
-  const withComm = fiches.filter(f=>(f.commissionTotale||0)>0||(f.commissionFixe||0)>0);
-
-  const annees = useMemo(() => {
-    const cur = new Date().getFullYear();
-    return [...new Set([cur,...withComm.map(c=>new Date(c.dateVente??c.createdAt).getFullYear())])].sort((a,b)=>b-a);
-  }, [withComm]);
-
-  const byAnnee = annee==='tout' ? withComm : withComm.filter(c=>String(new Date(c.dateVente??c.createdAt).getFullYear())===annee);
-
-  const filtered = byAnnee.filter(c=>{
-    if (filtre==='payee')     return c.commissionPayee;
-    if (filtre==='non_payee') return !c.commissionPayee && c.status !== 'installation_annulee';
-    if (filtre==='annulee')   return c.status === 'installation_annulee';
-    return true;
-  });
-
-  /* ── historique du mois calendrier ── */
-  const filteredHistorique = filtered.filter(c=>{
-    const d = new Date(c.dateVente??c.createdAt);
-    return d.getFullYear()===calMois.year && d.getMonth()===calMois.month;
-  });
-
-  /* ── stats cartes : tout = toutes années, année = mois du calendrier ── */
-  const baseStats       = annee==='tout' ? filtered : filteredHistorique;
-  const activesForStats = baseStats.filter(c=>c.status!=='installation_annulee');
-  const annuleeForStats = baseStats.filter(c=>c.status==='installation_annulee');
-  const actives     = filtre==='annulee' ? annuleeForStats : activesForStats;
-  const totalGagne  = filtre==='annulee' ? 0 : activesForStats.reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const totalAnnule = annuleeForStats.reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const totalPaye   = filtre==='annulee' ? 0 : activesForStats.filter(c=>c.commissionPayee).reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const enAttente   = filtre==='annulee' ? 0 : Math.max(0, totalGagne-totalPaye);
-  const vals        = actives.map(c=>c.commissionTotale||0).filter(v=>v>0);
-  const maximum     = vals.length?Math.max(...vals):0;
-  const minimum     = vals.length?Math.min(...vals):0;
-  const pctPaye     = totalGagne>0?Math.round((totalPaye/totalGagne)*100):0;
-
-  /* ── stats annuelles = objectif + badge graphique ── */
-  const activesAll    = filtered.filter(c=>c.status!=='installation_annulee');
-  const totalGagneAll = activesAll.reduce((s,c)=>s+(c.commissionTotale||0), 0);
-  const objectif      = annee!=='tout'?(settings.objectifAnnuel?.[annee]||0):0;
-  const objPct        = objectif>0?Math.min(Math.round((totalGagne/objectif)*100),100):0;
-
-  /* ── chart data ── */
-  const chartData = annee==='tout'
-    ? annees.map((yr,i)=>{
-        const yrF = filtered.filter(c=>String(new Date(c.dateVente??c.createdAt).getFullYear())===String(yr));
-        const activeYrF = filtre === 'annulee' ? yrF : yrF.filter(c=>c.status!=='installation_annulee');
-        const barColor = filtre==='payee'?'#3b6cf8':filtre==='non_payee'?'#f79009':filtre==='annulee'?'#be123c':YEAR_COLORS[i%YEAR_COLORS.length];
-        const cPayee   = yrF.filter(c=>c.commissionPayee&&c.status!=='installation_annulee').length;
-        const cAttente = yrF.filter(c=>!c.commissionPayee&&c.status!=='installation_annulee').length;
-        const cAnnulee = yrF.filter(c=>c.status==='installation_annulee').length;
-        return { name:String(yr), total:activeYrF.reduce((s,c)=>s+(c.commissionTotale||0),0), count:yrF.length, cPayee, cAttente, cAnnulee, color:barColor };
-      })
-    : [...filteredHistorique].sort((a,b)=>new Date(a.dateVente??a.createdAt).getTime()-new Date(b.dateVente??b.createdAt).getTime())
-        .map(c=>{
-          const d = new Date(c.dateVente??c.createdAt);
-          const annulee = c.status==='installation_annulee';
-          return { name:`${d.getDate()} ${MOIS_COURT[d.getMonth()]}`, total:c.commissionTotale||0, color:annulee?'#be123c':c.commissionPayee?'#3b6cf8':'#f79009', annulee, fullNom:c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'?', motif:c.motifAnnulation||'', payee:c.commissionPayee };
-        });
+  /* ── raccourcis stats depuis backend ── */
+  const annees             = commStats?.annees             ?? [];
+  const totalGagne         = commStats?.totalGagne         ?? 0;
+  const totalPaye          = commStats?.totalPaye          ?? 0;
+  const enAttente          = commStats?.enAttente          ?? 0;
+  const totalAnnule        = commStats?.totalAnnule        ?? 0;
+  const maximum            = commStats?.maximum            ?? 0;
+  const minimum            = commStats?.minimum            ?? 0;
+  const pctPaye            = commStats?.pctPaye            ?? 0;
+  const objectif           = commStats?.objectif           ?? 0;
+  const objPct             = commStats?.objPct             ?? 0;
+  const nActives           = commStats?.nActives           ?? 0;
+  const nPayees            = commStats?.nPayees            ?? 0;
+  const nAttenteCount      = commStats?.nAttente           ?? 0;
+  const nAnnulees          = commStats?.nAnnulees          ?? 0;
+  const chartData          = commStats?.chartData          ?? [];
+  const calendarData       = commStats?.calendarData       ?? {};
+  const filteredHistorique = commStats?.historique         ?? [];
+  const totalMois          = commStats?.totalMois          ?? 0;
 
 
   /* ────────────────── RENDER ────────────────── */
@@ -319,7 +278,7 @@ export default function CommissionsPage() {
       <div style={{position:'relative',zIndex:1,padding:isMobile?'16px 12px 40px':'28px 32px 40px'}}>
 
         {/* ════════════════════════════════════════
-            HEADER (style Solution Express)
+            HEADER
             ════════════════════════════════════════ */}
         <div style={{padding:'1.5px',borderRadius:22,background:'linear-gradient(135deg,#12b76a70,#61DAFB35,#a78bfa25)',marginBottom:20,animation:'fadeSlideUp 0.4s ease both'}}>
           <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'20.5px',padding:isMobile?'18px 16px':'28px 32px',backdropFilter:'blur(40px)',position:'relative',overflow:'hidden'}}>
@@ -374,7 +333,7 @@ export default function CommissionsPage() {
                   <AnimatedNumber value={totalGagne} decimals={0} color="#22c55e" suffix=" TND"/>
                 </div>
                 <div style={{fontSize:11,color:'#fff',marginTop:5}}>
-                  {activesForStats.length} vente{activesForStats.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(activesForStats.length,1))}
+                  {nActives} vente{nActives!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(nActives,1))}
                 </div>
               </div>
             </div>
@@ -387,7 +346,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={totalPaye} decimals={0} color="#3b6cf8" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{activesForStats.filter(c=>c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{nPayees} ventes</div>
             </div>
           </div>
 
@@ -398,7 +357,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={enAttente} decimals={0} color="#f79009" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{activesForStats.filter(c=>!c.commissionPayee).length} ventes</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{nAttenteCount} ventes</div>
             </div>
           </div>
 
@@ -431,7 +390,7 @@ export default function CommissionsPage() {
               <div style={{fontSize:isMobile?16:20,fontWeight:900,lineHeight:1}}>
                 <AnimatedNumber value={totalAnnule} decimals={0} color="#be123c" suffix=" TND"/>
               </div>
-              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{annuleeForStats.length} vente{annuleeForStats.length!==1?'s':''}</div>
+              <div style={{fontSize:10,color:'#fff',marginTop:5}}>{nAnnulees} vente{nAnnulees!==1?'s':''}</div>
             </div>
           </div>
         </div>
@@ -525,9 +484,19 @@ export default function CommissionsPage() {
           {/* Calendrier */}
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <CalendrierModerne
-              commissions={filtered}
+              calendarData={calendarData}
+              totalMois={totalMois}
               selectedDate={selDate}
-              onSelectDate={(d,items)=>{setSelDate(d);setSelVentes(items);}}
+              onSelectDate={(d)=>{
+                if (!d) { setSelDate(null); setSelVentes([]); return; }
+                setSelDate(d);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                setSelVentes(filteredHistorique.filter(c => {
+                  const cd = new Date(c.dateVente ?? c.createdAt);
+                  const ck = `${cd.getFullYear()}-${String(cd.getMonth()+1).padStart(2,'0')}-${String(cd.getDate()).padStart(2,'0')}`;
+                  return ck === key;
+                }));
+              }}
               onMonthChange={setCalMois}
             />
             {/* Détail jour sélectionné */}
