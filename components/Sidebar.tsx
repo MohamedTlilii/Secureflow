@@ -71,9 +71,9 @@ export default function Sidebar() {
     if (!user) return;
     const debut = user.dateDebut ? new Date(user.dateDebut) : null;
     if (!debut) return;
-    const today = new Date();
-    if (today.getMonth() !== debut.getMonth() || today.getDate() !== debut.getDate()) return;
-    const key = `sf_anniv_${today.getFullYear()}`;
+    const todayTunis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Tunis' }));
+    if (todayTunis.getMonth() !== debut.getMonth() || todayTunis.getDate() !== debut.getDate()) return;
+    const key = `sf_anniv2_${todayTunis.getFullYear()}`;
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, '1');
     setTimeout(() => setShowAnniv(true), 1200);
