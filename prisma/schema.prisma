@@ -72,9 +72,10 @@ model Settings {
   services             Json     @default("[]")
   motifsAnnulation     Json     @default("[]")
   objectifAnnuel       Json     @default("{}")
-  commissionFixeDefaut   Float    @default(0)
-  commissionExtraDefaut  Float    @default(0)
-  updatedAt            DateTime @updatedAt
+  commissionFixeDefaut        Float    @default(0)
+  commissionExtraDefaut       Float    @default(0)
+  produitsAvecQualification   Json     @default("[]")
+  updatedAt                   DateTime @updatedAt
 }
 
 model Essence {

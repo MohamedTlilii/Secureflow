@@ -105,6 +105,7 @@ export interface Settings {
   objectifAnnuel: Record<string, number>;
   commissionFixeDefaut: number;
   commissionExtraDefaut: number;
+  produitsAvecQualification: string[];
 }
 
 export interface EssenceMois {
@@ -183,4 +184,5 @@ export const DEFAULT_SETTINGS: Settings = {
   objectifAnnuel: { '2025': 2222, '2026': 5000 },
   commissionFixeDefaut: 0,
   commissionExtraDefaut: 0,
+  produitsAvecQualification: ['alarme'],
 };

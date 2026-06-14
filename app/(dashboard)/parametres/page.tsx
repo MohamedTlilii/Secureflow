@@ -744,8 +744,34 @@ export default function ParametresPage() {
               onAdd={item => addKL('typeLead', item)} onRemove={i => removeKL('typeLead', i)}/>
           )}
           {activeTab === 'qualification' && (
-            <KeyLabelSection items={settings.qualificationSysteme||[]} color={tab.color} placeholder="Ex: Système +15 ans..."
-              onAdd={item => addKL('qualificationSysteme', item)} onRemove={i => removeKL('qualificationSysteme', i)}/>
+            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              {/* Produits qui nécessitent une qualification */}
+              <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#e0e0f0', marginBottom:12 }}>
+                  Produits qui nécessitent une qualification
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {(settings.services||[]).map(sv => {
+                    const checked = (settings.produitsAvecQualification||[]).includes(sv.id);
+                    return (
+                      <label key={sv.id} style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+                        <input type="checkbox" checked={checked}
+                          onChange={e => {
+                            const cur = settings.produitsAvecQualification || [];
+                            upd('produitsAvecQualification', e.target.checked ? [...cur, sv.id] : cur.filter(p => p !== sv.id));
+                          }}
+                          style={{ width:16, height:16, cursor:'pointer', accentColor: tab.color }}
+                        />
+                        <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{sv.label || sv.id}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Options de qualification */}
+              <KeyLabelSection items={settings.qualificationSysteme||[]} color={tab.color} placeholder="Ex: Système +15 ans..."
+                onAdd={item => addKL('qualificationSysteme', item)} onRemove={i => removeKL('qualificationSysteme', i)}/>
+            </div>
           )}
           {activeTab === 'services' && (
             <ServiceSection services={settings.services||[]} onUpdate={svcs => upd('services', svcs)} isMobile={isMobile}/>

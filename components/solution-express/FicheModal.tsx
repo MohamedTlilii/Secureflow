@@ -235,12 +235,14 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
           {tab === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={lbl}>Qualification système</label>
-                  <select value={form.qualificationSysteme} onChange={e => set('qualificationSysteme', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                    {settings.qualificationSysteme.map(q => <option key={q.key} value={q.key}>{q.label}</option>)}
-                  </select>
-                </div>
+                {form.produits.some(p => (settings.produitsAvecQualification || []).includes(p)) && (
+                  <div>
+                    <label style={lbl}>Qualification système</label>
+                    <select value={form.qualificationSysteme} onChange={e => set('qualificationSysteme', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                      {settings.qualificationSysteme.map(q => <option key={q.key} value={q.key}>{q.label}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label style={lbl}>Type de lead</label>
                   <select value={form.leadType} onChange={e => set('leadType', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>

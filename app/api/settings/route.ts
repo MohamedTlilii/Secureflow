@@ -20,7 +20,7 @@ export async function PUT(req: NextRequest) {
     if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
     const body = await req.json();
 
-    const arrayFields = ['villes', 'typeCommerce', 'typeLead', 'qualificationSysteme', 'services', 'motifsAnnulation'];
+    const arrayFields = ['villes', 'typeCommerce', 'typeLead', 'qualificationSysteme', 'services', 'motifsAnnulation', 'produitsAvecQualification'];
     for (const f of arrayFields) {
       if (body[f] !== undefined && !Array.isArray(body[f])) {
         return NextResponse.json({ message: `${f} doit être un tableau` }, { status: 400 });
