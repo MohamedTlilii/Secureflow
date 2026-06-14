@@ -475,8 +475,7 @@ function ProfilSection() {
       setNewPwd(''); setConfirmPwd('');
       toast.success('Profil sauvegardé !');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erreur lors de la sauvegarde';
-      toast.error(msg);
+      toast.error(apiErrMsg(err, 'Erreur lors de la sauvegarde'));
     } finally { setSaving(false); }
   };
 

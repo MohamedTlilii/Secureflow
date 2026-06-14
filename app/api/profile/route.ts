@@ -7,11 +7,11 @@ import { prisma } from '@/lib/prisma';
 export async function PUT(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
 
     let body: Record<string, unknown>;
     try { body = await req.json(); }
-    catch { return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 }); }
+    catch { return NextResponse.json({ message: 'Corps de requête invalide' }, { status: 400 }); }
 
     const { name, role, email, dateDebut, avatar, newPassword } = body as {
       name?: string; role?: string; email?: string; dateDebut?: string | null;
@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest) {
 
     if (newPassword) {
       if (String(newPassword).length < 6) {
-        return NextResponse.json({ error: 'Mot de passe trop court (min. 6 caractères)' }, { status: 400 });
+        return NextResponse.json({ message: 'Mot de passe trop court (min. 6 caractères)' }, { status: 400 });
       }
       updateData.password = await bcrypt.hash(String(newPassword), 12);
     }
@@ -40,6 +40,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ message: 'Erreur serveur' }, { status: 500 });
   }
 }

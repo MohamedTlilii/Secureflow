@@ -4,10 +4,10 @@ import { getCurrentUser } from '@/lib/auth';
 import { ensureYear } from '@/lib/essence-helpers';
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
     const body = await req.json();
     const updateData: Record<string, unknown> = {};
 

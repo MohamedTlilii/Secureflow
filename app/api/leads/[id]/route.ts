@@ -11,10 +11,10 @@ const ALLOWED_UPDATE_FIELDS = new Set([
 ]);
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
     const existing = await prisma.solutionExpress.findUnique({ where: { id: params.id } });
     if (!existing) return NextResponse.json({ message: 'Fiche non trouvée' }, { status: 404 });
     if (existing.createdBy !== user.id) return NextResponse.json({ message: 'Non autorisé' }, { status: 403 });
@@ -49,10 +49,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
     const existing = await prisma.solutionExpress.findUnique({ where: { id: params.id } });
     if (!existing) return NextResponse.json({ message: 'Fiche non trouvée' }, { status: 404 });
     if (existing.createdBy !== user.id) return NextResponse.json({ message: 'Non autorisé' }, { status: 403 });

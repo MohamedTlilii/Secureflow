@@ -4,20 +4,20 @@ import { getCurrentUser } from '@/lib/auth';
 import { VALID_STATUTS } from '@/types';
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
-  const { searchParams } = new URL(req.url);
-  const status   = searchParams.get('status');
-  const leadType = searchParams.get('leadType');
-  const ville    = searchParams.get('ville');
-
-  const where: Record<string, unknown> = { createdBy: user.id };
-  if (status && VALID_STATUTS.includes(status as typeof VALID_STATUTS[number])) where.status = status;
-  if (leadType) where.leadType = leadType;
-  if (ville && ville.length < 100) where.ville = ville;
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const status   = searchParams.get('status');
+    const leadType = searchParams.get('leadType');
+    const ville    = searchParams.get('ville');
+
+    const where: Record<string, unknown> = { createdBy: user.id };
+    if (status && VALID_STATUTS.includes(status as typeof VALID_STATUTS[number])) where.status = status;
+    if (leadType) where.leadType = leadType;
+    if (ville && ville.length < 100) where.ville = ville;
+
     const fiches = await prisma.solutionExpress.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -36,10 +36,10 @@ const ALLOWED_FIELDS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
+
     const body = await req.json();
 
     if (body.status && !VALID_STATUTS.includes(body.status)) {

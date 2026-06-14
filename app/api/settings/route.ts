@@ -4,10 +4,9 @@ import { getCurrentUser } from '@/lib/auth';
 import { DEFAULT_SETTINGS } from '@/types';
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
     const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
     return NextResponse.json(settings ?? DEFAULT_SETTINGS);
   } catch {
@@ -16,10 +15,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-
   try {
+    const user = await getCurrentUser(req);
+    if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
     const body = await req.json();
 
     const arrayFields = ['villes', 'typeCommerce', 'typeLead', 'qualificationSysteme', 'services', 'motifsAnnulation'];
