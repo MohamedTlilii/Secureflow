@@ -26,8 +26,6 @@ interface Particle { x:number; y:number; s:number; d:number; delay:number; color
 
 const AV_COLORS = ['#3b6cf8','#06b6d4','#f59e0b','#f97316','#a78bfa'];
 
-const getYear  = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getFullYear().toString();
-const getMonth = (f: SolutionExpress) => new Date(f.dateVente ?? f.createdAt).getMonth();
 const ini = (f: SolutionExpress) => {
   const name = f.entreprise || `${f.prenom||''} ${f.nom||''}`.trim() || '?';
   const p = name.split(' ');
@@ -310,7 +308,12 @@ export default function PipelinePage() {
             {STAGES.map((stage,stageIdx)=>{
               const colItems = filtered
                 .filter(f=>f.status===stage.key)
-                .sort((a,b)=>new Date(b.dateVente??b.createdAt).getTime()-new Date(a.dateVente??a.createdAt).getTime());
+                .sort((a,b)=>{
+                  if (!a.dateVente && !b.dateVente) return 0;
+                  if (!a.dateVente) return 1;
+                  if (!b.dateVente) return -1;
+                  return new Date(b.dateVente).getTime()-new Date(a.dateVente).getTime();
+                });
               const isOver = over===stage.key;
 
               return (
@@ -340,14 +343,14 @@ export default function PipelinePage() {
                   <div style={{display:'flex',flexDirection:'column',gap:8,flex:1,maxHeight:560,overflowY:'auto'}}>
                     {colItems.map((f,i)=>{
                       const isDragging = dragId===f.id;
-                      const dCurr  = new Date(f.dateVente??f.createdAt);
-                      const dPrev  = i>0 ? new Date(colItems[i-1].dateVente??colItems[i-1].createdAt) : null;
-                      const showSep = !dPrev || dCurr.getMonth()!==dPrev.getMonth() || dCurr.getFullYear()!==dPrev.getFullYear();
+                      const dCurr  = f.dateVente ? new Date(f.dateVente) : null;
+                      const dPrev  = i>0 && colItems[i-1].dateVente ? new Date(colItems[i-1].dateVente!) : null;
+                      const showSep = !!dCurr && (!dPrev || dCurr.getMonth()!==dPrev.getMonth() || dCurr.getFullYear()!==dPrev.getFullYear());
                       const avColor = AV_COLORS[i % AV_COLORS.length];
 
                       return (
                         <div key={f.id}>
-                          {showSep&&(
+                          {showSep&&dCurr&&(
                             <div style={{display:'flex',alignItems:'center',gap:6,margin:'4px 0 2px'}}>
                               <div style={{flex:1,height:1,background:`${stage.color}25`}}/>
                               <span style={{fontSize:9,fontWeight:700,color:stage.color,letterSpacing:0.8,textTransform:'uppercase'}}>

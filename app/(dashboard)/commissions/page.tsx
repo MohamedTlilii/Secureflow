@@ -47,7 +47,8 @@ export default function CommissionsPage() {
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [annee,        setAnnee]        = useState<string>(String(new Date().getFullYear()));
   const [filtre,       setFiltre]       = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
-  const [selectedMois, setSelectedMois] = useState<number | null>(null);
+  const [selectedMois,  setSelectedMois]  = useState<number | null>(null);
+  const [visibleCount,  setVisibleCount]  = useState(20);
   const [resumeFiche,  setResumeFiche]  = useState<SolutionExpress|null>(null);
   const [ultraFiche,   setUltraFiche]   = useState<SolutionExpress|null>(null);
   const [loading,      setLoading]      = useState(true);
@@ -97,6 +98,7 @@ export default function CommissionsPage() {
   const [commStats, setCommStats] = useState<CommStats | null>(null);
 
   useEffect(() => { monthCache.current = {}; }, [annee, filtre]);
+  useEffect(() => { setVisibleCount(20); }, [annee, selectedMois, filtre]);
 
   const fetchStats = useCallback(async (force = false) => {
     const calAnnee = annee !== 'tout' ? Number(annee) : new Date().getFullYear();
@@ -420,6 +422,7 @@ export default function CommissionsPage() {
                 ):(
                   <div>
                     {[...filteredHistorique].sort((a,b)=>new Date(b.dateVente!).getTime()-new Date(a.dateVente!).getTime())
+                      .slice(0,visibleCount)
                       .map((c,i,arr)=>{
                         const annulee = c.status==='installation_annulee';
                         const color   = annulee?'#be123c':c.commissionPayee?'#3b6cf8':'#f79009';
@@ -475,6 +478,14 @@ export default function CommissionsPage() {
                           </div>
                         );
                       })}
+                    {visibleCount < filteredHistorique.length && (
+                      <div style={{padding:'14px 20px',borderTop:'1px solid rgba(255,255,255,0.06)',textAlign:'center'}}>
+                        <button onClick={()=>setVisibleCount(v=>v+20)}
+                          style={{padding:'9px 28px',borderRadius:10,border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.04)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                          Afficher plus ({filteredHistorique.length - visibleCount} restants)
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

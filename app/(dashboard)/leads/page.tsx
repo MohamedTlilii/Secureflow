@@ -265,12 +265,20 @@ export default function SolutionExpressPage() {
 
   const sorted = useMemo(() => [...filtered].sort((a, b) => {
     switch (sortBy) {
-      case 'date_asc':        return new Date(a.dateVente ?? a.createdAt).getTime() - new Date(b.dateVente ?? b.createdAt).getTime();
+      case 'date_asc':
+        if (!a.dateVente && !b.dateVente) return 0;
+        if (!a.dateVente) return 1;
+        if (!b.dateVente) return -1;
+        return new Date(a.dateVente).getTime() - new Date(b.dateVente).getTime();
       case 'urgency_desc':    return (b.urgencyScore || 0) - (a.urgencyScore || 0);
       case 'commission_desc': return (b.commissionTotale || 0) - (a.commissionTotale || 0);
       case 'entreprise':      return (a.entreprise || '').localeCompare(b.entreprise || '');
       case 'status':          return VALID_STATUTS.indexOf(a.status) - VALID_STATUTS.indexOf(b.status);
-      default:                return new Date(b.dateVente ?? b.createdAt).getTime() - new Date(a.dateVente ?? a.createdAt).getTime();
+      default:
+        if (!a.dateVente && !b.dateVente) return 0;
+        if (!a.dateVente) return 1;
+        if (!b.dateVente) return -1;
+        return new Date(b.dateVente).getTime() - new Date(a.dateVente).getTime();
     }
   }), [filtered, sortBy]);
 

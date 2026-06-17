@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import { prisma } from './prisma';
 
 const _rawSecret = process.env.JWT_SECRET;
 if (!_rawSecret) throw new Error('JWT_SECRET non défini dans les variables d\'environnement');
-const JWT_SECRET: string = _rawSecret;
+const JWT_SECRET = new TextEncoder().encode(_rawSecret);
 
 export interface JwtPayload {
   id: string;
@@ -11,16 +11,11 @@ export interface JwtPayload {
   exp?: number;
 }
 
-export function signToken(userId: string): string {
-  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
-}
-
-export function verifyToken(token: string): JwtPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
-  } catch {
-    return null;
-  }
+export async function signToken(userId: string): Promise<string> {
+  return new SignJWT({ id: userId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('7d')
+    .sign(JWT_SECRET);
 }
 
 export async function getCurrentUser(req: Request) {

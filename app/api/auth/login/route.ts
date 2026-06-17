@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Email ou mot de passe incorrect' }, { status: 401 });
     }
     loginAttempts.delete(ip);
-    const token = signToken(user.id);
+    const token = await signToken(user.id);
     const { password: _, ...userSafe } = user;
     return NextResponse.json({ token, user: userSafe });
   } catch {

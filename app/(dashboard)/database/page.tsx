@@ -132,7 +132,12 @@ const villesDispos = useMemo(() =>
     (!filters.ville      || item.ville      === filters.ville) &&
     (!filters.typeClient || item.typeClient === filters.typeClient) &&
     (!filters.status     || item.status     === filters.status)
-  ).sort((a,b) => new Date(b.dateVente ?? b.createdAt ?? 0).getTime() - new Date(a.dateVente ?? a.createdAt ?? 0).getTime()),
+  ).sort((a,b) => {
+    if (!a.dateVente && !b.dateVente) return 0;
+    if (!a.dateVente) return 1;
+    if (!b.dateVente) return -1;
+    return new Date(b.dateVente).getTime() - new Date(a.dateVente).getTime();
+  }),
   [fichesByAnnee, filters]);
 
   const hasFilters = Object.values(filters).some(Boolean);
