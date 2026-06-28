@@ -10,6 +10,9 @@ import {
 } from 'recharts';
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
+import { getCachedSettings } from '@/lib/settings-cache';
+import useIsMobile from '@/hooks/useIsMobile';
+import CosmosBackground from '@/components/CosmosBackground';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings } from '@/types';
@@ -21,21 +24,17 @@ const fmtDate  = (d?: string | null) =>
 const fmtMoney = (v: number) => `${(v||0).toFixed(2)} TND`;
 
 /* ─── constantes ──────────────────────────────────────────── */
+const COMM_PART_COLORS = ['#12b76a','#61DAFB','#3b6cf8','#a78bfa','#f59e0b'];
 
-/* ─── cosmos ──────────────────────────────────────────────── */
-const PART_COLORS = ['#12b76a','#61DAFB','#3b6cf8','#a78bfa','#f59e0b'];
-interface Star     { x:number; y:number; s:number; o:number; d:number }
-interface Particle { x:number; y:number; s:number; d:number; delay:number; color:string }
-
-/* ─── mobile hook ─────────────────────────────────────────── */
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 768);
-    h(); window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
+/* ─── interfaces ─── */
+interface ChartBar { name:string; total:number; color?:string; count?:number; cPayee?:number; cAttente?:number; cAnnulee?:number; annulee?:boolean; fullNom?:string; motif?:string; payee?:boolean }
+interface CommStats {
+  totalGagne:number; totalPaye:number; enAttente:number; totalAnnule:number;
+  maximum:number; minimum:number;
+  objectif:number; objPct:number;
+  nActives:number; nPayees:number; nAttente:number; nAnnulees:number;
+  annees:number[]; chartData:ChartBar[];
+  historique:SolutionExpress[]; histTotal:number;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -44,37 +43,23 @@ function useIsMobile() {
 export default function CommissionsPage() {
   const isMobile = useIsMobile();
 
-  const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
-  const [annee,        setAnnee]        = useState<string>(String(new Date().getFullYear()));
-  const [filtre,       setFiltre]       = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
-  const [selectedMois,  setSelectedMois]  = useState<number | null>(null);
-  const [visibleCount,  setVisibleCount]  = useState(20);
-  const [resumeFiche,  setResumeFiche]  = useState<SolutionExpress|null>(null);
-  const [ultraFiche,   setUltraFiche]   = useState<SolutionExpress|null>(null);
-  const [loading,      setLoading]      = useState(true);
-  const [mounted,      setMounted]      = useState(false);
+  const [settings,    setSettings]    = useState<Settings>(DEFAULT_SETTINGS);
+  const [annee,       setAnnee]       = useState<string>(String(new Date().getFullYear()));
+  const [filtre,      setFiltre]      = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
+  const [selectedMois, setSelectedMois] = useState<number | null>(null);
+  const [historique,  setHistorique]  = useState<SolutionExpress[]>([]);
+  const [histTotal,   setHistTotal]   = useState(0);
+  const [togglingId,  setTogglingId]  = useState<string | null>(null);
+  const [resumeFiche, setResumeFiche] = useState<SolutionExpress|null>(null);
+  const [ultraFiche,  setUltraFiche]  = useState<SolutionExpress|null>(null);
+  const [loading,     setLoading]     = useState(true);
 
-  const starsRef    = useRef<Star[]>([]);
-  const partsRef    = useRef<Particle[]>([]);
-  const monthCache  = useRef<Record<string, CommStats>>({});
-
-  /* ── cosmos ── */
-  useEffect(() => {
-    starsRef.current = Array.from({length:60},()=>({
-      x:Math.random()*100,y:Math.random()*100,
-      s:Math.random()*2+0.4,o:Math.random()*0.5+0.08,d:Math.random()*5+2,
-    }));
-    partsRef.current = Array.from({length:18},()=>({
-      x:Math.random()*100,y:Math.random()*100+100,
-      s:Math.random()*5+2,d:Math.random()*18+10,delay:Math.random()*8,
-      color:PART_COLORS[Math.floor(Math.random()*PART_COLORS.length)],
-    }));
-    setMounted(true);
-  }, []);
+  const monthCache = useRef<Record<string, CommStats>>({});
+  const ctrlRef    = useRef<AbortController | null>(null);
 
   /* ── fetch settings (labels uniquement) ── */
   useEffect(() => {
-    api.get<Settings>('/api/settings').then(r => { if (r.data) setSettings(r.data); }).catch(() => {});
+    getCachedSettings().then(s => { if (s) setSettings(s); });
   }, []);
 
   /* ── helpers labels ── */
@@ -86,104 +71,120 @@ export default function CommissionsPage() {
     [settings.qualificationSysteme]);
 
   /* ── Stats depuis le backend ── */
-  interface ChartBar { name:string; total:number; color?:string; count?:number; cPayee?:number; cAttente?:number; cAnnulee?:number; annulee?:boolean; fullNom?:string; motif?:string; payee?:boolean }
-  interface CommStats {
-    totalGagne:number; totalPaye:number; enAttente:number; totalAnnule:number;
-    maximum:number; minimum:number; pctPaye:number;
-    objectif:number; objPct:number;
-    nActives:number; nPayees:number; nAttente:number; nAnnulees:number;
-    annees:number[]; chartData:ChartBar[]; calendarData:Record<string,{total:number;payee:number;attente:number;annulee:number}>;
-    historique:SolutionExpress[]; totalMois:number;
-  }
   const [commStats, setCommStats] = useState<CommStats | null>(null);
 
   useEffect(() => { monthCache.current = {}; }, [annee, filtre]);
-  useEffect(() => { setVisibleCount(20); }, [annee, selectedMois, filtre]);
+  useEffect(() => { setHistorique([]); setHistTotal(0); }, [annee, selectedMois, filtre]);
 
   const fetchStats = useCallback(async (force = false) => {
     const calAnnee = annee !== 'tout' ? Number(annee) : new Date().getFullYear();
     const key = `${annee}-${selectedMois ?? 'all'}`;
     if (!force && monthCache.current[key]) {
-      setCommStats(monthCache.current[key]);
+      const cached = monthCache.current[key];
+      setCommStats(cached);
+      setHistorique(cached.historique ?? []);
+      setHistTotal(cached.histTotal ?? 0);
       return;
     }
+    ctrlRef.current?.abort();
+    const ctrl = new AbortController();
+    ctrlRef.current = ctrl;
+    let canceled = false;
     setLoading(true);
     try {
       const { data } = await api.get<CommStats>('/api/commissions/stats', {
-        params: { annee, filtre, calAnnee, calMois: selectedMois ?? -1 },
+        params: { annee, filtre, calAnnee, calMois: selectedMois ?? -1, histOffset: 0 },
+        signal: ctrl.signal,
       });
       monthCache.current[key] = data;
       setCommStats(data);
-    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
-    finally { setLoading(false); }
+      setHistorique(data.historique ?? []);
+      setHistTotal(data.histTotal ?? 0);
+    } catch (e) {
+      if ((e as {name?:string}).name === 'CanceledError') { canceled = true; return; }
+      toast.error(apiErrMsg(e, 'Erreur chargement'));
+    } finally { if (!canceled) setLoading(false); }
   }, [annee, filtre, selectedMois]);
 
   useEffect(() => {
     fetchStats();
     const onVis = () => { if (!document.hidden) fetchStats(true); };
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      ctrlRef.current?.abort();
+    };
   }, [fetchStats]);
 
   /* ── toggle paiement ── */
   const togglePaiement = async (f: SolutionExpress) => {
+    if (togglingId) return;
+    setTogglingId(f.id);
     try {
       await api.put(`/api/leads/${f.id}`, {
         commissionPayee: !f.commissionPayee,
         datePaiementCommission: !f.commissionPayee ? new Date().toISOString() : null,
       });
-      toast.success(!f.commissionPayee?'✓ Commission payée !':'Marquée non payée');
+      toast.success(!f.commissionPayee ? '✓ Commission payée !' : 'Marquée non payée');
       fetchStats(true);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur paiement')); }
+    finally { setTogglingId(null); }
+  };
+
+  /* ── charger plus d'historique ── */
+  const loadMore = async () => {
+    const calAnnee = annee !== 'tout' ? Number(annee) : new Date().getFullYear();
+    try {
+      const { data } = await api.get<CommStats>('/api/commissions/stats', {
+        params: { annee, filtre, calAnnee, calMois: selectedMois ?? -1, histOffset: historique.length },
+      });
+      setHistorique(prev => [...prev, ...(data.historique ?? [])]);
+      setHistTotal(data.histTotal ?? 0);
+    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
   };
 
   /* ── raccourcis stats depuis backend ── */
-  const annees             = commStats?.annees             ?? [];
-  const totalGagne         = commStats?.totalGagne         ?? 0;
-  const totalPaye          = commStats?.totalPaye          ?? 0;
-  const enAttente          = commStats?.enAttente          ?? 0;
-  const totalAnnule        = commStats?.totalAnnule        ?? 0;
-  const maximum            = commStats?.maximum            ?? 0;
-  const minimum            = commStats?.minimum            ?? 0;
-  const pctPaye            = commStats?.pctPaye            ?? 0;
-  const objectif           = commStats?.objectif           ?? 0;
-  const objPct             = commStats?.objPct             ?? 0;
-  const nActives           = commStats?.nActives           ?? 0;
-  const nPayees            = commStats?.nPayees            ?? 0;
-  const nAttenteCount      = commStats?.nAttente           ?? 0;
-  const nAnnulees          = commStats?.nAnnulees          ?? 0;
-  const chartData          = commStats?.chartData          ?? [];
-  const calendarData       = commStats?.calendarData       ?? {};
-  const filteredHistorique = commStats?.historique         ?? [];
-  const totalMois          = commStats?.totalMois          ?? 0;
+  const annees        = useMemo(() => (commStats?.annees ?? []).map(String), [commStats?.annees]);
+  const totalGagne    = commStats?.totalGagne  ?? 0;
+  const totalPaye     = commStats?.totalPaye   ?? 0;
+  const enAttente     = commStats?.enAttente   ?? 0;
+  const totalAnnule   = commStats?.totalAnnule ?? 0;
+  const maximum       = commStats?.maximum     ?? 0;
+  const minimum       = commStats?.minimum     ?? 0;
+  const objectif      = commStats?.objectif    ?? 0;
+  const objPct        = commStats?.objPct      ?? 0;
+  const nActives      = commStats?.nActives    ?? 0;
+  const nPayees       = commStats?.nPayees     ?? 0;
+  const nAttenteCount = commStats?.nAttente    ?? 0;
+  const nAnnulees     = commStats?.nAnnulees   ?? 0;
+  const chartData     = commStats?.chartData   ?? [];
 
+  const todayLabel = useMemo(() =>
+    new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' }),
+  []);
+
+  const sortedHistorique = useMemo(() =>
+    [...historique].sort((a, b) => {
+      const ta = a.dateVente ? Date.parse(a.dateVente) : 0;
+      const tb = b.dateVente ? Date.parse(b.dateVente) : 0;
+      return tb - ta;
+    }),
+  [historique]);
 
   /* ────────────────── RENDER ────────────────── */
   return (
     <div style={{position:'relative',minHeight:'100vh',color:'#fff',overflow:'hidden'}}>
-      <style>{`
-        @keyframes twinkle-star  { 0%,100%{opacity:.08} 50%{opacity:.55} }
-        @keyframes particle-rise { from{transform:translateY(0);opacity:.4} to{transform:translateY(-100vh);opacity:0} }
-        @keyframes comm-fade-in  { from{opacity:0} to{opacity:1} }
-        @keyframes comm-slide-up { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        .comm-row:hover { background:rgba(255,255,255,0.03)!important; }
-      `}</style>
 
       {/* Cosmos vert/teal */}
       <div style={{position:'fixed',inset:0,background:'radial-gradient(ellipse 120% 80% at 50% -10%,rgba(18,183,106,0.12) 0%,transparent 60%),radial-gradient(ellipse 80% 60% at 90% 50%,rgba(97,218,251,0.07) 0%,transparent 50%),#06060f',zIndex:0,pointerEvents:'none'}}/>
-      {mounted&&starsRef.current.map((s,i)=>(
-        <div key={i} style={{position:'fixed',left:`${s.x}%`,top:`${s.y}%`,width:s.s,height:s.s,borderRadius:'50%',background:'#fff',opacity:s.o,pointerEvents:'none',zIndex:0,animation:`twinkle-star ${s.d}s ease-in-out infinite`,animationDelay:`${i*0.08}s`}}/>
-      ))}
-      {mounted&&partsRef.current.map((p,i)=>(
-        <div key={i} style={{position:'fixed',left:`${p.x}%`,bottom:`-${p.y}px`,width:p.s,height:p.s,borderRadius:'50%',background:p.color,opacity:0.4,pointerEvents:'none',zIndex:0,animation:`particle-rise ${p.d}s linear infinite`,animationDelay:`${p.delay}s`}}/>
-      ))}
+      <CosmosBackground particleColors={COMM_PART_COLORS} />
 
       <div style={{position:'relative',zIndex:1,padding:isMobile?'16px 12px 40px':'28px 32px 40px'}}>
 
         {/* ════════════════════════════════════════
             HEADER
             ════════════════════════════════════════ */}
-        <div style={{padding:'1.5px',borderRadius:22,background:'linear-gradient(135deg,#12b76a70,#61DAFB35,#a78bfa25)',marginBottom:20,animation:'fadeSlideUp 0.4s ease both'}}>
+        <div style={{padding:'1.5px',borderRadius:22,background:'linear-gradient(135deg,#ef444470,#dc262640,#a78bfa25)',marginBottom:20,animation:'fadeSlideUp 0.4s ease both'}}>
           <div style={{background:'rgba(2,8,16,0.97)',borderRadius:'20.5px',padding:isMobile?'18px 16px':'28px 32px',backdropFilter:'blur(40px)',position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',top:-80,left:-60,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle,rgba(18,183,106,0.20) 0%,transparent 70%)',pointerEvents:'none'}}/>
             <div style={{position:'absolute',bottom:-50,right:-30,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle,rgba(97,218,251,0.12) 0%,transparent 70%)',pointerEvents:'none'}}/>
@@ -204,13 +205,13 @@ export default function CommissionsPage() {
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                   {!isMobile&&(
                     <div style={{fontSize:12,color:'#fff',background:'rgba(255,255,255,0.05)',padding:'6px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',whiteSpace:'nowrap',fontWeight:700,textTransform:'capitalize'}}>
-                      {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+                      {todayLabel}
                     </div>
                   )}
                   <select value={annee} onChange={e=>{setAnnee(e.target.value);setFiltre('tout');setSelectedMois(null);}}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
                     <option value="tout">Toutes les années</option>
-                    {annees.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                    {annees.map(y=><option key={y} value={y}>{y}</option>)}
                   </select>
                   {annee!=='tout'&&(
                     <select value={selectedMois===null?'tout':String(selectedMois)} onChange={e=>setSelectedMois(e.target.value==='tout'?null:parseInt(e.target.value))}
@@ -322,9 +323,15 @@ export default function CommissionsPage() {
               </span>
             </div>
             <div style={{height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',display:'flex'}}>
-              <div style={{height:'100%',background:'#3b6cf8',width:`${objectif>0?Math.min((totalPaye/objectif)*100,100):0}%`,transition:'width 1.2s ease'}}/>
-              <div style={{height:'100%',background:'#f79009',width:`${objectif>0?Math.min((enAttente/objectif)*100,100):0}%`,transition:'width 1.2s ease'}}/>
-            </div>
+              {objectif>0&&(()=>{
+                const cappedTotal = Math.min(totalGagne, objectif);
+                const payePct    = cappedTotal > 0 ? (Math.min(totalPaye,   cappedTotal) / objectif) * 100 : 0;
+                const attentePct = cappedTotal > 0 ? (Math.min(enAttente,   cappedTotal - Math.min(totalPaye, cappedTotal)) / objectif) * 100 : 0;
+                return (<>
+                  <div style={{height:'100%',background:'#3b6cf8',width:`${payePct}%`,   transition:'width 1.2s ease'}}/>
+                  <div style={{height:'100%',background:'#f79009',width:`${attentePct}%`, transition:'width 1.2s ease'}}/>
+                </>);
+              })()}</div>
           </div>
         )}
 
@@ -398,9 +405,9 @@ export default function CommissionsPage() {
                   <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>
                     Historique — {selectedMois!==null?MOIS_FULL[selectedMois]+' '+annee:'Année '+annee}
                   </div>
-                  {filteredHistorique.length>0&&(
+                  {histTotal>0&&(
                     <div style={{fontSize:11,color:'#fff',background:'rgba(255,255,255,0.04)',padding:'3px 12px',borderRadius:20,border:'1px solid rgba(255,255,255,0.08)',fontWeight:700}}>
-                      <span style={{color:'#fff',fontWeight:800}}>{filteredHistorique.length}</span> vente{filteredHistorique.length!==1?'s':''}
+                      <span style={{color:'#fff',fontWeight:800}}>{histTotal}</span> vente{histTotal!==1?'s':''}
                     </div>
                   )}
                 </div>
@@ -409,7 +416,7 @@ export default function CommissionsPage() {
                   <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'60px 0'}}>
                     <div style={{width:36,height:36,borderRadius:'50%',border:'3px solid rgba(239,68,68,0.15)',borderTopColor:'#ef4444',animation:'spin 0.8s linear infinite'}}/>
                   </div>
-                ):filteredHistorique.length===0?(
+                ):historique.length===0?(
                   <div style={{textAlign:'center',padding:'60px 20px'}}>
                     <div style={{width:60,height:60,borderRadius:18,background:'rgba(18,183,106,0.06)',border:'1px solid rgba(18,183,106,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
                       <Wallet size={28} color="#12b76a" style={{opacity:0.4}}/>
@@ -421,9 +428,7 @@ export default function CommissionsPage() {
                   </div>
                 ):(
                   <div>
-                    {[...filteredHistorique].sort((a,b)=>new Date(b.dateVente!).getTime()-new Date(a.dateVente!).getTime())
-                      .slice(0,visibleCount)
-                      .map((c,i,arr)=>{
+                    {sortedHistorique.map((c,i,arr)=>{
                         const annulee = c.status==='installation_annulee';
                         const color   = annulee?'#be123c':c.commissionPayee?'#3b6cf8':'#f79009';
                         return (
@@ -465,24 +470,24 @@ export default function CommissionsPage() {
                                 ❌{!isMobile&&' Annulée'}
                               </div>
                             ):(
-                              <button onClick={()=>togglePaiement(c)}
-                                style={{display:'flex',alignItems:'center',gap:isMobile?4:6,padding:isMobile?'6px 10px':'8px 16px',borderRadius:20,fontSize:11,fontWeight:700,cursor:'pointer',flexShrink:0,transition:'all 0.2s',
+                              <button onClick={()=>togglePaiement(c)} disabled={!!togglingId}
+                                style={{display:'flex',alignItems:'center',gap:isMobile?4:6,padding:isMobile?'6px 10px':'8px 16px',borderRadius:20,fontSize:11,fontWeight:700,cursor:togglingId?'wait':'pointer',flexShrink:0,transition:'all 0.2s',opacity:togglingId===c.id?0.6:1,
                                   border:`1px solid ${c.commissionPayee?'rgba(59,108,248,0.3)':'rgba(247,144,9,0.3)'}`,
                                   background:c.commissionPayee?'rgba(59,108,248,0.08)':'rgba(247,144,9,0.08)',
                                   color:c.commissionPayee?'#3b6cf8':'#f79009'}}
-                                onMouseEnter={e=>e.currentTarget.style.transform='scale(1.04)'}
-                                onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+                                onMouseEnter={e=>{if(!togglingId)e.currentTarget.style.transform='scale(1.04)';}}
+                                onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';}}>
                                 {c.commissionPayee?<><CheckCircle size={13}/>{!isMobile&&' Payée'}</>:<><XCircle size={13}/>{!isMobile&&' Attente'}</>}
                               </button>
                             )}
                           </div>
                         );
                       })}
-                    {visibleCount < filteredHistorique.length && (
+                    {historique.length < histTotal && (
                       <div style={{padding:'14px 20px',borderTop:'1px solid rgba(255,255,255,0.06)',textAlign:'center'}}>
-                        <button onClick={()=>setVisibleCount(v=>v+20)}
+                        <button onClick={loadMore}
                           style={{padding:'9px 28px',borderRadius:10,border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.04)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                          Afficher plus ({filteredHistorique.length - visibleCount} restants)
+                          Afficher plus ({histTotal - historique.length} restants)
                         </button>
                       </div>
                     )}

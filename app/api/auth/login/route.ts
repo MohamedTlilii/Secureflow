@@ -3,32 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
 
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS  = 10;
-const WINDOW_MS     = 15 * 60 * 1000;
-
-function getIp(req: NextRequest): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0].trim()
-    ?? req.headers.get('x-real-ip')
-    ?? 'unknown';
-}
-
-function isRateLimited(ip: string): boolean {
-  const now   = Date.now();
-  const entry = loginAttempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > MAX_ATTEMPTS;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = getIp(req);
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ message: 'Trop de tentatives — réessaie dans 15 minutes' }, { status: 429 });
-  }
   let body: { email?: unknown; password?: unknown };
   try { body = await req.json(); }
   catch { return NextResponse.json({ message: 'Corps de requête invalide' }, { status: 400 }); }
@@ -54,7 +29,6 @@ export async function POST(req: NextRequest) {
     if (!valid) {
       return NextResponse.json({ message: 'Email ou mot de passe incorrect' }, { status: 401 });
     }
-    loginAttempts.delete(ip);
     const token = await signToken(user.id);
     const { password: _, ...userSafe } = user;
     return NextResponse.json({ token, user: userSafe });

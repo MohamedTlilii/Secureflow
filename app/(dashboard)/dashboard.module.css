@@ -1,0 +1,284 @@
+/* ────────────────────────────────────────────────────────────
+   Dashboard — CSS module
+   Styles structurels stables. Les valeurs dynamiques (couleurs
+   issues des settings, pourcentages calculés) restent inline.
+   ──────────────────────────────────────────────────────────── */
+
+/* ── Keyframes locaux (CSS modules ne résout pas les @keyframes globaux) ── */
+@keyframes spin        { to { transform: rotate(360deg); } }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Layout racine ── */
+.root { position: relative; min-height: 100vh; color: #fff; overflow: hidden; }
+.bgGradient {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(18,183,106,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 90% 50%, rgba(59,108,248,0.07) 0%, transparent 50%),
+    #06060f;
+}
+.content { position: relative; z-index: 1; }
+.contentPad { padding: 28px 32px 40px; }
+.contentPadMobile { padding: 16px 12px 40px; }
+
+/* ── Wrapper carte avec bordure dégradée ── */
+.section {
+  padding: 1.5px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  animation: fadeSlideUp 0.4s ease both;
+}
+.sectionInner {
+  border-radius: 16.5px;
+  padding: 20px 26px;
+  backdrop-filter: blur(20px);
+  background: rgba(2,8,16,0.97);
+}
+.sectionInnerMobile { padding: 16px; }
+
+/* ── En-tête de section (titre + icône) ── */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.sectionTitle { font-size: 14px; font-weight: 700; color: #c0c0e0; }
+
+/* ── Spinner de chargement ── */
+.loadingWrap { display: flex; align-items: center; justify-content: center; padding: 80px 0; }
+.spinner {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid rgba(18,183,106,0.15);
+  border-top-color: #12b76a;
+  animation: spin 0.9s linear infinite;
+}
+
+/* ── État d'erreur bloquante ── */
+.errorWrap {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 80px 20px; gap: 12px;
+}
+.errorText { color: #be123c; font-size: 14px; font-weight: 700; margin: 0; text-align: center; }
+.errorBtn {
+  margin-top: 4px; padding: 8px 22px; border-radius: 9px;
+  border: 1px solid #be123c; background: rgba(190,18,60,0.1);
+  color: #be123c; cursor: pointer; font-size: 12px; font-weight: 700;
+}
+
+/* ── Bandeau erreur non-bloquant ── */
+.errorBanner {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  border-radius: 10px; background: rgba(190,18,60,0.08);
+  border: 1px solid rgba(190,18,60,0.25); margin-bottom: 16px;
+}
+.errorBannerText { flex: 1; font-size: 13px; color: #be123c; font-weight: 600; }
+.errorBannerBtn {
+  font-size: 12px; padding: 4px 12px; border-radius: 7px;
+  border: 1px solid #be123c; background: rgba(190,18,60,0.1);
+  color: #be123c; cursor: pointer; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── État vide ── */
+.emptyState { color: #fff; font-size: 13px; text-align: center; padding: 20px 0; }
+
+/* ── Header principal ── */
+.headerSection { padding: 1.5px; border-radius: 22px; margin-bottom: 24px; animation: fadeSlideUp 0.4s ease both; }
+.headerInner {
+  background: rgba(2,8,16,0.97); border-radius: 20.5px;
+  position: relative; overflow: hidden;
+}
+.headerPad { padding: 28px 32px; }
+.headerPadMobile { padding: 20px 16px; }
+.headerOrb { position: absolute; border-radius: 50%; pointer-events: none; }
+.headerContent { position: relative; z-index: 1; }
+
+.headerTop {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.headerTopMobile { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+.headerLogo {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg, #12b76a, #61DAFB);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 28px rgba(18,183,106,0.5); flex-shrink: 0;
+}
+.headerTitleRow { display: flex; align-items: center; gap: 14px; }
+.headerTitle {
+  margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 30%, #12b76a);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.headerTitleMobile { font-size: 20px; }
+.headerSubtitle { color: #12b76a; font-size: 13px; margin: 0; margin-top: 2px; font-weight: 700; }
+
+.headerFilters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.headerDate {
+  font-size: 12px; color: #fff; background: rgba(255,255,255,0.05);
+  padding: 6px 14px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap; text-transform: capitalize;
+}
+.headerSelect {
+  font-size: 12px; padding: 7px 14px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06); color: #fff;
+  cursor: pointer; outline: none; font-weight: 700;
+}
+
+/* ── Taux d'installation ── */
+.rateRow { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.rateRowMobile { flex-direction: column; }
+.rateLabel { font-size: 24px; font-weight: 800; color: #c0c0e0; margin-bottom: 4px; }
+.rateLabelMobile { font-size: 18px; }
+.rateDesc { font-size: 12px; color: #fff; margin-bottom: 12px; }
+.rateBarWrap { height: 22px; border-radius: 6px; background: rgba(255,255,255,0.08); position: relative; }
+.rateBarFill {
+  height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, #3b6cf8, #12b76a);
+  transition: width 1.2s ease;
+  box-shadow: 0 0 12px rgba(18,183,106,0.4);
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px; overflow: hidden;
+}
+.rateBarPct { font-size: 10px; font-weight: 700; color: #fff; white-space: nowrap; }
+.rateBarMax {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.scoreRings { display: flex; gap: 24px; flex-shrink: 0; }
+
+/* ── Total leads ── */
+.totalSection { padding: 1.5px; border-radius: 18px; margin-bottom: 14px; animation: fadeSlideUp 0.4s 0.05s ease both; }
+.totalInner {
+  background: rgba(2,8,16,0.97); border-radius: 16.5px;
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.totalPad { padding: 20px 26px; }
+.totalPadMobile { padding: 16px 18px; }
+.totalLeft { display: flex; align-items: center; gap: 18px; }
+.totalIcon {
+  width: 52px; height: 52px; border-radius: 15px;
+  background: rgba(6,182,212,0.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: 0 0 22px rgba(6,182,212,0.25);
+}
+.totalLabel { font-size: 10px; color: #06b6d4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.totalValue { font-size: 40px; font-weight: 900; color: #06b6d4; line-height: 1; }
+.totalValueMobile { font-size: 28px; }
+.totalRight { display: flex; align-items: center; }
+.totalRightGap { gap: 28px; }
+.totalRightGapMobile { gap: 18px; }
+.totalTypeItem { display: flex; align-items: center; gap: 8px; }
+.totalTypeIcon {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+.totalTypeVal { font-size: 22px; font-weight: 900; line-height: 1; }
+.totalTypeValMobile { font-size: 18px; }
+.totalTypeLbl { font-size: 11px; font-weight: 700; }
+
+/* ── Status cards grid ── */
+.statusGrid { display: grid; gap: 14px; margin-bottom: 24px; }
+.statusGridDesktop { grid-template-columns: repeat(3, 1fr); }
+.statusGridMobile  { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.statusCard { padding: 1.5px; border-radius: 16px; }
+.statusCardInner {
+  background: rgba(2,8,16,0.97); border-radius: 14.5px;
+  height: 100%; backdrop-filter: blur(20px);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.statusCardPad { padding: 18px 20px; }
+.statusCardPadMobile { padding: 14px; }
+.statusCardBody { display: flex; align-items: flex-start; justify-content: space-between; }
+.statusCardLbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.statusCardVal { font-size: 32px; font-weight: 900; line-height: 1; }
+.statusCardValMobile { font-size: 24px; }
+.statusCardSub { font-size: 10px; margin-top: 5px; font-weight: 700; }
+.statusCardIcon {
+  width: 38px; height: 38px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ── Produits ── */
+.prodList { display: flex; flex-direction: column; gap: 12px; }
+.prodRow { display: flex; align-items: center; gap: 10px; }
+.prodIcon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.prodMeta { flex: 1; min-width: 0; }
+.prodMetaRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; }
+.prodName { font-size: 13px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prodCount { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+/* ── Types de leads ── */
+.leadTypeRow { display: flex; align-items: center; gap: 10px; }
+.leadTypeDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.leadTypeName { flex: 1; font-size: 13px; color: #fff; }
+.leadTypeCount { font-size: 13px; font-weight: 700; }
+
+/* ── Villes ── */
+.cityRow { display: flex; align-items: center; gap: 12px; transition: transform 0.15s; }
+.cityRank {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(97,218,251,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #61DAFB; flex-shrink: 0;
+}
+.cityName { flex: 1; font-size: 13px; color: #fff; }
+.cityCount { font-size: 13px; font-weight: 700; color: #fff; }
+
+/* ── Scrollable list ── */
+.scrollList { display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto; }
+
+/* ── Commerce grid ── */
+.commerceGrid { display: grid; gap: 10px; }
+.commerceGridDesktop { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.commerceGridMobile  { grid-template-columns: 1fr; }
+
+.commerceItem {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 10px; transition: all 0.15s;
+}
+.commerceRank {
+  width: 26px; height: 26px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.commerceLabel { flex: 1; font-size: 13px; color: #fff; line-height: 1.3; }
+.commerceCount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
+
+/* ── Leads récents ── */
+.recentList { display: flex; flex-direction: column; }
+.recentRow {
+  display: flex; align-items: center;
+  padding: 10px 0; transition: all 0.15s;
+}
+.recentRowGap { gap: 12px; }
+.recentRowGapMobile { gap: 10px; }
+.recentAvatar {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; flex-shrink: 0;
+}
+.recentMeta { flex: 1; min-width: 0; }
+.recentName { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recentSub { font-size: 11px; color: #fff; margin-top: 1px; }
+.recentCanceled { font-size: 10px; color: #be123c; margin-top: 1px; }
+.badge {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;
+}
+.statusBadge {
+  font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  flex-shrink: 0; white-space: nowrap;
+}
+
+/* ── Grille 2 colonnes (villes / lead types) ── */
+.twoColGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.twoColGridMobile { grid-template-columns: 1fr; }

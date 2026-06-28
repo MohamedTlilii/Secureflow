@@ -2,14 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { VALID_STATUTS } from '@/types';
-
-const ALLOWED_UPDATE_FIELDS = new Set([
-  'prenom','nom','email','telephone','entreprise','ville','typeClient',
-  'leadType','typeCommerce','qualificationSysteme','status','produits',
-  'fournisseurs','notes','summary','dateVente','commissionFixe',
-  'commissionExtra','commissionPayee','datePaiementCommission','motifAnnulation',
-  'urgencyScore','montantContrat','sexe','sourceText','sourceUrl','ancienneAdresse','adresse',
-]);
+import { ALLOWED_LEAD_FIELDS } from '@/lib/leads-config';
+import { calcCommissionTotale } from '@/lib/commission';
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -28,15 +22,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const updateFields: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(body)) {
-      if (ALLOWED_UPDATE_FIELDS.has(k)) updateFields[k] = v;
+      if (ALLOWED_LEAD_FIELDS.has(k)) updateFields[k] = v;
     }
 
     if (updateFields.commissionFixe !== undefined || updateFields.commissionExtra !== undefined) {
       const rawFixe  = updateFields.commissionFixe  ?? existing.commissionFixe  ?? 0;
       const rawExtra = updateFields.commissionExtra ?? existing.commissionExtra ?? 0;
-      const fixe  = Number.isFinite(parseFloat(String(rawFixe)))  ? parseFloat(String(rawFixe))  : 0;
-      const extra = Number.isFinite(parseFloat(String(rawExtra))) ? parseFloat(String(rawExtra)) : 0;
-      updateFields.commissionTotale = fixe + extra;
+      updateFields.commissionTotale = calcCommissionTotale(rawFixe, rawExtra);
     }
 
     const updated = await prisma.solutionExpress.update({

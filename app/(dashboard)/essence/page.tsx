@@ -1,28 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Fuel, CheckCircle, Clock, MessageSquare, Edit3, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
+import useIsMobile from '@/hooks/useIsMobile';
+import CosmosBackground from '@/components/CosmosBackground';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import type { EssenceMois } from '@/types';
 import { MOIS_FULL } from '@/types';
 
-/* ─── cosmos ─────────────────────────────────────────────── */
-const PART_COLORS = ['#f59e0b', '#f97316', '#fbbf24', '#3b6cf8', '#12b76a'];
-interface Star     { x:number; y:number; s:number; o:number; d:number }
-interface Particle { x:number; y:number; s:number; d:number; delay:number; color:string }
+const ESSENCE_PART_COLORS = ['#f59e0b', '#f97316', '#fbbf24', '#3b6cf8', '#12b76a'];
 
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 640);
-    h();
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
+const isAbortErr = (e: unknown) =>
+  (e as { code?: string })?.code === 'ERR_CANCELED' ||
+  (e as { name?: string })?.name === 'CanceledError';
 
 /* ─── NoteModal ──────────────────────────────────────────── */
 function NoteModal({ doc, onClose, onSave }: {
@@ -58,71 +50,73 @@ function NoteModal({ doc, onClose, onSave }: {
    PAGE
 ═══════════════════════════════════════════════════════════ */
 export default function EssencePage() {
-  const isMobile  = useIsMobile();
+  const isMobile = useIsMobile();
+
   const [data,      setData]      = useState<EssenceMois[]>([]);
   const [loading,   setLoading]   = useState(true);
-  const [mounted,   setMounted]   = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editVal,   setEditVal]   = useState('');
   const [noteModal, setNoteModal] = useState<EssenceMois | null>(null);
 
-  const starsRef = useRef<Star[]>([]);
-  const partsRef = useRef<Particle[]>([]);
-
-  const now         = new Date();
-  const curYear     = now.getFullYear();
-  const isDecembre  = now.getMonth() === 11;
-  const [annee,     setAnnee]     = useState(curYear);
-
-  /* ── cosmos ── */
-  useEffect(() => {
-    starsRef.current = Array.from({ length: 60 }, () => ({
-      x: Math.random() * 100, y: Math.random() * 100,
-      s: Math.random() * 2 + 0.4, o: Math.random() * 0.5 + 0.08, d: Math.random() * 5 + 2,
-    }));
-    partsRef.current = Array.from({ length: 18 }, () => ({
-      x: Math.random() * 100, y: Math.random() * 100 + 100,
-      s: Math.random() * 5 + 2, d: Math.random() * 18 + 10, delay: Math.random() * 8,
-      color: PART_COLORS[Math.floor(Math.random() * PART_COLORS.length)],
-    }));
-    setMounted(true);
+  const { curYear, isDecembre, todayLabel } = useMemo(() => {
+    const now = new Date();
+    return {
+      curYear:    now.getFullYear(),
+      isDecembre: now.getMonth() === 11,
+      todayLabel: now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    };
   }, []);
 
+  const [annee, setAnnee] = useState(curYear);
+
+  const toggleRef    = useRef(new Set<string>());
+  const preparingRef = useRef(false);
+
   /* ── fetch ── */
-  const fetchData = useCallback(async (yr: number, force = false) => {
-    if (!force) setLoading(true);
+  const fetchData = useCallback(async (yr: number, signal?: AbortSignal, silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const { data: rows } = await api.get<EssenceMois[]>('/api/essence', { params: { annee: yr } });
+      const { data: rows } = await api.get<EssenceMois[]>('/api/essence', { params: { annee: yr }, signal });
       setData(rows);
     } catch (e) {
+      if (isAbortErr(e)) return;
       toast.error(apiErrMsg(e, 'Erreur chargement'));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData(annee);
-    const onVis = () => { if (!document.hidden) fetchData(annee, true); };
+    const controller = new AbortController();
+    fetchData(annee, controller.signal);
+    const onVis = () => { if (!document.hidden) fetchData(annee, controller.signal, true); };
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    return () => {
+      controller.abort();
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [fetchData, annee]);
 
   /* ── stats locales ── */
   const stats = useMemo(() => {
     const totalAttendu = data.reduce((s, m) => s + m.montantAttendu, 0);
-    const totalRecu    = data.filter(m => m.recu).reduce((s, m) => s + m.montantAttendu, 0);
-    const moisRecus    = data.filter(m => m.recu).length;
+    const recuItems    = data.filter(m => m.recu);
+    const totalRecu    = recuItems.reduce((s, m) => s + m.montantAttendu, 0);
+    const moisRecus    = recuItems.length;
     const pctRecu      = totalAttendu > 0 ? Math.round((totalRecu / totalAttendu) * 100) : 0;
-    return { totalAttendu, totalRecu, totalManquant: totalAttendu - totalRecu, moisRecus, moisTotal: data.length, pctRecu };
+    const pc           = pctRecu >= 80 ? '#12b76a' : pctRecu >= 40 ? '#f59e0b' : '#ef4444';
+    return { totalAttendu, totalRecu, totalManquant: totalAttendu - totalRecu, moisRecus, moisTotal: data.length, pctRecu, pc };
   }, [data]);
 
   /* ── patch local ── */
-  const patchData = (id: string, patch: Partial<EssenceMois>) =>
-    setData(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
+  const patchData = useCallback((id: string, patch: Partial<EssenceMois>) =>
+    setData(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))
+  , []);
 
   /* ── toggle reçu ── */
-  const toggleRecu = async (doc: EssenceMois) => {
+  const toggleRecu = useCallback(async (doc: EssenceMois) => {
+    if (toggleRef.current.has(doc.id)) return;
+    toggleRef.current.add(doc.id);
     const newRecu = !doc.recu;
     try {
       await api.put(`/api/essence/${doc.id}`, { recu: newRecu });
@@ -130,11 +124,13 @@ export default function EssencePage() {
       toast.success(newRecu ? '✅ Marqué reçu !' : 'Marqué en attente');
     } catch (e) {
       toast.error(apiErrMsg(e, 'Erreur mise à jour'));
+    } finally {
+      toggleRef.current.delete(doc.id);
     }
-  };
+  }, [patchData]);
 
   /* ── save note ── */
-  const saveNote = async (note: string) => {
+  const saveNote = useCallback(async (note: string) => {
     if (!noteModal) return;
     try {
       await api.put(`/api/essence/${noteModal.id}`, { note });
@@ -144,58 +140,51 @@ export default function EssencePage() {
     } catch (e) {
       toast.error(apiErrMsg(e, 'Erreur sauvegarde note'));
     }
-  };
+  }, [noteModal, patchData]);
 
   /* ── save montant ── */
-  const saveMontant = async (doc: EssenceMois) => {
+  const saveMontant = useCallback(async (doc: EssenceMois) => {
     const v = parseFloat(editVal);
     if (isNaN(v) || v < 0) { setEditingId(null); return; }
+    const rounded = +v.toFixed(3);
     try {
-      await api.put(`/api/essence/${doc.id}`, { montantAttendu: +v.toFixed(3) });
-      patchData(doc.id, { montantAttendu: +v.toFixed(3) });
+      await api.put(`/api/essence/${doc.id}`, { montantAttendu: rounded });
+      patchData(doc.id, { montantAttendu: rounded });
       setEditingId(null);
       toast.success('Montant mis à jour');
     } catch (e) {
       toast.error(apiErrMsg(e, 'Erreur — montant non sauvegardé'));
       setEditingId(null);
     }
-  };
+  }, [editVal, patchData]);
 
   /* ── préparer année suivante ── */
-  const prepareNextYear = async () => {
+  const prepareNextYear = useCallback(async () => {
+    if (preparingRef.current) return;
+    preparingRef.current = true;
     try {
       await api.post('/api/essence/prepare-next');
+      setAnnee(curYear + 1);
       toast.success(`🎉 ${curYear + 1} est prêt !`);
     } catch (e) {
       toast.error(apiErrMsg(e, 'Erreur'));
+    } finally {
+      preparingRef.current = false;
     }
-  };
-
-  const pc = stats.pctRecu >= 80 ? '#12b76a' : stats.pctRecu >= 40 ? '#f59e0b' : '#ef4444';
+  }, [curYear]);
 
   /* ────────────────── RENDER ────────────────── */
   return (
     <div style={{ position: 'relative', minHeight: '100vh', color: '#fff', overflow: 'hidden' }}>
-      <style>{`
-        @keyframes twinkle-star  { 0%,100%{opacity:.08} 50%{opacity:.55} }
-        @keyframes particle-rise { from{transform:translateY(0);opacity:.4} to{transform:translateY(-100vh);opacity:0} }
-        @keyframes fadeSlideUp   { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .ess-row:hover { background:rgba(255,255,255,0.035)!important; }
-      `}</style>
 
       {/* Fond */}
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse 120% 80% at 50% -10%,rgba(245,158,11,0.12) 0%,transparent 60%),radial-gradient(ellipse 80% 60% at 90% 50%,rgba(249,115,22,0.07) 0%,transparent 50%),#06060f', zIndex: 0, pointerEvents: 'none' }} />
-      {mounted && starsRef.current.map((s, i) => (
-        <div key={i} style={{ position: 'fixed', left: `${s.x}%`, top: `${s.y}%`, width: s.s, height: s.s, borderRadius: '50%', background: '#fff', opacity: s.o, pointerEvents: 'none', zIndex: 0, animation: `twinkle-star ${s.d}s ease-in-out infinite`, animationDelay: `${i * 0.08}s` }} />
-      ))}
-      {mounted && partsRef.current.map((p, i) => (
-        <div key={i} style={{ position: 'fixed', left: `${p.x}%`, bottom: `-${p.y}px`, width: p.s, height: p.s, borderRadius: '50%', background: p.color, opacity: 0.4, pointerEvents: 'none', zIndex: 0, animation: `particle-rise ${p.d}s linear infinite`, animationDelay: `${p.delay}s` }} />
-      ))}
+      <CosmosBackground particleColors={ESSENCE_PART_COLORS} />
 
       <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '16px 12px 40px' : '28px 32px 40px' }}>
 
         {/* ── HEADER ── */}
-        <div style={{ padding: '1.5px', borderRadius: 22, background: 'linear-gradient(135deg,#f59e0b70,#d9770640,#12b76a25)', marginBottom: 20, animation: 'fadeSlideUp 0.4s ease both' }}>
+        <div style={{ padding: '1.5px', borderRadius: 22, background: 'linear-gradient(135deg,#f59e0b70,#d9770640,#12b76a25)', marginBottom: 20, animation: 'essFadeSlideUp 0.4s ease both' }}>
           <div style={{ background: 'rgba(2,8,16,0.97)', borderRadius: '20.5px', padding: isMobile ? '18px 16px' : '28px 32px', backdropFilter: 'blur(40px)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: -80, left: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle,rgba(245,158,11,0.18) 0%,transparent 70%)', pointerEvents: 'none' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -225,7 +214,7 @@ export default function EssencePage() {
                 </div>
                 {!isMobile && (
                   <div style={{ fontSize: 12, color: '#fff', background: 'rgba(255,255,255,0.05)', padding: '6px 14px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap', fontWeight: 700, textTransform: 'capitalize' }}>
-                    {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {todayLabel}
                   </div>
                 )}
                 {isDecembre && annee === curYear && (
@@ -239,11 +228,11 @@ export default function EssencePage() {
               {/* Stats cards */}
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
                 {[
-                  { label: 'En attente', value: stats.totalManquant, color: '#f59e0b' },
-                  { label: 'Total reçu',  value: stats.totalRecu,     color: '#12b76a' },
-                  { label: `Total ${annee}`,   value: stats.totalAttendu,  color: '#6366f1' },
+                  { label: 'En attente',    value: stats.totalManquant, color: '#f59e0b' },
+                  { label: 'Total reçu',    value: stats.totalRecu,     color: '#12b76a' },
+                  { label: `Total ${annee}`, value: stats.totalAttendu,  color: '#6366f1' },
                 ].map((s, i) => (
-                  <div key={i} style={{ background: `${s.color}12`, borderRadius: 12, padding: '12px 16px', border: `1px solid ${s.color}25`, animation: `fadeSlideUp 0.4s ${i * 0.06}s ease both` }}>
+                  <div key={s.label} style={{ background: `${s.color}12`, borderRadius: 12, padding: '12px 16px', border: `1px solid ${s.color}25`, animation: `essFadeSlideUp 0.4s ${i * 0.06}s ease both` }}>
                     <div style={{ fontSize: 10, color: s.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>{s.label}</div>
                     <AnimatedNumber value={s.value} decimals={0} color={s.color} suffix=" TND" />
                   </div>
@@ -254,10 +243,10 @@ export default function EssencePage() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 11, color: '#fff' }}>
                   <span>Mois reçus · {stats.moisRecus} / {stats.moisTotal}</span>
-                  <span style={{ fontWeight: 700, color: pc }}>{stats.pctRecu}%</span>
+                  <span style={{ fontWeight: 700, color: stats.pc }}>{stats.pctRecu}%</span>
                 </div>
                 <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg,#f59e0b,${pc})`, width: `${stats.pctRecu}%`, transition: 'width 1.2s ease' }} />
+                  <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg,#f59e0b,${stats.pc})`, width: `${stats.pctRecu}%`, transition: 'width 1.2s ease' }} />
                 </div>
               </div>
             </div>
@@ -279,7 +268,7 @@ export default function EssencePage() {
                   background: m.recu ? 'rgba(18,183,106,0.05)' : 'rgba(255,255,255,0.02)',
                   border: `1px solid ${m.recu ? 'rgba(18,183,106,0.2)' : 'rgba(255,255,255,0.06)'}`,
                   borderRadius: 14, padding: isMobile ? '12px 14px' : '14px 18px',
-                  transition: 'all 0.15s', animation: `fadeSlideUp 0.35s ${i * 0.04}s ease both`,
+                  transition: 'all 0.15s', animation: `essFadeSlideUp 0.35s ${i * 0.04}s ease both`,
                 }}>
 
                 {/* Icon */}
@@ -345,7 +334,7 @@ export default function EssencePage() {
               </div>
             ))}
 
-            {data.length === 0 && !loading && (
+            {data.length === 0 && (
               <div style={{ textAlign: 'center', padding: '80px 0', color: '#fff', fontSize: 14 }}>
                 Aucune donnée pour {annee}
               </div>

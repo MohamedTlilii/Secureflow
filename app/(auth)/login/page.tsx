@@ -1,25 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 import axios from 'axios';
-
-// ─── Logo (même que sidebar) ─────────────────────────────────────────────────
-function LogoIcon({ size }: { size: number }) {
-  return (
-    <svg viewBox="0 0 32 32" width={size} height={size}
-      style={{ filter:'drop-shadow(0 0 8px rgba(18,183,106,0.95)) drop-shadow(0 0 18px rgba(6,182,212,0.6))' }}>
-      <circle cx="10" cy="6" r="4" fill="white"/>
-      <path d="M6 12 Q10 10 14 12 L13 22 H7 Z" fill="white"/>
-      <path d="M14 14 Q20 11 25 13" stroke="white" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-      <path d="M24 11 Q27 12 26 15 Q23 16 22 14" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="28" cy="9" r="3.5" fill="none" stroke="white" strokeWidth="1.8"/>
-    </svg>
-  );
-}
+import { LogoIcon } from '@/components/LogoIcon';
 
 // ─── Données statiques déterministes (pas de Math.random → pas de problème hydratation) ───
 
@@ -88,11 +75,11 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false);
   const [focused,  setFocused]  = useState('');
   const [mounted,  setMounted]  = useState(false);
-  const [btnHover, setBtnHover] = useState(false);
   const [tilt,     setTilt]     = useState({ x: 0, y: 0 });
   const [aurora,   setAurora]   = useState({ x: 50, y: 50 });
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const rafRef  = useRef<number | null>(null);
 
   // Mount animation
   useEffect(() => {
@@ -100,14 +87,23 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Aurora souris (global)
+  // Aurora souris (global) — throttlé via RAF
   useEffect(() => {
-    const h = (e: MouseEvent) => setAurora({
-      x: (e.clientX / window.innerWidth)  * 100,
-      y: (e.clientY / window.innerHeight) * 100,
-    });
+    let rafId: number | null = null;
+    const h = (e: MouseEvent) => {
+      if (rafId !== null) return;
+      const cx = e.clientX;
+      const cy = e.clientY;
+      rafId = requestAnimationFrame(() => {
+        setAurora({ x: (cx / window.innerWidth) * 100, y: (cy / window.innerHeight) * 100 });
+        rafId = null;
+      });
+    };
     window.addEventListener('mousemove', h);
-    return () => window.removeEventListener('mousemove', h);
+    return () => {
+      window.removeEventListener('mousemove', h);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Redirect si déjà connecté
@@ -115,19 +111,31 @@ export default function LoginPage() {
     if (!authLoading && user) router.replace('/');
   }, [authLoading, user, router]);
 
-  // Tilt 3D sur la card
+  // Nettoyage RAF tilt à l'unmount
+  useEffect(() => () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); }, []);
+
+  // Tilt 3D sur la card — throttlé via RAF
   const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (rafRef.current !== null) return;
     const r = cardRef.current?.getBoundingClientRect();
     if (!r) return;
-    setTilt({
-      x: ((e.clientX - r.left) / r.width  - 0.5) * 2,
-      y: ((e.clientY - r.top)  / r.height - 0.5) * 2,
+    const cx = e.clientX;
+    const cy = e.clientY;
+    rafRef.current = requestAnimationFrame(() => {
+      setTilt({
+        x: ((cx - r.left) / r.width  - 0.5) * 2,
+        y: ((cy - r.top)  / r.height - 0.5) * 2,
+      });
+      rafRef.current = null;
     });
   }, []);
 
-  const onMouseLeave = useCallback(() => setTilt({ x: 0, y: 0 }), []);
+  const onMouseLeave = useCallback(() => {
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    setTilt({ x: 0, y: 0 });
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error('Email et mot de passe requis');
@@ -137,7 +145,7 @@ export default function LoginPage() {
     try {
       await login(email.trim(), password);
       toast.success('Bienvenue !');
-      setTimeout(() => { router.push('/'); }, 300);
+      router.push('/');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         toast.error(err.response?.data?.message || 'Erreur de connexion');
@@ -147,19 +155,32 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, login, router]);
 
-  const iStyle = (f: string, c: string): React.CSSProperties => ({
+  const emailFocused = focused === 'email';
+  const pwFocused    = focused === 'password';
+
+  const emailInputStyle = useMemo((): React.CSSProperties => ({
     width: '100%', padding: '14px 46px 14px 44px', borderRadius: 13,
-    fontSize: 14, outline: 'none', boxSizing: 'border-box',
-    background: focused === f ? `${c}0d` : 'rgba(255,255,255,0.028)',
-    color: '#f0f4ff',
-    border: focused === f ? `1.5px solid ${c}` : '1.5px solid rgba(255,255,255,0.065)',
-    boxShadow: focused === f
-      ? `0 0 0 3px ${c}15,inset 0 1px 0 rgba(255,255,255,0.04)`
+    fontSize: 14, outline: 'none', boxSizing: 'border-box', color: '#f0f4ff',
+    background: emailFocused ? '#61DAFB0d' : 'rgba(255,255,255,0.028)',
+    border:     emailFocused ? '1.5px solid #61DAFB' : '1.5px solid rgba(255,255,255,0.065)',
+    boxShadow:  emailFocused
+      ? '0 0 0 3px #61DAFB15,inset 0 1px 0 rgba(255,255,255,0.04)'
       : 'inset 0 1px 0 rgba(255,255,255,0.02)',
     transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)',
-  });
+  }), [emailFocused]);
+
+  const pwInputStyle = useMemo((): React.CSSProperties => ({
+    width: '100%', padding: '14px 46px 14px 44px', borderRadius: 13,
+    fontSize: 14, outline: 'none', boxSizing: 'border-box', color: '#f0f4ff',
+    background: pwFocused ? '#12b76a0d' : 'rgba(255,255,255,0.028)',
+    border:     pwFocused ? '1.5px solid #12b76a' : '1.5px solid rgba(255,255,255,0.065)',
+    boxShadow:  pwFocused
+      ? '0 0 0 3px #12b76a15,inset 0 1px 0 rgba(255,255,255,0.04)'
+      : 'inset 0 1px 0 rgba(255,255,255,0.02)',
+    transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)',
+  }), [pwFocused]);
 
   const tiltTr  = `perspective(1300px) rotateX(${-tilt.y * 12}deg) rotateY(${tilt.x * 12}deg)`;
   const tiltTrs = tilt.x === 0 && tilt.y === 0
@@ -171,32 +192,9 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#030a16', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative', overflow: 'hidden' }}>
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
-        @keyframes starBlink  { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.8;transform:scale(1.4)} }
-        @keyframes orb1       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(55px,-42px)scale(1.1)} }
-        @keyframes orb2       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-48px,38px)scale(0.92)} }
-        @keyframes orb3       { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-55px)} }
-        @keyframes labelFloat { 0%,100%{opacity:0.85;transform:translateY(0)} 50%{opacity:1;transform:translateY(-18px)} }
-        @keyframes ptDrift    { 0%{transform:translateY(0)translateX(0)scale(1);opacity:0.5} 33%{transform:translateY(-28px)translateX(16px)scale(1.5);opacity:0.85} 66%{transform:translateY(-12px)translateX(-12px)scale(0.7);opacity:0.4} 100%{transform:translateY(0)translateX(0)scale(1);opacity:0.5} }
-        @keyframes hexPulse   { 0%,100%{opacity:0.45} 50%{opacity:0.98} }
-        @keyframes drawChart  { 0%{stroke-dashoffset:74} 48%{stroke-dashoffset:0} 58%{stroke-dashoffset:0} 100%{stroke-dashoffset:74} }
-        @keyframes dotPulse   { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.9);opacity:1} }
-        @keyframes fuelBounce { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-4px)} }
-        @keyframes logoPulse  { 0%,100%{box-shadow:0 0 48px rgba(18,183,106,0.38),0 0 110px rgba(18,183,106,0.14),0 0 180px rgba(97,218,251,0.06)} 50%{box-shadow:0 0 72px rgba(18,183,106,0.68),0 0 150px rgba(18,183,106,0.24),0 0 250px rgba(97,218,251,0.12)} }
-        @keyframes ringPulse  { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.85;transform:scale(1.07)} }
-        @keyframes wordFlash  { 0%{opacity:0;transform:translateY(18px)scale(0.9);filter:blur(5px)} 18%{opacity:1;transform:translateY(0)scale(1);filter:blur(0)} 80%{opacity:1} 100%{opacity:0;transform:translateY(-15px)scale(0.95);filter:blur(3px)} }
-        @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0.25} }
-        @keyframes fadeUp     { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin       { to{transform:rotate(360deg)} }
-        @keyframes shimmer    { 0%{transform:translateX(-150%)} 100%{transform:translateX(380%)} }
-        @keyframes scanV      { 0%{transform:translateY(-20vh);opacity:0} 6%{opacity:0.8} 94%{opacity:0.8} 100%{transform:translateY(120vh);opacity:0} }
-        @keyframes cornerGlow { 0%,100%{opacity:0.2} 50%{opacity:0.58} }
-      `}</style>
-
       {/* Signature */}
       <div style={{ position:'fixed', bottom:28, right:36, zIndex:2, pointerEvents:'none', display:'flex', alignItems:'center', gap:12 }}>
-        <LogoIcon size={34} />
+        <LogoIcon size={34} glow="strong" />
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
           <span style={{ fontFamily:"'Dancing Script', cursive", fontSize:28, fontWeight:700, color:'rgba(18,183,106,0.45)', lineHeight:1, letterSpacing:1, textShadow:'0 0 18px rgba(18,183,106,0.25)' }}>
             Mohamed Tlili
@@ -236,8 +234,8 @@ export default function LoginPage() {
       ))}
 
       {/* Étiquettes flottantes */}
-      {LABELS.map((l, i) => (
-        <div key={i} style={{ position: 'absolute', left: `${l.x}%`, top: `${l.y}%`, fontSize: 11, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 0.8, color: l.c, pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap', animation: `labelFloat ${l.dur}s ${l.d}s ease-in-out infinite` }}>{l.t}</div>
+      {LABELS.map((l) => (
+        <div key={l.t} style={{ position: 'absolute', left: `${l.x}%`, top: `${l.y}%`, fontSize: 11, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 0.8, color: l.c, pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap', animation: `labelFloat ${l.dur}s ${l.d}s ease-in-out infinite` }}>{l.t}</div>
       ))}
 
       {/* Particules */}
@@ -282,9 +280,9 @@ export default function LoginPage() {
                 <div style={{ animation: 'fadeUp 0.5s 0.1s ease both' }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'rgba(97,218,251,0.5)', textTransform: 'uppercase', letterSpacing: 2, display: 'block', marginBottom: 8 }}>Email</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#61DAFB' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: focused === 'email' ? 'drop-shadow(0 0 5px rgba(97,218,251,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
+                    <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: emailFocused ? '#61DAFB' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: emailFocused ? 'drop-shadow(0 0 5px rgba(97,218,251,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
                     <input
-                      style={iStyle('email', '#61DAFB')}
+                      style={emailInputStyle}
                       type="email"
                       placeholder="ton@email.com"
                       value={email}
@@ -294,7 +292,7 @@ export default function LoginPage() {
                       autoComplete="email"
                       required
                     />
-                    {focused === 'email' && <CornerAccents color="#61DAFB" />}
+                    {emailFocused && <CornerAccents color="#61DAFB" />}
                   </div>
                 </div>
 
@@ -302,9 +300,9 @@ export default function LoginPage() {
                 <div style={{ animation: 'fadeUp 0.5s 0.18s ease both' }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'rgba(18,183,106,0.5)', textTransform: 'uppercase', letterSpacing: 2, display: 'block', marginBottom: 8 }}>Mot de passe</label>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'password' ? '#12b76a' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: focused === 'password' ? 'drop-shadow(0 0 5px rgba(18,183,106,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
+                    <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: pwFocused ? '#12b76a' : 'rgba(255,255,255,0.18)', transition: 'all 0.25s', filter: pwFocused ? 'drop-shadow(0 0 5px rgba(18,183,106,0.85))' : 'none', zIndex: 2, pointerEvents: 'none' }} />
                     <input
-                      style={{ ...iStyle('password', '#12b76a'), paddingRight: 46 }}
+                      style={pwInputStyle}
                       type={showPw ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={password}
@@ -315,13 +313,12 @@ export default function LoginPage() {
                       required
                       minLength={6}
                     />
-                    {focused === 'password' && <CornerAccents color="#12b76a" />}
+                    {pwFocused && <CornerAccents color="#12b76a" />}
                     <button
                       type="button"
+                      className="login-eye-btn"
                       onClick={() => setShowPw((p) => !p)}
-                      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.18)', padding: 4, borderRadius: 6, transition: 'all 0.22s', display: 'flex', zIndex: 2 }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = '#12b76a'; e.currentTarget.style.filter = 'drop-shadow(0 0 5px rgba(18,183,106,0.7))'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.18)'; e.currentTarget.style.filter = 'none'; }}
+                      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', padding: 4, borderRadius: 6, display: 'flex', zIndex: 2 }}
                     >
                       {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -332,28 +329,21 @@ export default function LoginPage() {
                 <div style={{ animation: 'fadeUp 0.5s 0.26s ease both', marginTop: 4 }}>
                   <button
                     type="submit"
+                    className="login-submit-btn"
                     disabled={loading}
-                    onMouseEnter={() => setBtnHover(true)}
-                    onMouseLeave={() => setBtnHover(false)}
                     style={{
                       width: '100%', padding: '15px', borderRadius: 13,
-                      fontSize: 14, fontWeight: 800, letterSpacing: 0.3,
-                      cursor: loading ? 'not-allowed' : 'pointer', border: 'none',
+                      fontSize: 14, fontWeight: 800, letterSpacing: 0.3, border: 'none',
                       background: loading
                         ? 'rgba(255,255,255,0.04)'
                         : 'linear-gradient(135deg,#059669 0%,#12b76a 35%,#0ea5e9 75%,#61DAFB 100%)',
                       color: loading ? 'rgba(255,255,255,0.25)' : '#fff',
-                      boxShadow: loading ? 'none' : btnHover
-                        ? '0 12px 44px rgba(18,183,106,0.62),0 0 90px rgba(18,183,106,0.18)'
-                        : '0 4px 28px rgba(18,183,106,0.38)',
-                      transform: !loading && btnHover ? 'translateY(-2px) scale(1.012)' : 'translateY(0) scale(1)',
-                      transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                       position: 'relative', overflow: 'hidden',
                     }}
                   >
                     {!loading && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)', animation: 'shimmer 3s ease-in-out infinite' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)', animation: 'loginShimmer 3s ease-in-out infinite' }} />
                     )}
                     {loading ? (
                       <>

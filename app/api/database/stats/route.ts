@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       storageMB = 0;
     }
 
+    const storageLimit = Number(process.env.STORAGE_LIMIT_MB ?? 500);
     return NextResponse.json({
       totalDocs: seFiches + users + essences,
       solutionExpress: seFiches,
@@ -30,8 +31,8 @@ export async function GET(req: NextRequest) {
       essences,
       essenceRecu: parseFloat((essenceAgg._sum.montantAttendu ?? 0).toFixed(2)),
       storageMB,
-      storageLimit: 500,
-      storagePercent: Math.round((storageMB / 500) * 100),
+      storageLimit,
+      storagePercent: Math.round((storageMB / storageLimit) * 100),
     });
   } catch {
     return NextResponse.json({ message: 'Erreur serveur' }, { status: 500 });

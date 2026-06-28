@@ -2,16 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import React from 'react';
-
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 768);
-    h(); window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
 import {
   Edit2, Trash2, Shield, Wifi, Smartphone, Tv, Camera, Receipt,
   Phone, Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
@@ -19,22 +9,16 @@ import {
   MapPin, Mail, User, Calendar,
 } from 'lucide-react';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
-import { STATUS_LABEL } from '@/types';
+import { STATUS_LABEL, STATUS_COLOR } from '@/types';
+import useIsMobile from '@/hooks/useIsMobile';
 import MiniScoreRing from './MiniScoreRing';
 import CommissionBadge from './CommissionBadge';
-
-const PIPE_COLOR: Record<StatusFiche, string> = {
-  new:                   '#3b6cf8',
-  contacted:             '#f79009',
-  proposal:              '#a78bfa',
-  installation_en_cours: '#f97316',
-  installe:              '#12b76a',
-  installation_annulee:  '#ef4444',
-};
 
 const LEAD_PALETTE = [
   '#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e',
 ];
+
+const PIPE_COLOR = STATUS_COLOR;
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   wifi: Wifi, smartphone: Smartphone, tv: Tv, camera: Camera, receipt: Receipt,

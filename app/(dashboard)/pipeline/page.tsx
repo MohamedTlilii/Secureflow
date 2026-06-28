@@ -1,9 +1,12 @@
 ﻿'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Target, ArrowRight, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
+import { getCachedSettings } from '@/lib/settings-cache';
+import useIsMobile from '@/hooks/useIsMobile';
+import CosmosBackground from '@/components/CosmosBackground';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import UltraFiche from '@/components/solution-express/UltraFiche';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
@@ -19,11 +22,7 @@ const STAGES: { key: StatusFiche; label: string; color: string }[] = [
   { key:'installation_annulee',   label:'Annulée',               color:'#be123c' },
 ];
 
-/* ─── Cosmos ─────────────────────────────────────────────── */
-const PART_COLORS = ['#3b6cf8','#a78bfa','#12b76a','#f97316','#06b6d4'];
-interface Star     { x:number; y:number; s:number; o:number; d:number }
-interface Particle { x:number; y:number; s:number; d:number; delay:number; color:string }
-
+const PIPE_PART_COLORS = ['#3b6cf8','#a78bfa','#12b76a','#f97316','#06b6d4'];
 const AV_COLORS = ['#3b6cf8','#06b6d4','#f59e0b','#f97316','#a78bfa'];
 
 const ini = (f: SolutionExpress) => {
@@ -34,39 +33,10 @@ const ini = (f: SolutionExpress) => {
 const dName = (f: SolutionExpress) =>
   f.entreprise || `${f.prenom||''} ${f.nom||''}`.trim() || 'Sans nom';
 
-/* ─── Mobile hook ────────────────────────────────────────── */
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 768);
-    h();
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
-
-/* ─── ScoreRing ──────────────────────────────────────────── */
-function ScoreRing({ value, max, color, label }: { value:number; max:number; color:string; label:string }) {
-  const [a, setA] = useState(0);
-  const r = 34; const circ = 2 * Math.PI * r;
-  useEffect(() => { const t = setTimeout(() => setA(max>0?value/max:0), 200); return () => clearTimeout(t); }, [value, max]);
-  return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-      <div style={{ position:'relative', width:86, height:86 }}>
-        <svg width={86} height={86} style={{ transform:'rotate(-90deg)' }}>
-          <circle cx={43} cy={43} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={6}/>
-          <circle cx={43} cy={43} r={r} fill="none" stroke={color} strokeWidth={6}
-            strokeDasharray={circ} strokeDashoffset={circ*(1-a)}
-            strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s ease', filter:`drop-shadow(0 0 4px ${color})` }}/>
-        </svg>
-        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
-        </div>
-      </div>
-      <span style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</span>
-    </div>
-  );
+interface PipeStats {
+  total:number; b2b:number; b2c:number; installe:number; annulees:number;
+  enCours:number; proposals:number; convRate:number;
+  stageCounts:Record<string,number>; serviceCounts:Record<string,number>; annees:number[];
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -85,32 +55,8 @@ export default function PipelinePage() {
   const [over,        setOver]        = useState<string|null>(null);
   const [motifModal,  setMotifModal]  = useState<{ id:string }|null>(null);
   const [motif,       setMotif]       = useState('');
-  const [mounted,     setMounted]     = useState(false);
   const [viewFiche,   setViewFiche]   = useState<SolutionExpress|null>(null);
 
-  const starsRef = useRef<Star[]>([]);
-  const partsRef = useRef<Particle[]>([]);
-
-  /* ── cosmos ── */
-  useEffect(() => {
-    starsRef.current = Array.from({length:60},()=>({
-      x:Math.random()*100, y:Math.random()*100,
-      s:Math.random()*2+0.4, o:Math.random()*0.5+0.08, d:Math.random()*5+2,
-    }));
-    partsRef.current = Array.from({length:18},()=>({
-      x:Math.random()*100, y:Math.random()*100+100,
-      s:Math.random()*5+2, d:Math.random()*18+10, delay:Math.random()*8,
-      color:PART_COLORS[Math.floor(Math.random()*PART_COLORS.length)],
-    }));
-    setMounted(true);
-  }, []);
-
-  /* ── stats interface ── */
-  interface PipeStats {
-    total:number; b2b:number; b2c:number; installe:number; annulees:number;
-    enCours:number; proposals:number; convRate:number;
-    stageCounts:Record<string,number>; serviceCounts:Record<string,number>; annees:number[];
-  }
   const [pipeStats, setPipeStats] = useState<PipeStats | null>(null);
 
   /* ── fetch leads (kanban) ── */
@@ -118,11 +64,11 @@ export default function PipelinePage() {
     setLoading(true);
     try {
       const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/leads'),
-        api.get<Settings>('/api/settings'),
+        api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params: { limit: 200 } }),
+        getCachedSettings(),
       ]);
-      setItems(Array.isArray(f.data) ? f.data : []);
-      setSettings(s.data ?? DEFAULT_SETTINGS);
+      setItems(f.data.fiches ?? []);
+      setSettings(s ?? DEFAULT_SETTINGS);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
     finally { setLoading(false); }
   }, []);
@@ -156,8 +102,18 @@ export default function PipelinePage() {
 
   /* ── filtrage (pour kanban seulement) ── */
   const filtered = useMemo(() => {
-    let r = annee === 'tout' ? items : items.filter(f => f.dateVente && new Date(f.dateVente).getFullYear().toString() === annee);
-    if (annee !== 'tout' && mois !== 'tout') r = r.filter(f => f.dateVente && new Date(f.dateVente).getMonth() === Number(mois));
+    let r: SolutionExpress[];
+    if (annee === 'tout') {
+      r = items;
+    } else {
+      const yr = Number(annee);
+      // Aligné sur le serveur : dateVente en priorité, createdAt en fallback si null
+      r = items.filter(f => new Date(f.dateVente ?? f.createdAt).getFullYear() === yr);
+      if (mois !== 'tout') {
+        const mo = Number(mois);
+        r = r.filter(f => new Date(f.dateVente ?? f.createdAt).getMonth() === mo);
+      }
+    }
     if (filtreComm === 'payee')     r = r.filter(f => f.commissionPayee);
     if (filtreComm === 'non_payee') r = r.filter(f => !f.commissionPayee && f.status !== 'installation_annulee');
     if (filtreComm === 'annulee')   r = r.filter(f => f.status === 'installation_annulee');
@@ -167,8 +123,6 @@ export default function PipelinePage() {
   /* ── raccourcis stats depuis backend ── */
   const annees     = (pipeStats?.annees ?? []).map(String);
   const total      = pipeStats?.total      ?? 0;
-  const installe   = pipeStats?.installe   ?? 0;
-  const convRate   = pipeStats?.convRate   ?? 0;
   const stageCounts = pipeStats?.stageCounts ?? {};
 
   /* ── drag & drop ── */
@@ -204,19 +158,12 @@ export default function PipelinePage() {
   return (
     <div style={{position:'relative',minHeight:'100vh',color:'#fff',overflow:'hidden'}}>
       <style>{`
-        @keyframes twinkle-star  { 0%,100%{opacity:.08} 50%{opacity:.55} }
-        @keyframes particle-rise { from{transform:translateY(0);opacity:.4} to{transform:translateY(-100vh);opacity:0} }
         .pip-card:hover { transform:translateY(-2px)!important; }
       `}</style>
 
       {/* Fond cosmos (bleu/violet comme SE) */}
       <div style={{position:'fixed',inset:0,background:'radial-gradient(ellipse 120% 80% at 50% -10%,rgba(59,108,248,0.12) 0%,transparent 60%),radial-gradient(ellipse 80% 60% at 90% 50%,rgba(167,139,250,0.07) 0%,transparent 50%),#06060f',zIndex:0,pointerEvents:'none'}}/>
-      {mounted&&starsRef.current.map((s,i)=>(
-        <div key={i} style={{position:'fixed',left:`${s.x}%`,top:`${s.y}%`,width:s.s,height:s.s,borderRadius:'50%',background:'#fff',opacity:s.o,pointerEvents:'none',zIndex:0,animation:`twinkle-star ${s.d}s ease-in-out infinite`,animationDelay:`${i*0.08}s`}}/>
-      ))}
-      {mounted&&partsRef.current.map((p,i)=>(
-        <div key={i} style={{position:'fixed',left:`${p.x}%`,bottom:`-${p.y}px`,width:p.s,height:p.s,borderRadius:'50%',background:p.color,opacity:0.4,pointerEvents:'none',zIndex:0,animation:`particle-rise ${p.d}s linear infinite`,animationDelay:`${p.delay}s`}}/>
-      ))}
+      <CosmosBackground particleColors={PIPE_PART_COLORS} />
 
       <div style={{position:'relative',zIndex:1,padding:isMobile?'16px 12px 40px':'28px 32px 40px'}}>
 
@@ -250,7 +197,7 @@ export default function PipelinePage() {
                       {new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
                     </div>
                   )}
-<select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
+                  <select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
                     <option value="tout">Toutes les années</option>
                     {annees.map(y=><option key={y} value={y}>{y}</option>)}

@@ -4,8 +4,6 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Bold everything */
-* { font-weight: 700; }
 
 :root { color-scheme: dark; }
 
@@ -72,6 +70,64 @@ input:-webkit-autofill:focus {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+.dash-row:hover         { background: rgba(255,255,255,0.03) !important; }
+.dash-row.annulee:hover { background: rgba(190,18,60,0.07)    !important; }
+.comm-row:hover         { background: rgba(255,255,255,0.03) !important; }
+
+/* ── Database page ── */
+.db-inp:focus { border-color: rgba(6,182,212,0.5) !important; }
+.db-sel:focus { border-color: rgba(6,182,212,0.5) !important; }
+.db-row { transition: background 0.15s; }
+.db-row:hover { background: rgba(6,182,212,0.04) !important; }
+.db-stat-card { transition: transform 0.15s; }
+.db-stat-card:hover { transform: translateY(-2px); }
+.db-action-btn { transition: all 0.15s; }
+.db-action-view:hover { background: rgba(6,182,212,0.12) !important; border-color: rgba(6,182,212,0.4) !important; transform: scale(1.1); }
+.db-action-del:hover:not(:disabled) { background: rgba(240,68,56,0.12) !important; border-color: rgba(240,68,56,0.4) !important; transform: scale(1.1); }
+.db-clear-btn:hover { background: rgba(240,68,56,0.15) !important; }
+.db-pdf-dl:hover:not(:disabled) { background: rgba(18,183,106,0.16) !important; }
+.db-pdf-view:hover:not(:disabled) { background: rgba(59,108,248,0.16) !important; }
+.db-mobile-view:hover { background: rgba(6,182,212,0.14) !important; border-color: rgba(6,182,212,0.4) !important; }
+.db-mobile-del:hover:not(:disabled) { background: rgba(240,68,56,0.14) !important; border-color: rgba(240,68,56,0.4) !important; }
+
+/* ── Paramètres page ── */
+.params-tag { transition: background 0.15s, border-color 0.15s; cursor: default; }
+.params-tag:hover { background: var(--c22) !important; border-color: var(--c66) !important; }
+.params-tag-x { transition: color 0.15s; }
+.params-tag:hover .params-tag-x { color: #ef4444 !important; }
+.params-add-btn { transition: all 0.15s; }
+.params-add-btn:hover { background: var(--c30) !important; border-color: var(--c) !important; }
+.params-obj-x { transition: color 0.15s; color: rgba(255,255,255,0.3); }
+.params-obj-x:hover { color: #ef4444 !important; }
+.params-svc-add { transition: all 0.15s; }
+.params-svc-add:hover { background: rgba(99,102,241,0.07) !important; border-color: rgba(99,102,241,0.6) !important; }
+.params-svc-edit { transition: color 0.15s; color: rgba(255,255,255,0.35); }
+.params-svc-edit:hover { color: var(--svc-c) !important; }
+.params-svc-del { transition: color 0.15s; color: rgba(255,255,255,0.35); }
+.params-svc-del:hover { color: #ef4444 !important; }
+
+/* ── Sidebar ── */
+.sb-close-btn  { transition: color 0.15s; color: rgba(255,255,255,0.9); }
+.sb-close-btn:hover  { color: #fff !important; }
+.sb-logout-btn { transition: color 0.15s; color: rgba(255,255,255,0.4); }
+.sb-logout-btn:hover { color: #ef4444 !important; }
+
+@keyframes profileSlideDown { from { opacity:0; transform:translateY(-10px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes profileSlideUp   { from { opacity:0; transform:translateY(10px)  scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes annexFadeIn      { from { opacity:0; } to { opacity:1; } }
+@keyframes annexPop         { from { opacity:0; transform:scale(0.8) translateY(30px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes bounceEmoji      { from { transform:translateY(0); } to { transform:translateY(-8px); } }
+@keyframes confetti0 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+@keyframes confetti1 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(-540deg);opacity:0} }
+@keyframes confetti2 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(900deg);opacity:0} }
+@keyframes confetti3 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(-720deg);opacity:0} }
+@keyframes confetti4 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(540deg);opacity:0} }
+@keyframes confetti5 { 0%{transform:translateY(0) rotate(0deg);opacity:.8} 100%{transform:translateY(110vh) rotate(-900deg);opacity:0} }
+
+@keyframes comm-fade-in  { from { opacity:0; } to { opacity:1; } }
+@keyframes comm-slide-up { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes glowPulse     { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+
 @keyframes commPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(247,144,9,0); }
   50%       { box-shadow: 0 0 0 5px rgba(247,144,9,0.22); }
@@ -81,3 +137,38 @@ input:-webkit-autofill:focus {
   from { background-position: -200% center; }
   to   { background-position:  200% center; }
 }
+
+/* ── CosmosBackground ── */
+@keyframes cosmos-twinkle { 0%,100%{opacity:.08} 50%{opacity:.55} }
+@keyframes cosmos-rise { from{transform:translateY(0);opacity:.4} to{transform:translateY(-100vh);opacity:0} }
+
+/* ── Essence page ── */
+.ess-row:hover { background: rgba(255,255,255,0.035) !important; }
+@keyframes essFadeSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Login page ── */
+.login-eye-btn    { transition: all 0.22s; color: rgba(255,255,255,0.18); }
+.login-eye-btn:hover { color: #12b76a; filter: drop-shadow(0 0 5px rgba(18,183,106,0.7)); }
+.login-submit-btn { cursor: pointer; transition: all 0.3s cubic-bezier(0.23,1,0.32,1); }
+.login-submit-btn:not(:disabled)       { box-shadow: 0 4px 28px rgba(18,183,106,0.38); }
+.login-submit-btn:not(:disabled):hover { box-shadow: 0 12px 44px rgba(18,183,106,0.62),0 0 90px rgba(18,183,106,0.18); transform: translateY(-2px) scale(1.012); }
+.login-submit-btn:disabled             { cursor: not-allowed; box-shadow: none; }
+
+@keyframes starBlink  { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.8;transform:scale(1.4)} }
+@keyframes orb1       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(55px,-42px)scale(1.1)} }
+@keyframes orb2       { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-48px,38px)scale(0.92)} }
+@keyframes orb3       { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-55px)} }
+@keyframes labelFloat { 0%,100%{opacity:0.85;transform:translateY(0)} 50%{opacity:1;transform:translateY(-18px)} }
+@keyframes ptDrift    { 0%{transform:translateY(0)translateX(0)scale(1);opacity:0.5} 33%{transform:translateY(-28px)translateX(16px)scale(1.5);opacity:0.85} 66%{transform:translateY(-12px)translateX(-12px)scale(0.7);opacity:0.4} 100%{transform:translateY(0)translateX(0)scale(1);opacity:0.5} }
+@keyframes hexPulse   { 0%,100%{opacity:0.45} 50%{opacity:0.98} }
+@keyframes drawChart  { 0%{stroke-dashoffset:74} 48%{stroke-dashoffset:0} 58%{stroke-dashoffset:0} 100%{stroke-dashoffset:74} }
+@keyframes dotPulse   { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.9);opacity:1} }
+@keyframes fuelBounce { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-4px)} }
+@keyframes logoPulse  { 0%,100%{box-shadow:0 0 48px rgba(18,183,106,0.38),0 0 110px rgba(18,183,106,0.14),0 0 180px rgba(97,218,251,0.06)} 50%{box-shadow:0 0 72px rgba(18,183,106,0.68),0 0 150px rgba(18,183,106,0.24),0 0 250px rgba(97,218,251,0.12)} }
+@keyframes ringPulse  { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.85;transform:scale(1.07)} }
+@keyframes wordFlash  { 0%{opacity:0;transform:translateY(18px)scale(0.9);filter:blur(5px)} 18%{opacity:1;transform:translateY(0)scale(1);filter:blur(0)} 80%{opacity:1} 100%{opacity:0;transform:translateY(-15px)scale(0.95);filter:blur(3px)} }
+@keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes fadeUp     { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scanV      { 0%{transform:translateY(-20vh);opacity:0} 6%{opacity:0.8} 94%{opacity:0.8} 100%{transform:translateY(120vh);opacity:0} }
+@keyframes cornerGlow { 0%,100%{opacity:0.2} 50%{opacity:0.58} }
+@keyframes loginShimmer { 0%{transform:translateX(-150%)} 100%{transform:translateX(380%)} }

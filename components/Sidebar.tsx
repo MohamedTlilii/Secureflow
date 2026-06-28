@@ -2,24 +2,31 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   LayoutDashboard, BarChart2, Wallet, Users, Kanban,
   Fuel, Database, Settings, LogOut, X, Calendar, UserCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
-import type { SolutionExpress } from '@/types';
+import useIsMobile from '@/hooks/useIsMobile';
+import { LogoIcon } from '@/components/LogoIcon';
+
+/* ─── Module-level constants ─── */
+const SIDEBAR_W_EXPANDED  = '240px';
+const SIDEBAR_W_COLLAPSED = '70px';
+
+const ANNIV_COLORS = ['#12b76a','#f79009','#818cf8','#38bdf8','#f04438','#a764f8'];
 
 const NAV = [
-  { to: '/',                 label: 'Dashboard',           color: '#12b76a', Icon: LayoutDashboard },
-  { to: '/leads',            label: 'Leads',               color: '#818cf8', Icon: Users           },
-  { to: '/pipeline',         label: 'Pipeline',            color: '#c084fc', Icon: Kanban          },
-  { to: '/commissions',      label: 'Commissions',         color: '#ef4444', Icon: Wallet          },
-  { to: '/comparaison',      label: 'Comparaison',         color: '#3b82f6', Icon: BarChart2       },
-  { to: '/essence',          label: 'Indemnité Carburant', color: '#fb923c', Icon: Fuel            },
-  { to: '/database',         label: 'Base de données',     color: '#f472b6', Icon: Database        },
-  { to: '/parametres',       label: 'Paramètres',          color: '#06b6d4', Icon: Settings        },
+  { to: '/',            label: 'Dashboard',          short: 'Dash',      color: '#12b76a', Icon: LayoutDashboard },
+  { to: '/leads',       label: 'Leads',              short: 'Leads',     color: '#818cf8', Icon: Users           },
+  { to: '/pipeline',    label: 'Pipeline',            short: 'Pipeline',  color: '#c084fc', Icon: Kanban          },
+  { to: '/commissions', label: 'Commissions',         short: 'Comm.',     color: '#ef4444', Icon: Wallet          },
+  { to: '/comparaison', label: 'Comparaison',         short: 'Comp.',     color: '#3b82f6', Icon: BarChart2       },
+  { to: '/essence',     label: 'Indemnité Carburant', short: 'Carburant', color: '#fb923c', Icon: Fuel            },
+  { to: '/database',    label: 'Base de données',     short: 'Base DB',   color: '#f472b6', Icon: Database        },
+  { to: '/parametres',  label: 'Paramètres',          short: 'Params',    color: '#06b6d4', Icon: Settings        },
 ] as const;
 
 function fmtDebut(d: Date): string {
@@ -27,27 +34,17 @@ function fmtDebut(d: Date): string {
 }
 
 function anciennete(d: Date): { label: string; suffix: string } {
-  const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+  const now  = new Date();
+  const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
   if (diff < 30)  return { label: `${diff} jour${diff > 1 ? 's' : ''}`, suffix: "d'activité" };
   if (diff < 365) return { label: `${Math.floor(diff / 30)} mois`,       suffix: "d'activité" };
-  const y = Math.floor(diff / 365);
+  let y = now.getFullYear() - d.getFullYear();
+  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) y--;
   return { label: `${y} an${y > 1 ? 's' : ''}`, suffix: 'dans le poste' };
 }
 
 interface ProfileStats { totalPaye: number; enAttente: number; annee: number; }
 
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    let t: ReturnType<typeof setTimeout>;
-    const h = () => { clearTimeout(t); t = setTimeout(check, 80); };
-    window.addEventListener('resize', h);
-    return () => { window.removeEventListener('resize', h); clearTimeout(t); };
-  }, []);
-  return isMobile;
-}
 
 export default function Sidebar() {
   const pathname  = usePathname();
@@ -60,27 +57,46 @@ export default function Sidebar() {
   const [showAnniv,   setShowAnniv]   = useState(false);
   const [stats,       setStats]       = useState<ProfileStats | null>(null);
 
-  const avatarRef = useRef<HTMLDivElement>(null);
-  const panelRef  = useRef<HTMLDivElement>(null);
+  const avatarRef      = useRef<HTMLDivElement>(null);
+  const panelRef       = useRef<HTMLDivElement>(null);
+  const annivTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasFetchedRef  = useRef(false);
 
-  const handleLogout = () => { logout(); router.push('/login'); };
+  const handleLogout = useCallback(() => { logout(); router.push('/login'); }, [logout, router]);
 
+  const isActive = useCallback(
+    (to: string) => to === '/' ? pathname === '/' : pathname.startsWith(to),
+    [pathname]
+  );
+
+  /* Collapse sidebar when anniversary modal opens */
   useEffect(() => { if (showAnniv) setExpanded(false); }, [showAnniv]);
 
+  /* Anniversary trigger */
   useEffect(() => {
     if (!user) return;
     const debut = user.dateDebut ? new Date(user.dateDebut) : null;
     if (!debut) return;
-    const todayTunis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Tunis' }));
-    if (todayTunis.getMonth() !== debut.getMonth() || todayTunis.getDate() !== debut.getDate()) return;
-    const key = `sf_anniv2_${todayTunis.getFullYear()}`;
+    const tz       = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const todayLocal = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+    if (todayLocal.getMonth() !== debut.getMonth() || todayLocal.getDate() !== debut.getDate()) return;
+    const years = todayLocal.getFullYear() - debut.getFullYear();
+    if (years <= 0) return;
+    const key = `sf_anniv2_${todayLocal.getFullYear()}`;
     if (localStorage.getItem(key)) return;
     localStorage.setItem(key, '1');
-    setTimeout(() => setShowAnniv(true), 1200);
+    annivTimerRef.current = setTimeout(() => setShowAnniv(true), 1200);
+    return () => {
+      if (annivTimerRef.current) clearTimeout(annivTimerRef.current);
+    };
   }, [user]);
 
-  useEffect(() => { if (!showProfile) setStats(null); }, [showProfile]);
+  /* Clear stats + fetch flag when panel closes */
+  useEffect(() => {
+    if (!showProfile) { setStats(null); hasFetchedRef.current = false; }
+  }, [showProfile]);
 
+  /* Click outside to close profile panel */
   useEffect(() => {
     if (!showProfile) return;
     const handler = (e: MouseEvent) => {
@@ -93,33 +109,27 @@ export default function Sidebar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showProfile]);
 
+  /* Fetch profile stats — once per panel open */
   useEffect(() => {
-    if (!showProfile || stats) return;
+    if (!showProfile) return;
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     const controller = new AbortController();
-    api.get<SolutionExpress[]>('/api/leads', { signal: controller.signal })
-      .then(res => {
-        const all = Array.isArray(res.data) ? res.data : [];
-        if (!all.length) { setStats({ totalPaye: 0, enAttente: 0, annee: new Date().getFullYear() }); return; }
-        const yr     = new Date().getFullYear();
-        const fiches = all.filter(f => f.dateVente && new Date(f.dateVente).getFullYear() === yr);
-        const totalPaye = fiches.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
-        const enAttente = fiches.filter(f => f.status !== 'installation_annulee' && !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
-        setStats({ totalPaye, enAttente, annee: yr });
-      })
+    api.get<ProfileStats>('/api/profile/stats', { signal: controller.signal })
+      .then(res => setStats(res.data))
       .catch(err => {
         if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') return;
         setStats({ totalPaye: 0, enAttente: 0, annee: new Date().getFullYear() });
       });
     return () => controller.abort();
-  }, [showProfile, stats]);
+  }, [showProfile]);
 
+  /* Sync CSS layout variables */
   useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-w',  isMobile ? '0px'  : expanded ? '240px' : '70px');
-    document.documentElement.style.setProperty('--main-pt',    isMobile ? '56px' : '0px');
-    document.documentElement.style.setProperty('--main-pb',    isMobile ? '80px' : '0px');
+    document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : expanded ? SIDEBAR_W_EXPANDED : SIDEBAR_W_COLLAPSED);
+    document.documentElement.style.setProperty('--main-pt',   isMobile ? '56px' : '0px');
+    document.documentElement.style.setProperty('--main-pb',   isMobile ? '80px' : '0px');
   }, [isMobile, expanded]);
-
-  const isActive = (to: string) => to === '/' ? pathname === '/' : pathname.startsWith(to);
 
   /* ── MOBILE ───────────────────────────────────────────────────────────── */
   if (isMobile) return (
@@ -128,14 +138,12 @@ export default function Sidebar() {
       <header style={{ position:'fixed', top:0, left:0, right:0, zIndex:200, background:'rgba(2,6,20,0.97)', borderBottom:'1px solid rgba(18,183,106,0.18)', backdropFilter:'blur(40px)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', height:56, boxShadow:'0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(18,183,106,0.1)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <LogoIcon size={32}/>
-          <div>
-            <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, lineHeight:1 }}>SecureFlow</div>
-          </div>
+          <div style={{ fontWeight:900, fontSize:18, background:'linear-gradient(135deg,#e8fff5 20%,#12b76a,#3b6cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', letterSpacing:-0.5, lineHeight:1 }}>SecureFlow</div>
         </div>
         <div ref={avatarRef} onClick={() => setShowProfile(p => !p)} style={{ display:'flex', alignItems:'center', gap:9, padding:'5px 8px', borderRadius:10, cursor:'pointer', background: showProfile ? 'rgba(18,183,106,0.12)' : 'transparent', border:`1px solid ${showProfile ? 'rgba(18,183,106,0.35)' : 'transparent'}`, transition:'all 0.2s' }}>
           <div style={{ textAlign:'right' }}>
-            <div style={{ fontSize:12.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{user?.name}</div>
-            <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:700, textTransform:'capitalize' }}>{user?.role}</div>
+            <div style={{ fontSize:12.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{user?.name || '—'}</div>
+            <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:700, textTransform:'capitalize' }}>{user?.role || '—'}</div>
           </div>
           <Avatar emoji={user?.avatar}/>
         </div>
@@ -150,7 +158,7 @@ export default function Sidebar() {
 
       {/* Bottom nav */}
       <nav style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:200, background:'rgba(2,6,20,0.97)', borderTop:'1px solid rgba(18,183,106,0.18)', backdropFilter:'blur(40px)', display:'flex', alignItems:'center', padding:'6px 2px 14px', boxShadow:'0 -4px 24px rgba(0,0,0,0.5),0 -1px 0 rgba(18,183,106,0.1)' }}>
-        {NAV.map(({ to, Icon, label, color }) => {
+        {NAV.map(({ to, Icon, short, color }) => {
           const active = isActive(to);
           return (
             <Link key={to} href={to} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 2px', borderRadius:10, color, textDecoration:'none', position:'relative' }}>
@@ -158,19 +166,18 @@ export default function Sidebar() {
               <div style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background: active ? `${color}1a` : 'transparent', transform: active ? 'scale(1.1)' : 'scale(1)', transition:'all 0.2s' }}>
                 <Icon size={18}/>
               </div>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.8 }}>{label.split(' ')[0]}</span>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.2, opacity: active ? 1 : 0.8 }}>{short}</span>
             </Link>
           );
         })}
       </nav>
 
       <AnnivModal show={showAnniv} name={user?.name} debutYear={user?.dateDebut ? new Date(user.dateDebut).getFullYear() : undefined} onClose={() => setShowAnniv(false)}/>
-      <style>{`@keyframes profileSlideDown{from{opacity:0;transform:translateY(-10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
     </>
   );
 
   /* ── DESKTOP ──────────────────────────────────────────────────────────── */
-  const w = expanded ? '240px' : '70px';
+  const w = expanded ? SIDEBAR_W_EXPANDED : SIDEBAR_W_COLLAPSED;
   return (
     <>
       <aside
@@ -178,7 +185,7 @@ export default function Sidebar() {
         onMouseLeave={() => setExpanded(false)}
         style={{ width: w, background:'rgba(2,6,20,0.97)', borderRight:'1px solid rgba(18,183,106,0.18)', position:'fixed', top:0, left:0, bottom:0, display:'flex', flexDirection:'column', zIndex:100, transition:'width 0.35s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', backdropFilter:'blur(40px)', boxShadow: expanded ? '4px 0 60px rgba(18,183,106,0.12),4px 0 40px rgba(0,0,0,0.6)' : '2px 0 20px rgba(0,0,0,0.5)' }}>
 
-        {/* Glow orbs (same as pages) */}
+        {/* Glow orbs */}
         <div style={{ position:'absolute', top:-60, left:-40, width:180, height:180, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.13) 0%,transparent 70%)', pointerEvents:'none' }}/>
         <div style={{ position:'absolute', bottom:-40, left:-20, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
 
@@ -210,14 +217,12 @@ export default function Sidebar() {
             <div ref={avatarRef} onClick={() => setShowProfile(p => !p)} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:'10.5px', background:'rgba(2,6,20,0.95)', transition:'all 0.2s', cursor:'pointer', overflow:'hidden' }}>
               <Avatar size={29} emoji={user?.avatar}/>
               <div style={{ flex:1, minWidth:0, opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-6px)', transition:'opacity 0.22s ease 0.05s,transform 0.22s ease 0.05s', pointerEvents: expanded ? 'auto' : 'none' }}>
-                <div style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', background:'linear-gradient(135deg,#e8fff5,#12b76a)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{user?.name}</div>
-                <div style={{ fontSize:10, color:'rgba(18,183,106,0.8)', fontWeight:700, textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
+                <div style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', background:'linear-gradient(135deg,#e8fff5,#12b76a)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{user?.name || '—'}</div>
+                <div style={{ fontSize:10, color:'rgba(18,183,106,0.8)', fontWeight:700, textTransform:'capitalize', marginTop:1 }}>{user?.role || '—'}</div>
               </div>
             </div>
           </div>
         </div>
-
-        <style>{`@keyframes profileSlideUp{from{opacity:0;transform:translateY(10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
       </aside>
 
       {/* Profile panel desktop */}
@@ -234,37 +239,11 @@ export default function Sidebar() {
 
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-function LogoIcon({ size }: { size: number }) {
-  return (
-    <svg viewBox="0 0 32 32" width={size} height={size}
-      style={{ filter:'drop-shadow(0 0 6px rgba(18,183,106,0.95)) drop-shadow(0 0 12px rgba(6,182,212,0.5))' }}>
-      {/* Head */}
-      <circle cx="10" cy="6" r="4" fill="white"/>
-      {/* Body */}
-      <path d="M6 12 Q10 10 14 12 L13 22 H7 Z" fill="white"/>
-      {/* Arm reaching */}
-      <path d="M14 14 Q20 11 25 13" stroke="white" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-      {/* Grabbing fingers */}
-      <path d="M24 11 Q27 12 26 15 Q23 16 22 14" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Coin */}
-      <circle cx="28" cy="9" r="3.5" fill="none" stroke="white" strokeWidth="1.8"/>
-    </svg>
-  );
-}
 
 function Avatar({ size = 33, emoji }: { size?: number; emoji?: string | null }) {
-  if (emoji) {
-    return (
-      <div style={{ width:size, height:size, borderRadius:'50%', flexShrink:0, border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 10px rgba(18,183,106,0.25)', background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(59,108,248,0.12))', display:'flex', alignItems:'center', justifyContent:'center', fontSize: Math.round(size * 0.52) }}>
-        {emoji}
-      </div>
-    );
-  }
-  return (
-    <div style={{ width:size, height:size, borderRadius:'50%', flexShrink:0, border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 10px rgba(18,183,106,0.25)', background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(59,108,248,0.12))', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <UserCircle2 size={Math.round(size * 0.72)} color="#12b76a" strokeWidth={1.5}/>
-    </div>
-  );
+  const base: React.CSSProperties = { width:size, height:size, borderRadius:'50%', flexShrink:0, border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 10px rgba(18,183,106,0.25)', background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(59,108,248,0.12))', display:'flex', alignItems:'center', justifyContent:'center' };
+  if (emoji) return <div style={{ ...base, fontSize: Math.round(size * 0.52) }}>{emoji}</div>;
+  return <div style={base}><UserCircle2 size={Math.round(size * 0.72)} color="#12b76a" strokeWidth={1.5}/></div>;
 }
 
 function ProfilePanel({ user, stats, onClose, onLogout }: {
@@ -278,27 +257,26 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
       <div style={{ background:'linear-gradient(135deg,rgba(129,140,248,0.12),transparent)', padding:'16px 14px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:11 }}>
         <Avatar size={44} emoji={user?.avatar}/>
         <div style={{ minWidth:0, flex:1 }}>
-          <div style={{ fontSize:13.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
-          <div style={{ fontSize:11, color:'#818cf8', fontWeight:700, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
+          <div style={{ fontSize:13.5, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name || '—'}</div>
+          <div style={{ fontSize:11, color:'#818cf8', fontWeight:700, textTransform:'capitalize', marginTop:2 }}>{user?.role || '—'}</div>
         </div>
-        <button type="button" onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.9)', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>
+        <button type="button" onClick={onClose} className="sb-close-btn"
+          style={{ background:'none', border:'none', cursor:'pointer', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}>
           <X size={13}/>
         </button>
       </div>
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:9 }}>
         {debutDate && (
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(129,140,248,0.06)', border:'1px solid rgba(129,140,248,0.12)' }}>
-          <div style={{ width:30, height:30, borderRadius:8, background:'rgba(129,140,248,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <Calendar size={14} color="#818cf8"/>
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(129,140,248,0.06)', border:'1px solid rgba(129,140,248,0.12)' }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:'rgba(129,140,248,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Calendar size={14} color="#818cf8"/>
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+              <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
+              {anc && <div style={{ fontSize:10.5, color:'#fff', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
-            <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
-            {anc && <div style={{ fontSize:10.5, color:'#fff', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
-          </div>
-        </div>
         )}
         {stats && (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -313,9 +291,8 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
             ))}
           </div>
         )}
-        <button type="button" onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'8px', borderRadius:8, border:'none', background:'none', color:'rgba(255,255,255,0.4)', cursor:'pointer', fontSize:12, fontWeight:600 }}
-          onMouseEnter={e => (e.currentTarget.style.color='#ef4444')}
-          onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.4)')}>
+        <button type="button" onClick={onLogout} className="sb-logout-btn"
+          style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'8px', borderRadius:8, border:'none', background:'none', cursor:'pointer', fontSize:12, fontWeight:600 }}>
           <LogOut size={13}/> Déconnexion
         </button>
       </div>
@@ -325,15 +302,15 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
 
 function AnnivModal({ show, name, debutYear, onClose }: { show: boolean; name?: string; debutYear?: number; onClose: () => void }) {
   if (!show) return null;
-  const years = new Date().getFullYear() - (debutYear ?? new Date().getFullYear());
+  const thisYear = new Date().getFullYear();
+  const years    = thisYear - (debutYear ?? thisYear);
   if (years <= 0) return null;
-  const COLORS = ['#12b76a','#f79009','#818cf8','#38bdf8','#f04438','#a764f8'];
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', animation:'annexFadeIn 0.3s ease both' }}>
       <div style={{ position:'relative', background:'rgba(3,8,26,0.98)', borderRadius:24, maxWidth:420, width:'100%', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(18,183,106,0.2)', animation:'annexPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}>
         <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-          {COLORS.map((c, i) => (
-            <div key={i} style={{ position:'absolute', top:'-10%', left:`${10+i*15}%`, width:8, height:8, borderRadius: i % 2 ? '50%' : 3, background:c, animation:`confetti${i} ${1.8+i*0.3}s ease-in ${i*0.15}s infinite`, opacity:0.8 }}/>
+          {ANNIV_COLORS.map((c, i) => (
+            <div key={c} style={{ position:'absolute', top:'-10%', left:`${10+i*15}%`, width:8, height:8, borderRadius: i % 2 ? '50%' : 3, background:c, animation:`confetti${i} ${1.8+i*0.3}s ease-in ${i*0.15}s infinite`, opacity:0.8 }}/>
           ))}
         </div>
         <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(247,144,9,0.1),transparent)', padding:'36px 28px 24px', textAlign:'center', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
@@ -352,17 +329,6 @@ function AnnivModal({ show, name, debutYear, onClose }: { show: boolean; name?: 
           <button type="button" onClick={onClose} style={{ width:'100%', padding:'13px', borderRadius:14, border:'none', cursor:'pointer', fontSize:14, fontWeight:700, background:'linear-gradient(135deg,#12b76a,#0ea472)', color:'#fff', boxShadow:'0 4px 20px rgba(18,183,106,0.35)' }}>Merci 🙏</button>
         </div>
       </div>
-      <style>{`
-        @keyframes annexFadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes annexPop{from{opacity:0;transform:scale(0.8) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
-        @keyframes bounceEmoji{from{transform:translateY(0)}to{transform:translateY(-8px)}}
-        @keyframes confetti0{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-        @keyframes confetti1{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(-540deg);opacity:0}}
-        @keyframes confetti2{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(900deg);opacity:0}}
-        @keyframes confetti3{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(-720deg);opacity:0}}
-        @keyframes confetti4{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(540deg);opacity:0}}
-        @keyframes confetti5{0%{transform:translateY(0) rotate(0deg);opacity:.8}100%{transform:translateY(110vh) rotate(-900deg);opacity:0}}
-      `}</style>
     </div>
   );
 }

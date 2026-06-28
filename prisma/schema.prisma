@@ -61,6 +61,9 @@ model SolutionExpress {
   @@index([ville])
   @@index([createdAt(sort: Desc)])
   @@index([createdBy])
+  @@index([dateVente])
+  @@index([createdBy, dateVente])
+  @@index([createdBy, createdAt(sort: Desc)])
 }
 
 model Settings {

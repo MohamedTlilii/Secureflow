@@ -39,11 +39,7 @@ export const STATUS_COLOR: Record<StatusFiche, string> = {
   installation_annulee: '#be123c',
 };
 
-export interface Fournisseurs {
-  alarme?:   { actuel?: string; propose?: string };
-  internet?: { actuel?: string; propose?: string };
-  mobile?:   { actuel?: string; propose?: string };
-}
+export type Fournisseurs = Record<string, { actuel?: string; propose?: string }>;
 
 export interface SolutionExpress {
   id: string;
@@ -184,5 +180,5 @@ export const DEFAULT_SETTINGS: Settings = {
   objectifAnnuel: { '2025': 2222, '2026': 5000 },
   commissionFixeDefaut: 0,
   commissionExtraDefaut: 0,
-  produitsAvecQualification: ['alarme'],
+  produitsAvecQualification: ['systeme_d_alarme'],
 };

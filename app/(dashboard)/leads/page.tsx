@@ -1,14 +1,17 @@
-﻿'use client';
+'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import {
   Plus, Search, X, Filter, ChevronUp, ChevronDown,
-  TrendingUp, Building2, CheckCircle, XCircle,
+  TrendingUp, Building2, CheckCircle, XCircle, AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { apiErrMsg } from '@/lib/api';
+import { getCachedSettings } from '@/lib/settings-cache';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
 import { VALID_STATUTS, STATUS_LABEL, DEFAULT_SETTINGS, MOIS_FULL } from '@/types';
+import useIsMobile from '@/hooks/useIsMobile';
+import CosmosBackground from '@/components/CosmosBackground';
 import AnimatedNumber from '@/components/AnimatedNumber';
 import FicheCard from '@/components/solution-express/FicheCard';
 import UltraFiche from '@/components/solution-express/UltraFiche';
@@ -31,25 +34,10 @@ const SECTION_COLORS = [
   '#06b6d4','#f59e0b','#ef4444','#ec4899','#84cc16',
 ];
 
-/* ─── Cosmos ─── */
-interface Star     { x: number; y: number; s: number; o: number; d: number }
-interface Particle { x: number; y: number; s: number; d: number; delay: number; color: string }
-const PART_COLORS = ['#3b6cf8','#a78bfa','#12b76a','#f97316','#06b6d4'];
-
-/* ─── Mobile hook ─── */
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 768);
-    h();
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
+const LEADS_PART_COLORS = ['#3b6cf8','#a78bfa','#12b76a','#f97316','#06b6d4'];
 
 /* ─── Select helper ─── */
-function Sel({ val, onChange, opts, placeholder }: {
+const Sel = memo(function Sel({ val, onChange, opts, placeholder }: {
   val: string; onChange: (v: string) => void;
   opts: { value: string; label: string }[]; placeholder: string;
 }) {
@@ -60,7 +48,7 @@ function Sel({ val, onChange, opts, placeholder }: {
       {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
-}
+});
 
 /* ═══════════════════════════════════════════════════════════
    PAGE PRINCIPALE
@@ -69,72 +57,114 @@ export default function SolutionExpressPage() {
   const isMobile = useIsMobile();
 
   /* ── États ── */
-  const [fiches,       setFiches]       = useState<SolutionExpress[]>([]);
-  const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
-  const [loading,      setLoading]      = useState(true);
-  const [search,       setSearch]       = useState('');
-  const [searchFocused,setSearchFocused]= useState(false);
-  const [filters,      setFilters]      = useState<Filters>(EMPTY_FILTERS);
-  const [sortBy,       setSortBy]       = useState<SortKey>('date_desc');
-  const [annee,        setAnnee]        = useState(String(new Date().getFullYear()));
-  const [showFilt,     setShowFilt]     = useState(true);
-  const [modal,        setModal]        = useState<ModalMode>(null);
-  const [editing,      setEditing]      = useState<SolutionExpress | null>(null);
-  const [selected,     setSelected]     = useState<SolutionExpress | null>(null);
-  const [form,         setForm]         = useState<FormState>({ ...EMPTY_FORM });
-  const [saving,       setSaving]       = useState(false);
-  const [motifPending, setMotifPending] = useState<{ fiche: SolutionExpress } | null>(null);
-  const [motifChoice,  setMotifChoice]  = useState('');
-  const [mounted,      setMounted]      = useState(false);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [fiches,        setFiches]        = useState<SolutionExpress[]>([]);
+  const [total,         setTotal]         = useState(0);
+  const [settings,      setSettings]      = useState<Settings>(DEFAULT_SETTINGS);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState<string | null>(null);
+  const [search,        setSearch]        = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [filters,       setFilters]       = useState<Filters>(EMPTY_FILTERS);
+  const [sortBy,        setSortBy]        = useState<SortKey>('date_desc');
+  const [annee,         setAnnee]         = useState(String(new Date().getFullYear()));
+  const [showFilt,      setShowFilt]      = useState(true);
+  const [modal,         setModal]         = useState<ModalMode>(null);
+  const [editing,       setEditing]       = useState<SolutionExpress | null>(null);
+  const [selected,      setSelected]      = useState<SolutionExpress | null>(null);
+  const [form,          setForm]          = useState<FormState>({ ...EMPTY_FORM });
+  const [saving,        setSaving]        = useState(false);
+  const [motifPending,  setMotifPending]  = useState<{ fiche: SolutionExpress } | null>(null);
+  const [motifChoice,   setMotifChoice]   = useState('');
+  const [deleteTarget,  setDeleteTarget]  = useState<string | null>(null);
 
-  const starsRef  = useRef<Star[]>([]);
-  const partsRef  = useRef<Particle[]>([]);
   const toggleRef = useRef(new Set<string>());
+  const ctrlRef   = useRef<AbortController | null>(null);
 
-  /* ── Cosmos ── */
+  /* ── Debounce recherche ── */
   useEffect(() => {
-    starsRef.current = Array.from({ length: 60 }, () => ({
-      x: Math.random()*100, y: Math.random()*100,
-      s: Math.random()*2+0.4, o: Math.random()*0.5+0.08, d: Math.random()*5+2,
-    }));
-    partsRef.current = Array.from({ length: 18 }, () => ({
-      x: Math.random()*100, y: Math.random()*100+100,
-      s: Math.random()*5+2, d: Math.random()*18+10, delay: Math.random()*8,
-      color: PART_COLORS[Math.floor(Math.random()*PART_COLORS.length)],
-    }));
-    setMounted(true);
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  /* ── Fetch ── */
-  const fetchAll = useCallback(async () => {
+  /* ── Fetch leads paginé côté serveur ── */
+  const fetchLeads = useCallback(async (
+    signal: AbortSignal,
+    opts: { append?: boolean; offset?: number } = {},
+  ) => {
+    const { append = false, offset = 0 } = opts;
+    if (!append) { setLoading(true); setError(null); setFiches([]); }
+    let canceled = false;
     try {
-      const [f, s] = await Promise.all([
-        api.get<SolutionExpress[]>('/api/leads'),
-        api.get<Settings>('/api/settings'),
-      ]);
-      setFiches(Array.isArray(f.data) ? f.data : []);
-      setSettings(s.data ?? DEFAULT_SETTINGS);
-    } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement des données')); }
-    finally { setLoading(false); }
+      const params = {
+        search: debouncedSearch, annee, sortBy,
+        status:        filters.status,
+        typeClient:    filters.typeClient,
+        leadType:      filters.leadType,
+        ville:         filters.ville,
+        typeCommerce:  filters.typeCommerce,
+        qualifSysteme: filters.qualifSysteme,
+        commission:    filters.commission,
+        service:       filters.service,
+        limit: PAGE_SIZE,
+        offset,
+      };
+      const { data } = await api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params, signal });
+      setTotal(data.total);
+      if (append) {
+        setFiches(prev => [...prev, ...data.fiches]);
+      } else {
+        setFiches(data.fiches);
+        setSelected(prev => prev ? (data.fiches.find(fi => fi.id === prev.id) ?? prev) : null);
+      }
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'ERR_CANCELED') { canceled = true; return; }
+      if (append) toast.error(apiErrMsg(e, 'Erreur chargement'));
+      else setError(apiErrMsg(e, 'Erreur chargement des données'));
+    } finally {
+      if (!canceled && !append) setLoading(false);
+    }
+  }, [debouncedSearch, annee, sortBy, filters]);
+
+  /* ── Déclencheur principal — refetch à chaque changement de filtre/tri/recherche ── */
+  useEffect(() => {
+    ctrlRef.current?.abort();
+    ctrlRef.current = new AbortController();
+    fetchLeads(ctrlRef.current.signal);
+    const onVis = () => {
+      if (!document.hidden) {
+        ctrlRef.current?.abort();
+        ctrlRef.current = new AbortController();
+        fetchLeads(ctrlRef.current.signal);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      ctrlRef.current?.abort();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [fetchLeads]);
+
+  /* ── Settings (chargement initial uniquement) ── */
+  useEffect(() => {
+    getCachedSettings().then(s => { if (s) setSettings(s); });
   }, []);
 
   /* ── Stats depuis le backend ── */
   const [leadsStats, setLeadsStats] = useState({ totalFiches:0, totalInstalle:0, totalAnnule:0, totalPipeline:0, annees:[] as number[] });
   useEffect(() => {
-    api.get('/api/leads/stats', { params: { annee } })
+    const ctrl = new AbortController();
+    api.get('/api/leads/stats', { params: { annee }, signal: ctrl.signal })
       .then(r => { if (r.data) setLeadsStats(r.data); })
-      .catch(() => {});
+      .catch(e => { if ((e as { code?: string })?.code !== 'ERR_CANCELED') { /* non-bloquant */ } });
+    return () => ctrl.abort();
   }, [annee]);
 
-  useEffect(() => {
-    fetchAll();
-    const onVis = () => { if (!document.hidden) fetchAll(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [fetchAll]);
-
   /* ── Modals ── */
+  const todayLabel = useMemo(() =>
+    new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' }),
+  []);
+
   const openAdd = () => {
     setEditing(null);
     const fournisseurs = Object.fromEntries(settings.services.map(s => [s.id, { actuel: '', propose: '' }]));
@@ -144,7 +174,7 @@ export default function SolutionExpressPage() {
     setModal('add');
   };
 
-  const openEdit = (fiche: SolutionExpress) => {
+  const openEdit = useCallback((fiche: SolutionExpress) => {
     setEditing(fiche);
     setForm({
       ...EMPTY_FORM, ...fiche,
@@ -154,7 +184,7 @@ export default function SolutionExpressPage() {
       notes: fiche.notes ?? [],
     });
     setModal('edit');
-  };
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -167,59 +197,75 @@ export default function SolutionExpressPage() {
         datePaiementCommission: form.datePaiementCommission ? new Date(form.datePaiementCommission+'T12:00:00').toISOString() : null,
       };
       if (editing) {
-        await api.put(`/api/leads/${editing.id}`, payload);
-        if (selected?.id === editing.id) setSelected(s => s ? { ...s, ...payload } : null);
+        const { data: updated } = await api.put<SolutionExpress>(`/api/leads/${editing.id}`, payload);
+        setFiches(prev => prev.map(f => f.id === editing.id ? updated : f));
+        setSelected(s => s?.id === editing.id ? updated : s);
         toast.success('Fiche modifiée');
       } else {
-        await api.post('/api/leads', payload);
+        const { data: created } = await api.post<SolutionExpress>('/api/leads', payload);
+        setFiches(prev => [created, ...prev]);
+        setTotal(t => t + 1);
         toast.success('Fiche créée !');
       }
-      setModal(null); fetchAll();
+      setModal(null);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur sauvegarde')); }
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette fiche définitivement ?')) return;
+  const handleDelete = useCallback((id: string) => {
+    setDeleteTarget(id);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/api/leads/${id}`);
-      if (selected?.id === id) setSelected(null);
-      toast.success('Fiche supprimée'); fetchAll();
+      await api.delete(`/api/leads/${deleteTarget}`);
+      setFiches(prev => prev.filter(f => f.id !== deleteTarget));
+      setTotal(t => Math.max(t - 1, 0));
+      setSelected(s => s?.id === deleteTarget ? null : s);
+      toast.success('Fiche supprimée');
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression')); }
+    finally { setDeleteTarget(null); }
   };
 
-  const togglePaiement = async (fiche: SolutionExpress) => {
+  const togglePaiement = useCallback(async (fiche: SolutionExpress) => {
     if (toggleRef.current.has(fiche.id)) return;
     toggleRef.current.add(fiche.id);
     const next = !fiche.commissionPayee;
-    const optimistic = { ...fiche, commissionPayee: next, datePaiementCommission: next ? new Date().toISOString() : null };
+    const now  = next ? new Date().toISOString() : null;
+    const optimistic = { ...fiche, commissionPayee: next, datePaiementCommission: now };
     setFiches(prev => prev.map(f => f.id === fiche.id ? optimistic : f));
-    if (selected?.id === fiche.id) setSelected(optimistic);
+    setSelected(s => s?.id === fiche.id ? optimistic : s);
     try {
-      await api.put(`/api/leads/${fiche.id}`, { commissionPayee: next, datePaiementCommission: next ? new Date().toISOString() : null });
-      fetchAll();
-    } catch (e) { toast.error(apiErrMsg(e, 'Erreur paiement')); fetchAll(); }
-    finally { toggleRef.current.delete(fiche.id); }
-  };
+      await api.put(`/api/leads/${fiche.id}`, { commissionPayee: next, datePaiementCommission: now });
+    } catch (e) {
+      toast.error(apiErrMsg(e, 'Erreur paiement'));
+      setFiches(prev => prev.map(f => f.id === fiche.id ? fiche : f));
+      setSelected(s => s?.id === fiche.id ? fiche : s);
+    } finally { toggleRef.current.delete(fiche.id); }
+  }, []);
 
-  const changeStatus = (fiche: SolutionExpress, newStatus: StatusFiche) => {
+  const changeStatus = useCallback((fiche: SolutionExpress, newStatus: StatusFiche) => {
     if (newStatus === 'installation_annulee') { setMotifPending({ fiche }); setMotifChoice(''); return; }
+    setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: newStatus } : f));
+    setSelected(s => s?.id === fiche.id ? { ...s, status: newStatus } : s);
     api.put(`/api/leads/${fiche.id}`, { status: newStatus })
-      .then(() => {
-        setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: newStatus } : f));
-        if (selected?.id === fiche.id) setSelected(s => s ? { ...s, status: newStatus } : null);
-        toast.success('Statut mis à jour'); fetchAll();
-      })
-      .catch((e) => toast.error(apiErrMsg(e, 'Erreur statut')));
-  };
+      .then(() => toast.success('Statut mis à jour'))
+      .catch(e => {
+        toast.error(apiErrMsg(e, 'Erreur statut'));
+        setFiches(prev => prev.map(f => f.id === fiche.id ? fiche : f));
+        setSelected(s => s?.id === fiche.id ? fiche : s);
+      });
+  }, []);
 
   const confirmAnnulation = async () => {
-    if (!motifPending) return;
+    if (!motifPending || !motifChoice) return;
+    const { fiche } = motifPending;
     try {
-      await api.put(`/api/leads/${motifPending.fiche.id}`, { status: 'installation_annulee', motifAnnulation: motifChoice });
-      setFiches(prev => prev.map(f => f.id === motifPending.fiche.id ? { ...f, status: 'installation_annulee', motifAnnulation: motifChoice } : f));
-      if (selected?.id === motifPending.fiche.id) setSelected(s => s ? { ...s, status: 'installation_annulee', motifAnnulation: motifChoice } : null);
-      toast.success('Annulation confirmée'); fetchAll();
+      await api.put(`/api/leads/${fiche.id}`, { status: 'installation_annulee', motifAnnulation: motifChoice });
+      setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: 'installation_annulee' as StatusFiche, motifAnnulation: motifChoice } : f));
+      setSelected(s => s?.id === fiche.id ? { ...s, status: 'installation_annulee' as StatusFiche, motifAnnulation: motifChoice } : s);
+      toast.success('Annulation confirmée');
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur annulation')); }
     finally { setMotifPending(null); }
   };
@@ -229,108 +275,63 @@ export default function SolutionExpressPage() {
     try {
       await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
-      if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
+      setSelected(s => s?.id === fiche.id ? { ...s, notes: updated } : s);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur ajout note')); }
-  }, [selected]);
+  }, []);
 
   const deleteNote = useCallback(async (fiche: SolutionExpress, idx: number) => {
     const updated = (fiche.notes ?? []).filter((_, i) => i !== idx);
     try {
       await api.put(`/api/leads/${fiche.id}`, { notes: updated });
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, notes: updated } : f));
-      if (selected?.id === fiche.id) setSelected(s => s ? { ...s, notes: updated } : null);
+      setSelected(s => s?.id === fiche.id ? { ...s, notes: updated } : s);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression note')); }
-  }, [selected]);
+  }, []);
 
-  /* ── Filtrage + Tri ── */
-  const filtered = useMemo(() => fiches.filter(f => {
-    if (filters.status        && f.status              !== filters.status)        return false;
-    if (filters.typeClient    && f.typeClient           !== filters.typeClient)    return false;
-    if (filters.leadType      && f.leadType             !== filters.leadType)      return false;
-    if (filters.ville         && f.ville                !== filters.ville)         return false;
-    if (filters.typeCommerce  && f.typeCommerce         !== filters.typeCommerce)  return false;
-    if (filters.qualifSysteme && f.qualificationSysteme !== filters.qualifSysteme) return false;
-    if (filters.service && !(f.produits as string[]).includes(filters.service)) return false;
-    if (filters.commission === 'payee'      && !f.commissionPayee)                               return false;
-    if (filters.commission === 'en_attente' && (f.commissionPayee || !(f.commissionTotale > 0))) return false;
-    if (filters.commission === 'avec'       && !(f.commissionTotale > 0))                        return false;
-    if (filters.commission === 'annulee'    && f.status !== 'installation_annulee')              return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return [f.entreprise, f.prenom, f.nom, f.telephone, f.email, f.ville, f.summary]
-        .some(v => (v ?? '').toLowerCase().includes(q));
-    }
-    return true;
-  }), [fiches, filters, search]);
+  /* ── Données dérivées ── */
+  const allYears = useMemo(() => leadsStats.annees.map(String), [leadsStats.annees]);
 
-  const sorted = useMemo(() => [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'date_asc':
-        if (!a.dateVente && !b.dateVente) return 0;
-        if (!a.dateVente) return 1;
-        if (!b.dateVente) return -1;
-        return new Date(a.dateVente).getTime() - new Date(b.dateVente).getTime();
-      case 'urgency_desc':    return (b.urgencyScore || 0) - (a.urgencyScore || 0);
-      case 'commission_desc': return (b.commissionTotale || 0) - (a.commissionTotale || 0);
-      case 'entreprise':      return (a.entreprise || '').localeCompare(b.entreprise || '');
-      case 'status':          return VALID_STATUTS.indexOf(a.status) - VALID_STATUTS.indexOf(b.status);
-      default:
-        if (!a.dateVente && !b.dateVente) return 0;
-        if (!a.dateVente) return 1;
-        if (!b.dateVente) return -1;
-        return new Date(b.dateVente).getTime() - new Date(a.dateVente).getTime();
-    }
-  }), [filtered, sortBy]);
-
-  useEffect(() => setVisibleCount(PAGE_SIZE), [filters, search, annee, sortBy]);
-  const paginatedSorted = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
-
-  const allYears = leadsStats.annees.map(String);
-
-  const usedServiceIds = useMemo(() => {
-    const s = new Set<string>();
-    fiches.forEach(f => (f.produits as string[]).forEach(id => s.add(id)));
-    return s;
-  }, [fiches]);
+  const villesDispos = useMemo(() =>
+    [...new Set(settings.villes ?? [])].sort(),
+  [settings.villes]);
 
   const groups = useMemo(() => {
-    const inYear = annee === 'tout' ? paginatedSorted : paginatedSorted.filter(f => f.dateVente && String(new Date(f.dateVente).getFullYear()) === annee);
     if (annee === 'tout') {
       const map: Record<string, SolutionExpress[]> = {};
-      inYear.forEach(f => { const y = f.dateVente ? String(new Date(f.dateVente).getFullYear()) : 'Sans date'; if (!map[y]) map[y] = []; map[y].push(f); });
-      return Object.keys(map).sort((a, b) => Number(b) - Number(a)).map((y, i) => ({ label: y, color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[y] }));
+      fiches.forEach(f => {
+        const y = f.dateVente ? String(new Date(f.dateVente).getFullYear()) : 'Sans date';
+        if (!map[y]) map[y] = [];
+        map[y].push(f);
+      });
+      return Object.keys(map)
+        .sort((a, b) => a === 'Sans date' ? 1 : b === 'Sans date' ? -1 : Number(b) - Number(a))
+        .map((y, i) => ({ label: y, color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[y] }));
     }
     const map: Record<number, SolutionExpress[]> = {};
-    inYear.forEach(f => { if (!f.dateVente) return; const m = new Date(f.dateVente).getMonth(); if (!map[m]) map[m] = []; map[m].push(f); });
-    return Object.keys(map).map(Number).sort((a, b) => b - a).map((m, i) => ({ label: MOIS_FULL[m], color: SECTION_COLORS[i % SECTION_COLORS.length], items: map[m] ?? [] }));
-  }, [paginatedSorted, annee]);
+    fiches.forEach(f => {
+      if (!f.dateVente) return;
+      const m = new Date(f.dateVente).getMonth();
+      if (!map[m]) map[m] = [];
+      map[m].push(f);
+    });
+    return Object.keys(map).map(Number).sort((a, b) => b - a).map((m, i) => ({
+      label: MOIS_FULL[m],
+      color: SECTION_COLORS[i % SECTION_COLORS.length],
+      items: map[m] ?? [],
+    }));
+  }, [fiches, annee]);
 
   /* ── Stats depuis le backend ── */
   const { totalFiches, totalInstalle, totalAnnule, totalPipeline } = leadsStats;
 
-  const filtersActive  = Object.values(filters).some(Boolean) || !!search;
-  const villesDispos   = useMemo(() => {
-    const all = [...(settings.villes ?? []), ...fiches.map(f => f.ville).filter(Boolean)];
-    return [...new Set(all)].sort();
-  }, [fiches, settings.villes]);
-  const totalVisible   = groups.reduce((n, g) => n + g.items.length, 0);
+  const filtersActive = Object.values(filters).some(Boolean) || !!search;
 
   /* ─────────────────────────────── RENDER ──────────────────────────────── */
   return (
     <div style={{ position:'relative', minHeight:'100vh', color:'#fff', overflow:'hidden' }}>
-      <style>{`
-        @keyframes twinkle-star  { 0%,100%{opacity:0.08} 50%{opacity:0.55} }
-        @keyframes particle-rise { from{transform:translateY(0);opacity:0.4} to{transform:translateY(-100vh);opacity:0} }
-      `}</style>
-
       {/* ── Fond cosmos ── */}
       <div style={{ position:'fixed', inset:0, background:'radial-gradient(ellipse 120% 80% at 50% -10%, rgba(59,108,248,0.12) 0%, transparent 60%), radial-gradient(ellipse 80% 60% at 90% 50%, rgba(167,139,250,0.07) 0%, transparent 50%), #06060f', zIndex:0, pointerEvents:'none' }}/>
-      {mounted && starsRef.current.map((s,i) => (
-        <div key={i} style={{ position:'fixed', left:`${s.x}%`, top:`${s.y}%`, width:s.s, height:s.s, borderRadius:'50%', background:'#fff', opacity:s.o, pointerEvents:'none', zIndex:0, animation:`twinkle-star ${s.d}s ease-in-out infinite`, animationDelay:`${i*0.08}s` }}/>
-      ))}
-      {mounted && partsRef.current.map((p,i) => (
-        <div key={i} style={{ position:'fixed', left:`${p.x}%`, bottom:`-${p.y}px`, width:p.s, height:p.s, borderRadius:'50%', background:p.color, opacity:0.4, pointerEvents:'none', zIndex:0, animation:`particle-rise ${p.d}s linear infinite`, animationDelay:`${p.delay}s` }}/>
-      ))}
+      <CosmosBackground particleColors={LEADS_PART_COLORS} />
 
       <div style={{ position:'relative', zIndex:1, padding: isMobile ? '16px 12px 40px' : '28px 32px 40px' }}>
 
@@ -358,7 +359,7 @@ export default function SolutionExpressPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                   {!isMobile && (
                     <div style={{ fontSize:12, color:'#fff', background:'rgba(255,255,255,0.05)', padding:'6px 14px', borderRadius:9, border:'1px solid rgba(255,255,255,0.1)', textTransform:'capitalize', whiteSpace:'nowrap', fontWeight:700 }}>
-                      {new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                      {todayLabel}
                     </div>
                   )}
                   <select value={annee} onChange={e => setAnnee(e.target.value)}
@@ -448,7 +449,7 @@ export default function SolutionExpressPage() {
                 {/* Pills services */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
                   <span style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
-                  {settings.services.filter(sv => usedServiceIds.has(sv.id)).map(sv => (
+                  {settings.services.map(sv => (
                     <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
                       style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
                         border:`1px solid ${filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.12)'}`,
@@ -485,7 +486,7 @@ export default function SolutionExpressPage() {
         {/* Compteur résultats */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
           <span style={{ fontSize:13, color:'#fff', fontWeight:700 }}>
-            <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>{totalVisible}</span> fiche{totalVisible !== 1 ? 's' : ''}{filtersActive ? ' trouvée' : ' au total'}
+            <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>{total}</span> fiche{total !== 1 ? 's' : ''}{filtersActive ? ' trouvée' : ' au total'}
           </span>
           {filtersActive && <span style={{ fontSize:11, background:'rgba(167,139,250,0.1)', color:'#a78bfa', padding:'2px 12px', borderRadius:20, fontWeight:700 }}>Filtres actifs</span>}
         </div>
@@ -497,6 +498,18 @@ export default function SolutionExpressPage() {
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:16 }}>
             <div style={{ width:48, height:48, borderRadius:'50%', border:'3px solid rgba(129,140,248,0.15)', borderTopColor:'#818cf8', animation:'spin 0.8s linear infinite', boxShadow:'0 0 20px rgba(129,140,248,0.3)' }}/>
             <span style={{ fontSize:14, color:'#fff', letterSpacing:0.3 }}>Chargement des fiches…</span>
+          </div>
+        ) : error ? (
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:16, textAlign:'center' }}>
+            <div style={{ width:64, height:64, borderRadius:18, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto' }}>
+              <AlertCircle size={28} color="#ef4444" style={{ opacity:0.8 }}/>
+            </div>
+            <p style={{ fontSize:15, fontWeight:700, color:'#ef4444', margin:0 }}>{error}</p>
+            <button
+              onClick={() => { ctrlRef.current?.abort(); ctrlRef.current = new AbortController(); fetchLeads(ctrlRef.current.signal); }}
+              style={{ padding:'9px 22px', borderRadius:11, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              Réessayer
+            </button>
           </div>
         ) : groups.length === 0 ? (
           <div style={{ textAlign:'center', padding:'80px 20px' }}>
@@ -543,15 +556,19 @@ export default function SolutionExpressPage() {
                 </div>
               </div>
             ))}
-            {visibleCount < sorted.length && (
+            {fiches.length < total && (
               <div style={{ display:'flex', justifyContent:'center', paddingTop:8 }}>
                 <button
-                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                  onClick={() => {
+                    ctrlRef.current?.abort();
+                    ctrlRef.current = new AbortController();
+                    fetchLeads(ctrlRef.current.signal, { append: true, offset: fiches.length });
+                  }}
                   style={{ padding:'11px 32px', borderRadius:12, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.35)', color:'#a0b4ff', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.25)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.12)'; }}
                 >
-                  Afficher plus · {sorted.length - visibleCount} restant{sorted.length - visibleCount !== 1 ? 's' : ''}
+                  Afficher plus · {total - fiches.length} restant{total - fiches.length !== 1 ? 's' : ''}
                 </button>
               </div>
             )}
@@ -581,6 +598,26 @@ export default function SolutionExpressPage() {
         />
       )}
 
+      {deleteTarget && (
+        <div onClick={e => { if (e.target===e.currentTarget) setDeleteTarget(null); }}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(11,11,34,0.98),rgba(8,8,24,0.98))', border:'1px solid rgba(239,68,68,0.25)', borderRadius:20, width:'100%', maxWidth:360, padding:'26px 28px', boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(239,68,68,0.1)' }}>
+            <div style={{ fontSize:18, fontWeight:800, color:'#ef4444', marginBottom:8 }}>Supprimer la fiche ?</div>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,0.7)', marginBottom:24 }}>Cette action est irréversible.</p>
+            <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button onClick={() => setDeleteTarget(null)}
+                style={{ padding:'9px 16px', borderRadius:10, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'#fff', fontSize:13, cursor:'pointer' }}>
+                Annuler
+              </button>
+              <button onClick={confirmDelete}
+                style={{ padding:'9px 20px', borderRadius:10, background:'#ef4444', border:'none', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 4px 16px rgba(239,68,68,0.4)' }}>
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {motifPending && (
         <div onClick={e => { if (e.target===e.currentTarget) setMotifPending(null); }}
           style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
@@ -600,8 +637,8 @@ export default function SolutionExpressPage() {
                 style={{ padding:'9px 16px', borderRadius:10, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', color:'#fff', fontSize:13, cursor:'pointer' }}>
                 Annuler
               </button>
-              <button onClick={confirmAnnulation}
-                style={{ padding:'9px 20px', borderRadius:10, background:'#ef4444', border:'none', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 4px 16px rgba(239,68,68,0.4)' }}>
+              <button onClick={confirmAnnulation} disabled={!motifChoice}
+                style={{ padding:'9px 20px', borderRadius:10, background: motifChoice ? '#ef4444' : 'rgba(239,68,68,0.3)', border:'none', color:'#fff', fontSize:13, fontWeight:800, cursor: motifChoice ? 'pointer' : 'not-allowed', boxShadow: motifChoice ? '0 4px 16px rgba(239,68,68,0.4)' : 'none', transition:'all 0.15s' }}>
                 Confirmer
               </button>
             </div>
@@ -611,4 +648,3 @@ export default function SolutionExpressPage() {
     </div>
   );
 }
-

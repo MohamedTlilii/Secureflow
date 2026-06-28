@@ -1,17 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
-
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 640);
-    h();
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
+import React, { useState } from 'react';
 import {
   X, Edit2, Trash2, Shield, Wifi, Smartphone, Tv, Camera, Receipt, Phone, Mail, MapPin,
   Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
@@ -19,18 +8,12 @@ import {
   ArrowRight, Plus, Trash, Link, FileText, Check,
 } from 'lucide-react';
 import type { SolutionExpress, Settings, StatusFiche } from '@/types';
-import { STATUS_LABEL, VALID_STATUTS } from '@/types';
+import { STATUS_LABEL, STATUS_COLOR, VALID_STATUTS } from '@/types';
+import useIsMobile from '@/hooks/useIsMobile';
 import MiniScoreRing from './MiniScoreRing';
 import CommissionBadge from './CommissionBadge';
 
-const PIPE_COLOR: Record<StatusFiche, string> = {
-  new:                   '#3b6cf8',
-  contacted:             '#f79009',
-  proposal:              '#a78bfa',
-  installation_en_cours: '#f97316',
-  installe:              '#12b76a',
-  installation_annulee:  '#ef4444',
-};
+const PIPE_COLOR = STATUS_COLOR;
 
 const PIPELINE: StatusFiche[] = ['new', 'contacted', 'proposal', 'installation_en_cours', 'installe'];
 

@@ -1,135 +1,218 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { MOIS_LABELS } from '@/types';
+
 const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
+const HIST_PAGE   = 20;
 
 export async function GET(req: NextRequest) {
   const sp         = new URL(req.url).searchParams;
-  const anneeParam = sp.get('annee')    ?? 'tout';
-  const filtre     = sp.get('filtre')   ?? 'tout';
-  const calAnnee = parseInt(sp.get('calAnnee') ?? String(new Date().getFullYear()), 10);
-  const calMois  = parseInt(sp.get('calMois')  ?? '-1', 10); // -1 = toute l'année
+  const anneeParam = sp.get('annee')  ?? 'tout';
+  const filtre     = sp.get('filtre') ?? 'tout';
+  const calMois    = Math.max(parseInt(sp.get('calMois')   ?? '-1', 10), -1);
+  const calAnnee   = parseInt(sp.get('calAnnee') ?? String(new Date().getFullYear()), 10);
+  const histOffset = Math.max(parseInt(sp.get('histOffset') ?? '0', 10), 0);
 
   try {
     const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-    const all = await prisma.solutionExpress.findMany({
-      where: { createdBy: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
 
-    const settings = await prisma.settings.findUnique({ where: { id: 'global' } });
-    const objectifAnnuel = (settings?.objectifAnnuel ?? {}) as Record<string, number>;
+    /* ─── WHERE builders ────────────────────────────────────── */
+    const commCond: Prisma.SolutionExpressWhereInput = {
+      OR: [{ commissionTotale: { gt: 0 } }, { commissionFixe: { gt: 0 } }],
+    };
 
-    const getDate = (f: (typeof all)[0]) => f.dateVente ? new Date(f.dateVente) : null;
+    const baseConditions: Prisma.SolutionExpressWhereInput[] = [commCond];
 
-    const cur    = new Date().getFullYear();
-    const withComm = all.filter(f => (f.commissionTotale || 0) > 0 || (f.commissionFixe || 0) > 0);
-    const annees   = [...new Set([cur, ...withComm.filter(f => f.dateVente).map(f => getDate(f)!.getFullYear())])].sort((a, b) => b - a);
+    if (anneeParam !== 'tout') {
+      const yr = Number(anneeParam);
+      if (!Number.isNaN(yr) && yr > 2000 && yr < 2100) {
+        baseConditions.push({ dateVente: { gte: new Date(yr, 0, 1), lt: new Date(yr + 1, 0, 1) } });
+      }
+    }
+    if (calMois >= 0 && calMois <= 11 && !Number.isNaN(calAnnee)) {
+      baseConditions.push({
+        dateVente: { gte: new Date(calAnnee, calMois, 1), lt: new Date(calAnnee, calMois + 1, 1) },
+      });
+    }
 
-    const byAnnee = anneeParam === 'tout'
-      ? withComm
-      : withComm.filter(c => getDate(c)?.getFullYear() === Number(anneeParam));
+    const statsWhere: Prisma.SolutionExpressWhereInput = {
+      createdBy: user.id,
+      AND: baseConditions,
+    };
 
-    const filtered = byAnnee.filter(c => {
-      if (filtre === 'payee')     return c.commissionPayee;
-      if (filtre === 'non_payee') return !c.commissionPayee && c.status !== 'installation_annulee';
-      if (filtre === 'annulee')   return c.status === 'installation_annulee';
-      return true;
-    });
+    const filtreConds: Prisma.SolutionExpressWhereInput[] = [];
+    if (filtre === 'payee')     { filtreConds.push({ commissionPayee: true  }, { status: { not: 'installation_annulee' } }); }
+    if (filtre === 'non_payee') { filtreConds.push({ commissionPayee: false }, { status: { not: 'installation_annulee' } }); }
+    if (filtre === 'annulee')   { filtreConds.push({ status: 'installation_annulee' }); }
 
-    // Historique : mois spécifique ou toute l'année (calMois = -1)
-    const filteredHistorique = calMois >= 0
-      ? filtered.filter(c => {
-          const d = getDate(c);
-          return d !== null && d.getFullYear() === calAnnee && d.getMonth() === calMois;
-        })
-      : filtered;
+    const histWhere: Prisma.SolutionExpressWhereInput = {
+      createdBy: user.id,
+      AND: filtreConds.length > 0 ? [...baseConditions, ...filtreConds] : baseConditions,
+    };
 
-    // Stats sur la période sélectionnée (mois spécifique ou année complète)
-    const baseStats       = calMois >= 0 ? filteredHistorique : filtered;
-    const activesForStats = baseStats.filter(c => c.status !== 'installation_annulee');
-    const annuleeForStats = baseStats.filter(c => c.status === 'installation_annulee');
-    const actives = filtre === 'annulee' ? annuleeForStats : activesForStats;
+    // Min/Max cible : actives (sauf annulee pour filtre=tout), ou annulees si filtre=annulee
+    const minMaxConds: Prisma.SolutionExpressWhereInput[] = [...baseConditions, { commissionTotale: { gt: 0 } }];
+    if      (filtre === 'payee')     { minMaxConds.push({ commissionPayee: true  }, { status: { not: 'installation_annulee' } }); }
+    else if (filtre === 'non_payee') { minMaxConds.push({ commissionPayee: false }, { status: { not: 'installation_annulee' } }); }
+    else if (filtre === 'annulee')   { minMaxConds.push({ status: 'installation_annulee' }); }
+    else                             { minMaxConds.push({ status: { not: 'installation_annulee' } }); }
 
-    const totalGagne  = filtre === 'annulee' ? 0 : activesForStats.reduce((s, c) => s + (c.commissionTotale || 0), 0);
-    const totalAnnule = annuleeForStats.reduce((s, c) => s + (c.commissionTotale || 0), 0);
-    const totalPaye   = filtre === 'annulee' ? 0 : activesForStats.filter(c => c.commissionPayee).reduce((s, c) => s + (c.commissionTotale || 0), 0);
+    /* ─── Parallel queries ──────────────────────────────────── */
+    type YrRow = { yr: number; status: string; commissionPayee: boolean; total: number; cnt: number };
+
+    const [statsGroups, yearsRaw, [histItems, histTotal], settingsRaw, chartRaw, minMaxAgg] = await Promise.all([
+      /* 1 – Stats via groupBy (year+month scope, no filtre) */
+      prisma.solutionExpress.groupBy({
+        by:     ['status', 'commissionPayee'],
+        where:  statsWhere,
+        _sum:   { commissionTotale: true },
+        _count: { _all: true },
+      }),
+
+      /* 2 – Available years */
+      prisma.$queryRaw<{ yr: number }[]>(Prisma.sql`
+        SELECT DISTINCT EXTRACT(YEAR FROM "dateVente")::int AS yr
+        FROM   "SolutionExpress"
+        WHERE  "createdBy" = ${user.id}
+          AND  ("commissionTotale" > 0 OR "commissionFixe" > 0)
+          AND  "dateVente" IS NOT NULL
+        ORDER  BY yr DESC
+      `),
+
+      /* 3 – Historique paginé + total */
+      Promise.all([
+        prisma.solutionExpress.findMany({
+          where:   histWhere,
+          orderBy: [{ dateVente: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
+          take:    HIST_PAGE,
+          skip:    histOffset,
+        }),
+        prisma.solutionExpress.count({ where: histWhere }),
+      ]),
+
+      /* 4 – Settings (objectif) */
+      prisma.settings.findUnique({ where: { id: 'global' } }),
+
+      /* 5 – Chart data */
+      anneeParam === 'tout'
+        ? prisma.$queryRaw<YrRow[]>(Prisma.sql`
+            SELECT
+              EXTRACT(YEAR FROM "dateVente")::int         AS yr,
+              status,
+              "commissionPayee",
+              COALESCE(SUM("commissionTotale"), 0)::float AS total,
+              COUNT(*)::int                               AS cnt
+            FROM  "SolutionExpress"
+            WHERE "createdBy" = ${user.id}
+              AND ("commissionTotale" > 0 OR "commissionFixe" > 0)
+              AND "dateVente" IS NOT NULL
+            GROUP BY yr, status, "commissionPayee"
+            ORDER BY yr DESC
+          `)
+        : prisma.solutionExpress.findMany({
+            where:   histWhere,
+            orderBy: [{ dateVente: { sort: 'asc', nulls: 'last' } }],
+            take:    500,
+            select: {
+              commissionTotale: true, dateVente: true, status: true,
+              commissionPayee: true, motifAnnulation: true,
+              entreprise: true, prenom: true, nom: true,
+            },
+          }),
+
+      /* 6 – Min / Max précis */
+      prisma.solutionExpress.aggregate({
+        where: { createdBy: user.id, AND: minMaxConds },
+        _max:  { commissionTotale: true },
+        _min:  { commissionTotale: true },
+      }),
+    ]);
+
+    /* ─── Derivation stats depuis groupBy ───────────────────── */
+    const sumFn   = (gs: typeof statsGroups) => gs.reduce((s, g) => s + (g._sum.commissionTotale ?? 0), 0);
+    const countFn = (gs: typeof statsGroups) => gs.reduce((s, g) => s + g._count._all, 0);
+
+    const activeGroups   = statsGroups.filter(g => g.status !== 'installation_annulee');
+    const annuleeGroups  = statsGroups.filter(g => g.status === 'installation_annulee');
+    const payeeActive    = activeGroups.filter(g =>  g.commissionPayee);
+    const nonPayeeActive = activeGroups.filter(g => !g.commissionPayee);
+
+    const filteredActive =
+      filtre === 'payee'     ? payeeActive    :
+      filtre === 'non_payee' ? nonPayeeActive :
+      filtre === 'annulee'   ? []             :
+      activeGroups;
+
+    const totalGagne  = filtre === 'annulee' ? 0 : sumFn(filteredActive);
+    const totalAnnule = (filtre === 'payee' || filtre === 'non_payee') ? 0 : sumFn(annuleeGroups);
+    const totalPaye   = filtre === 'annulee' ? 0 : sumFn(payeeActive.filter(g => filteredActive.includes(g)));
     const enAttente   = filtre === 'annulee' ? 0 : Math.max(0, totalGagne - totalPaye);
-    const vals        = actives.map(c => c.commissionTotale || 0).filter(v => v > 0);
-    const maximum     = vals.length ? Math.max(...vals) : 0;
-    const minimum     = vals.length ? Math.min(...vals) : 0;
-    const pctPaye     = totalGagne > 0 ? Math.round((totalPaye / totalGagne) * 100) : 0;
 
+    const nActives  = filtre === 'annulee' ? 0 : countFn(filteredActive);
+    const nPayees   = (filtre === 'annulee' || filtre === 'non_payee') ? 0 : filtre === 'payee' ? nActives : countFn(payeeActive);
+    const nAttente  = (filtre === 'annulee' || filtre === 'payee')     ? 0 : filtre === 'non_payee' ? nActives : countFn(nonPayeeActive);
+    const nAnnulees = (filtre === 'payee'   || filtre === 'non_payee') ? 0 : countFn(annuleeGroups);
+
+    const maximum = minMaxAgg._max.commissionTotale ?? 0;
+    const minimum = minMaxAgg._min.commissionTotale ?? 0;
+
+    const objectifAnnuel = (settingsRaw?.objectifAnnuel ?? {}) as Record<string, number>;
     const objectif = anneeParam !== 'tout' ? (objectifAnnuel[anneeParam] || 0) : 0;
     const objPct   = objectif > 0 ? Math.min(Math.round((totalGagne / objectif) * 100), 100) : 0;
 
-    const nActives  = activesForStats.length;
-    const nPayees   = activesForStats.filter(c => c.commissionPayee).length;
-    const nAttente  = activesForStats.filter(c => !c.commissionPayee).length;
-    const nAnnulees = annuleeForStats.length;
+    const cur    = new Date().getFullYear();
+    const annees = [...new Set([cur, ...yearsRaw.map(r => Number(r.yr))])].sort((a, b) => b - a);
 
-    // Chart data
+    /* ─── Chart data ────────────────────────────────────────── */
     let chartData;
     if (anneeParam === 'tout') {
+      const yrRows = chartRaw as YrRow[];
       chartData = annees.map((yr, i) => {
-        const yrF       = filtered.filter(c => getDate(c)?.getFullYear() === yr);
-        const activeYrF = filtre === 'annulee' ? yrF : yrF.filter(c => c.status !== 'installation_annulee');
-        const barColor  = filtre === 'payee' ? '#3b6cf8' : filtre === 'non_payee' ? '#f79009' : filtre === 'annulee' ? '#be123c' : YEAR_COLORS[i % YEAR_COLORS.length];
+        const yg     = yrRows.filter(r => r.yr === yr);
+        const actYg  = yg.filter(r => r.status !== 'installation_annulee');
+        const annYg  = yg.filter(r => r.status === 'installation_annulee');
+        const payYg  = actYg.filter(r =>  r.commissionPayee);
+        const npaYg  = actYg.filter(r => !r.commissionPayee);
+        const filtYg = filtre === 'annulee' ? annYg : filtre === 'payee' ? payYg : filtre === 'non_payee' ? npaYg : actYg;
+        const barColor = filtre === 'payee' ? '#3b6cf8' : filtre === 'non_payee' ? '#f79009' : filtre === 'annulee' ? '#be123c' : YEAR_COLORS[i % YEAR_COLORS.length];
         return {
-          name: String(yr),
-          total: activeYrF.reduce((s, c) => s + (c.commissionTotale || 0), 0),
-          count: yrF.length,
-          cPayee:   yrF.filter(c => c.commissionPayee && c.status !== 'installation_annulee').length,
-          cAttente: yrF.filter(c => !c.commissionPayee && c.status !== 'installation_annulee').length,
-          cAnnulee: yrF.filter(c => c.status === 'installation_annulee').length,
-          color: barColor,
+          name:     String(yr),
+          total:    filtYg.reduce((s, r) => s + Number(r.total), 0),
+          count:    yg.reduce((s, r) => s + Number(r.cnt), 0),
+          cPayee:   payYg.reduce((s, r) => s + Number(r.cnt), 0),
+          cAttente: npaYg.reduce((s, r) => s + Number(r.cnt), 0),
+          cAnnulee: annYg.reduce((s, r) => s + Number(r.cnt), 0),
+          color:    barColor,
         };
       });
     } else {
-      chartData = [...filteredHistorique]
-        .sort((a, b) => getDate(a)!.getTime() - getDate(b)!.getTime())
-        .map(c => {
-          const d       = getDate(c);
-          const annulee = c.status === 'installation_annulee';
-          return {
-            name:    `${d!.getDate()} ${MOIS_LABELS[d!.getMonth()]}`,
-            total:   c.commissionTotale || 0,
-            color:   annulee ? '#be123c' : c.commissionPayee ? '#3b6cf8' : '#f79009',
-            annulee,
-            fullNom: c.entreprise || `${c.prenom || ''} ${c.nom || ''}`.trim() || '?',
-            motif:   c.motifAnnulation || '',
-            payee:   c.commissionPayee,
-          };
-        });
+      type DayItem = { commissionTotale: number|null; dateVente: string|null; status: string; commissionPayee: boolean; motifAnnulation: string|null; entreprise: string|null; prenom: string|null; nom: string|null };
+      chartData = (chartRaw as DayItem[]).map(c => {
+        const d       = c.dateVente ? new Date(c.dateVente) : null;
+        const annulee = c.status === 'installation_annulee';
+        return {
+          name:    d ? `${d.getDate()} ${MOIS_LABELS[d.getMonth()]}` : '?',
+          total:   c.commissionTotale || 0,
+          color:   annulee ? '#be123c' : c.commissionPayee ? '#3b6cf8' : '#f79009',
+          annulee,
+          fullNom: c.entreprise || `${c.prenom || ''} ${c.nom || ''}`.trim() || '?',
+          motif:   c.motifAnnulation || '',
+          payee:   c.commissionPayee,
+        };
+      });
     }
-
-    // Calendar data (all days in the year that have commissions)
-    const calendarData: Record<string, { total: number; payee: number; attente: number; annulee: number }> = {};
-    filtered.forEach(c => {
-      const d = getDate(c);
-      if (!d) return;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (!calendarData[key]) calendarData[key] = { total: 0, payee: 0, attente: 0, annulee: 0 };
-      if (c.status !== 'installation_annulee') calendarData[key].total += c.commissionTotale || 0;
-      if (c.status === 'installation_annulee') calendarData[key].annulee += 1;
-      if (c.commissionPayee)                        calendarData[key].payee   += c.commissionTotale || 0;
-      else if (c.status !== 'installation_annulee') calendarData[key].attente += c.commissionTotale || 0;
-    });
-
-    const totalMois = calMois >= 0
-      ? Object.entries(calendarData)
-          .filter(([k]) => k.startsWith(`${calAnnee}-${String(calMois + 1).padStart(2, '0')}`))
-          .reduce((s, [, v]) => s + v.total, 0)
-      : 0;
 
     return NextResponse.json({
       totalGagne, totalPaye, enAttente, totalAnnule,
-      maximum, minimum, pctPaye,
+      maximum, minimum,
       objectif, objPct,
       nActives, nPayees, nAttente, nAnnulees,
-      annees, chartData, calendarData, historique: filteredHistorique, totalMois,
+      annees, chartData,
+      historique: histItems,
+      histTotal,
     });
   } catch (e) {
     console.error(e);

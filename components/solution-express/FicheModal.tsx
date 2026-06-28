@@ -1,19 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const h = () => setM(window.innerWidth < 640);
-    h(); window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return m;
-}
-import { X, Shield, Wifi, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  X, Shield, Wifi, Smartphone, Tv, Camera, Receipt, Phone,
+  Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
+  Music, Server, Cloud, Wrench, Bell, Key, Package, Laptop, Tablet, Video,
+} from 'lucide-react';
 import type { Settings, StatusFiche } from '@/types';
 import { VALID_STATUTS, STATUS_LABEL } from '@/types';
+import useIsMobile from '@/hooks/useIsMobile';
 import DatePicker from './DatePicker';
 
 /* ─── Types exported for page.tsx ─── */
@@ -64,10 +59,16 @@ const lbl: React.CSSProperties = { fontSize: 11, color: '#8b8b9e', marginBottom:
 
 const TABS = ['👤 Contact', '🏢 Entreprise', '🔒 Système', '💰 Commission', '📝 Résumé'];
 
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  wifi: Wifi, smartphone: Smartphone, tv: Tv, camera: Camera, receipt: Receipt,
+  phone: Phone, monitor: Monitor, printer: Printer, creditcard: CreditCard,
+  zap: Zap, globe: Globe, headphones: Headphones, lock: Lock, home: Home,
+  car: Car, music: Music, server: Server, cloud: Cloud, wrench: Wrench,
+  bell: Bell, key: Key, package: Package, laptop: Laptop, tablet: Tablet, video: Video,
+};
 function ServiceIcon({ icon, size = 12, color }: { icon: string; size?: number; color?: string }) {
-  if (icon === 'wifi')       return <Wifi size={size} color={color} />;
-  if (icon === 'smartphone') return <Smartphone size={size} color={color} />;
-  return <Shield size={size} color={color} />;
+  const Ic = ICON_MAP[icon] ?? Shield;
+  return <Ic size={size} color={color} />;
 }
 
 /* ─── Props ─── */

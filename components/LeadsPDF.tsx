@@ -119,17 +119,17 @@ export function buildLeadsDoc(leads: SolutionExpress[], label: string) {
           {l.motifAnnulation ? <Row label="Motif annulation" value={l.motifAnnulation} /> : null}
 
           {/* ── Fournisseurs ── */}
-          {(l.fournisseurs?.alarme?.actuel || l.fournisseurs?.alarme?.propose ||
-            l.fournisseurs?.internet?.actuel || l.fournisseurs?.internet?.propose ||
-            l.fournisseurs?.mobile?.actuel || l.fournisseurs?.mobile?.propose) ? (
+          {l.fournisseurs && Object.values(l.fournisseurs).some(v => v?.actuel || v?.propose) ? (
             <>
               <Text style={S.section}>Fournisseurs</Text>
-              {l.fournisseurs?.alarme?.actuel   && <Row label="Alarme actuel"    value={l.fournisseurs.alarme.actuel} />}
-              {l.fournisseurs?.alarme?.propose   && <Row label="Alarme proposé"   value={l.fournisseurs.alarme.propose} />}
-              {l.fournisseurs?.internet?.actuel  && <Row label="Internet actuel"  value={l.fournisseurs.internet.actuel} />}
-              {l.fournisseurs?.internet?.propose && <Row label="Internet proposé" value={l.fournisseurs.internet.propose} />}
-              {l.fournisseurs?.mobile?.actuel    && <Row label="Mobile actuel"    value={l.fournisseurs.mobile.actuel} />}
-              {l.fournisseurs?.mobile?.propose   && <Row label="Mobile proposé"   value={l.fournisseurs.mobile.propose} />}
+              {Object.entries(l.fournisseurs).map(([key, val]) =>
+                val && (val.actuel || val.propose) ? (
+                  <View key={key}>
+                    {val.actuel  && <Row label={`${key.charAt(0).toUpperCase() + key.slice(1)} actuel`}  value={val.actuel} />}
+                    {val.propose && <Row label={`${key.charAt(0).toUpperCase() + key.slice(1)} proposé`} value={val.propose} />}
+                  </View>
+                ) : null
+              )}
             </>
           ) : null}
 

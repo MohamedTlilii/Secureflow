@@ -27,5 +27,5 @@ yarn-error.log*
 
 # claude
 .claude/
-RAPPORT_COMPLET.md
+RAPPORT.md
 log.md
