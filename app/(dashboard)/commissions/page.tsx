@@ -47,8 +47,9 @@ export default function CommissionsPage() {
   const [annee,       setAnnee]       = useState<string>(String(new Date().getFullYear()));
   const [filtre,      setFiltre]      = useState<'tout'|'payee'|'non_payee'|'annulee'>('tout');
   const [selectedMois, setSelectedMois] = useState<number | null>(null);
-  const [historique,  setHistorique]  = useState<SolutionExpress[]>([]);
-  const [histTotal,   setHistTotal]   = useState(0);
+  const [historique,     setHistorique]     = useState<SolutionExpress[]>([]);
+  const [histTotal,      setHistTotal]      = useState(0);
+  const [loadingMore,    setLoadingMore]    = useState(false);
   const [togglingId,  setTogglingId]  = useState<string | null>(null);
   const [resumeFiche, setResumeFiche] = useState<SolutionExpress|null>(null);
   const [ultraFiche,  setUltraFiche]  = useState<SolutionExpress|null>(null);
@@ -133,6 +134,8 @@ export default function CommissionsPage() {
 
   /* ── charger plus d'historique ── */
   const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
     const calAnnee = annee !== 'tout' ? Number(annee) : new Date().getFullYear();
     try {
       const { data } = await api.get<CommStats>('/api/commissions/stats', {
@@ -141,6 +144,7 @@ export default function CommissionsPage() {
       setHistorique(prev => [...prev, ...(data.historique ?? [])]);
       setHistTotal(data.histTotal ?? 0);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
+    finally { setLoadingMore(false); }
   };
 
   /* ── raccourcis stats depuis backend ── */
@@ -485,9 +489,9 @@ export default function CommissionsPage() {
                       })}
                     {historique.length < histTotal && (
                       <div style={{padding:'14px 20px',borderTop:'1px solid rgba(255,255,255,0.06)',textAlign:'center'}}>
-                        <button onClick={loadMore}
-                          style={{padding:'9px 28px',borderRadius:10,border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.04)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                          Afficher plus ({histTotal - historique.length} restants)
+                        <button onClick={loadMore} disabled={loadingMore}
+                          style={{padding:'9px 28px',borderRadius:10,border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.04)',color:'#fff',fontSize:12,fontWeight:700,cursor:loadingMore?'not-allowed':'pointer',opacity:loadingMore?0.5:1}}>
+                          {loadingMore ? 'Chargement…' : `Afficher plus (${histTotal - historique.length} restants)`}
                         </button>
                       </div>
                     )}
