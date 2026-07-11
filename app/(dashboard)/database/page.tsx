@@ -56,9 +56,10 @@ export default function DatabasePage() {
   const [filters, setFilters] = useState({
     prenom: '', nom: '', email: '', telephone: '', entreprise: '', ville: '', typeClient: '', status: '',
   });
-  const [pdfLoading,  setPdfLoading]  = useState(false);
-  const [confirmItem, setConfirmItem] = useState<SolutionExpress | null>(null);
-  const [deletingId,  setDeletingId]  = useState<string | null>(null);
+  const [pdfLoading,   setPdfLoading]  = useState(false);
+  const [confirmItem,  setConfirmItem] = useState<SolutionExpress | null>(null);
+  const [deletingId,   setDeletingId]  = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(30);
 
   const leadsCtrlRef = useRef<AbortController | null>(null);
   const statsCtrlRef = useRef<AbortController | null>(null);
@@ -161,6 +162,8 @@ export default function DatabasePage() {
       return a.dateVente < b.dateVente ? 1 : a.dateVente > b.dateVente ? -1 : 0;
     });
   }, [fichesByAnnee, filters]);
+
+  useEffect(() => { setVisibleCount(30); }, [displayData]);
 
   const hasFilters   = useMemo(() => Object.values(filters).some(Boolean), [filters]);
   const clearFilters = useCallback(() =>
@@ -405,7 +408,7 @@ export default function DatabasePage() {
                   </div>
                 ) : displayData.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {displayData.map((item, i) => (
+                    {displayData.slice(0, visibleCount).map((item, i) => (
                       <div key={item.id}
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '14px', animation: i < 30 ? `fadeSlideUp 0.3s ${Math.min(i * 0.03, 0.5)}s ease both` : 'none' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
@@ -459,6 +462,14 @@ export default function DatabasePage() {
                         </div>
                       </div>
                     ))}
+                    {visibleCount < displayData.length && (
+                      <div style={{ display:'flex', justifyContent:'center', padding:'14px 0' }}>
+                        <button onClick={() => setVisibleCount(v => v + 30)}
+                          style={{ padding:'9px 28px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.04)', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                          Afficher plus ({displayData.length - visibleCount} restants)
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div style={{ padding: '40px 0', textAlign: 'center', color: '#fff' }}>
@@ -537,7 +548,9 @@ export default function DatabasePage() {
                           </div>
                         </td>
                       </tr>
-                    ) : displayData.length > 0 ? displayData.map((item, i) => (
+                    ) : displayData.length > 0 ? (
+                      <>
+                      {displayData.slice(0, visibleCount).map((item, i) => (
                       <tr key={item.id} className="db-row"
                         style={{ animation: i < 30 ? `fadeSlideUp 0.3s ${Math.min(i * 0.03, 0.5)}s ease both` : 'none' }}>
                         <td style={tdSt}><div style={{ fontWeight: 600 }}>{item.prenom || '—'}</div></td>
@@ -585,7 +598,19 @@ export default function DatabasePage() {
                           </div>
                         </td>
                       </tr>
-                    )) : (
+                    ))}
+                      {visibleCount < displayData.length && (
+                        <tr>
+                          <td colSpan={9} style={{ padding:'14px 20px', textAlign:'center', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+                            <button onClick={() => setVisibleCount(v => v + 30)}
+                              style={{ padding:'9px 28px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.04)', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                              Afficher plus ({displayData.length - visibleCount} restants)
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                      </>
+                    ) : (
                       <tr>
                         <td colSpan={9} style={{ padding: '52px 0', textAlign: 'center', color: '#fff' }}>
                           <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(6,182,212,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', border: '1px solid rgba(6,182,212,0.1)' }}>
