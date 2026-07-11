@@ -59,6 +59,7 @@ export default function SolutionExpressPage() {
   /* ── États ── */
   const [fiches,        setFiches]        = useState<SolutionExpress[]>([]);
   const [total,         setTotal]         = useState(0);
+  const [loadingMore,   setLoadingMore]   = useState(false);
   const [settings,      setSettings]      = useState<Settings>(DEFAULT_SETTINGS);
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState<string | null>(null);
@@ -559,16 +560,20 @@ export default function SolutionExpressPage() {
             {fiches.length < total && (
               <div style={{ display:'flex', justifyContent:'center', paddingTop:8 }}>
                 <button
-                  onClick={() => {
+                  disabled={loadingMore}
+                  onClick={async () => {
+                    if (loadingMore) return;
+                    setLoadingMore(true);
                     ctrlRef.current?.abort();
                     ctrlRef.current = new AbortController();
-                    fetchLeads(ctrlRef.current.signal, { append: true, offset: fiches.length });
+                    await fetchLeads(ctrlRef.current.signal, { append: true, offset: fiches.length });
+                    setLoadingMore(false);
                   }}
-                  style={{ padding:'11px 32px', borderRadius:12, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.35)', color:'#a0b4ff', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.25)'; }}
+                  style={{ padding:'11px 32px', borderRadius:12, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.35)', color:'#a0b4ff', fontSize:13, fontWeight:700, cursor:loadingMore?'not-allowed':'pointer', opacity:loadingMore?0.5:1, transition:'all 0.2s' }}
+                  onMouseEnter={e => { if (!loadingMore) (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.25)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='rgba(59,108,248,0.12)'; }}
                 >
-                  Afficher plus · {total - fiches.length} restant{total - fiches.length !== 1 ? 's' : ''}
+                  {loadingMore ? 'Chargement…' : `Afficher plus · ${total - fiches.length} restant${total - fiches.length !== 1 ? 's' : ''}`}
                 </button>
               </div>
             )}

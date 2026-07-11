@@ -199,7 +199,6 @@ export default function PipelinePage() {
                   )}
                   <select value={annee} onChange={e=>{setAnnee(e.target.value);setMois('tout');}}
                     style={{fontSize:12,padding:'7px 14px',borderRadius:9,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',color:'#fff',cursor:'pointer',outline:'none',fontWeight:700}}>
-                    <option value="tout">Toutes les années</option>
                     {annees.map(y=><option key={y} value={y}>{y}</option>)}
                   </select>
                   {annee!=='tout'&&(
