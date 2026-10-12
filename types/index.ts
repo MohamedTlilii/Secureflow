@@ -65,6 +65,7 @@ export interface SolutionExpress {
   urgencyScore: number;
   summary: string;
   notes: string[];
+  partageAvec?: string[];
   montantContrat: number;
   commissionFixe: number;
   commissionExtra: number;
@@ -90,6 +91,11 @@ export interface Service {
   propose: ServiceFournisseur[];
 }
 
+export interface Agent {
+  nom: string;
+  sexe: 'homme' | 'femme';
+}
+
 export interface Settings {
   id: string;
   villes: string[];
@@ -98,6 +104,7 @@ export interface Settings {
   qualificationSysteme: TypeCommerceItem[];
   services: Service[];
   motifsAnnulation: string[];
+  agents: Agent[];
   objectifAnnuel: Record<string, number>;
   commissionFixeDefaut: number;
   commissionExtraDefaut: number;
@@ -177,6 +184,7 @@ export const DEFAULT_SETTINGS: Settings = {
     },
   ],
   motifsAnnulation: ['Prix trop élevé', 'Délai trop long', 'Concurrent choisi', 'Client non disponible', 'Autre'],
+  agents: [],
   objectifAnnuel: { '2025': 2222, '2026': 5000 },
   commissionFixeDefaut: 0,
   commissionExtraDefaut: 0,

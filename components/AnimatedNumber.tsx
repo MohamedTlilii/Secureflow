@@ -35,7 +35,7 @@ export default function AnimatedNumber({ value, decimals = 0, suffix = '', color
 
   return (
     <span style={{ color }}>
-      {display.toFixed(decimals)}{suffix}
+      {display.toFixed(decimals === 0 && !Number.isInteger(value) ? 1 : decimals)}{suffix}
     </span>
   );
 }

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { VALID_STATUTS, MOIS_LABELS } from '@/types';
+import { groupPondere, POIDS_SQL } from '@/lib/partage';
 
 type EvoRow   = { period: number; status: string; commission_payee: boolean; cnt: bigint };
 type ProdRow  = { produit: string; cnt: bigint };
@@ -50,14 +51,14 @@ export async function GET(req: NextRequest) {
     const evoQuery: Prisma.Sql = anneeParam === 'tout'
       ? Prisma.sql`
           SELECT EXTRACT(YEAR FROM "dateVente")::int AS period,
-                 status, "commissionPayee" AS commission_payee, COUNT(*) AS cnt
+                 status, "commissionPayee" AS commission_payee, SUM(${POIDS_SQL})::float AS cnt
           FROM   "SolutionExpress"
           WHERE  "createdBy" = ${user.id} AND "dateVente" IS NOT NULL
           GROUP  BY period, status, "commissionPayee"
           ORDER  BY period ASC`
       : Prisma.sql`
           SELECT (EXTRACT(MONTH FROM "dateVente")::int - 1) AS period,
-                 status, "commissionPayee" AS commission_payee, COUNT(*) AS cnt
+                 status, "commissionPayee" AS commission_payee, SUM(${POIDS_SQL})::float AS cnt
           FROM   "SolutionExpress"
           WHERE  "createdBy" = ${user.id}
             AND  "dateVente" >= ${gte!}
@@ -90,12 +91,8 @@ export async function GET(req: NextRequest) {
       statusGroups, clientGroups, cityGroups, leadTypeGroups, commerceGroups,
       recent, prodRaw, evoRaw, yearsRaw,
     ] = await Promise.all([
-      prisma.solutionExpress.groupBy({
-        by: ['status'], where: base, _count: { _all: true },
-      }),
-      prisma.solutionExpress.groupBy({
-        by: ['typeClient'], where: base, _count: { _all: true },
-      }),
+      groupPondere(base, ['status']),
+      groupPondere(base, ['typeClient']),
       prisma.solutionExpress.groupBy({
         by: ['ville'],
         where: { ...base, ville: { not: '' } },

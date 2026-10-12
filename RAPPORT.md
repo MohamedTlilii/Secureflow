@@ -17,6 +17,7 @@
 8. [Composants partagés](#8-composants-partagés)
 9. [Librairies utilitaires](#9-librairies-utilitaires)
 10. [État global du code](#10-état-global-du-code)
+11. [Vente partagée](#11-vente-partagée)
 
 ---
 
@@ -605,4 +606,31 @@ Détecte si l'écran est mobile (< 768px). Pattern isomorphique `useLayoutEffect
 
 Le projet est fonctionnel et sécurisé dans ses fondamentaux. Il démontre une maîtrise solide des patterns modernes React/Next.js (AbortController, optimistic updates, pagination serveur, CSS modules, memo/useCallback). La principale marge d'amélioration est la cohérence : le dashboard a été porté à un niveau professionnel, mais les autres pages restent dans leur état d'origine. Une refactorisation progressive des pages restantes amènerait le projet à **8/10**.
 
+---
 
+## 11. Vente partagée
+
+Un lead peut être partagé avec un agent. Un lead partagé compte **0,5** au lieu de 1 dans tous les compteurs de leads. Les montants en TND ne changent pas.
+
+### Données
+- `SolutionExpress.partageAvec` (Json, défaut `[]`) : liste des noms d'agents (en pratique 0 ou 1 nom).
+- `Settings.agents` (Json, défaut `[]`) : liste `{ nom, sexe: 'homme' | 'femme' }`, gérée dans Paramètres → onglet « Partage Avec ».
+
+### Interface
+- **Paramètres → Partage Avec** : ajout, suppression d'agents et choix homme/femme (clic sur l'icône pour changer).
+- **Fiche lead → onglet Commission** : liste déroulante « Vente partagée avec » (un agent ou « Aucun »).
+- **Carte du lead et fenêtre de détails** : étiquette « 🤝 Partagé avec … ».
+- **Page Leads** : filtres « Partage » (Partagés / Non partagés) et « Partagé avec » (un agent).
+
+### Règle de calcul (un seul endroit : `lib/partage.ts`)
+- `poidsLead(partageAvec)` : 0,5 si la liste n'est pas vide, sinon 1.
+- `POIDS_SQL` : même règle en SQL, à utiliser à la place de `COUNT(*)`.
+- `groupPondere(where, by)` : remplace `prisma.groupBy` avec un `_count._all` pondéré.
+- Appliqué à : Dashboard (statuts, B2B/B2C, évolution), Pipeline (compteurs et badges des colonnes), Leads (compteurs), Comparaison, Commissions (nombres de commissions).
+- Non appliqué : répartitions par ville, type de lead, commerce (comptent 1 par lead) ; pagination de l'historique ; page Profil (montants uniquement).
+- Les compteurs affichent une décimale quand le nombre n'est pas entier (`AnimatedNumber`, page Comparaison, badges du Pipeline).
+
+### Autres changements liés
+- Le bloc « Produits » a été retiré du Dashboard (le calcul serveur existe encore dans `/api/dashboard/stats`).
+- Le Pipeline charge jusqu'à 1000 leads (au lieu de 200).
+- Cases B2B/B2C du Dashboard plus larges, avec retour à la ligne des noms longs.

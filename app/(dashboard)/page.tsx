@@ -15,7 +15,6 @@ import ScoreRing from '@/components/dashboard/ScoreRing';
 import { TotalLeadsCard }      from '@/components/dashboard/TotalLeadsCard';
 import { StatusCards }         from '@/components/dashboard/StatusCards';
 import { EvolutionChart }      from '@/components/dashboard/EvolutionChart';
-import { ProductsSection }     from '@/components/dashboard/ProductsSection';
 import { CitiesAndLeadTypes }  from '@/components/dashboard/CitiesAndLeadTypes';
 import { CommerceSection }     from '@/components/dashboard/CommerceSection';
 import { RecentLeads }         from '@/components/dashboard/RecentLeads';
@@ -147,10 +146,6 @@ export default function DashboardPage() {
     Object.fromEntries(settings.typeCommerce.map(t => [t.key, t.label])),
     [settings.typeCommerce]);
 
-  const servicesMap = useMemo(() =>
-    Object.fromEntries(settings.services.map(sv => [sv.id, sv])),
-    [settings.services]);
-
   /* ── Raccourcis ── */
   const annees        = stats?.annees        ?? [];
   const totalSE       = stats?.totalSE       ?? 0;
@@ -163,7 +158,6 @@ export default function DashboardPage() {
   const byLeadType    = stats?.byLeadType    ?? [];
   const byCommerce    = stats?.byCommerce    ?? [];
   const byCommerceB2C = stats?.byCommerceB2C ?? [];
-  const byProduit     = stats?.byProduit     ?? [];
   const recent        = stats?.recent        ?? [];
   const evolutionData = stats?.evolutionData ?? [];
 
@@ -320,11 +314,6 @@ export default function DashboardPage() {
             <TotalLeadsCard isMobile={isMobile} blur={blur20} totalSE={totalSE} b2b={b2b} b2c={b2c} />
 
             <StatusCards cards={statusCards} isMobile={isMobile} blur={blur20} />
-
-            <ProductsSection
-              isMobile={isMobile} blur={blur20}
-              byProduit={byProduit} servicesMap={servicesMap} totalSE={totalSE}
-            />
 
             <CitiesAndLeadTypes
               isMobile={isMobile} blur={blur20}

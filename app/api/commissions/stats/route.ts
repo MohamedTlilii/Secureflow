@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { groupPondere, POIDS_SQL } from '@/lib/partage';
 import { MOIS_LABELS } from '@/types';
 
 const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
@@ -65,12 +66,7 @@ export async function GET(req: NextRequest) {
 
     const [statsGroups, yearsRaw, [histItems, histTotal], settingsRaw, chartRaw, minMaxAgg] = await Promise.all([
       /* 1 – Stats via groupBy (year+month scope, no filtre) */
-      prisma.solutionExpress.groupBy({
-        by:     ['status', 'commissionPayee'],
-        where:  statsWhere,
-        _sum:   { commissionTotale: true },
-        _count: { _all: true },
-      }),
+      groupPondere(statsWhere, ['status', 'commissionPayee']),
 
       /* 2 – Available years */
       prisma.$queryRaw<{ yr: number }[]>(Prisma.sql`
@@ -104,7 +100,7 @@ export async function GET(req: NextRequest) {
               status,
               "commissionPayee",
               COALESCE(SUM("commissionTotale"), 0)::float AS total,
-              COUNT(*)::int                               AS cnt
+              SUM(${POIDS_SQL})::float                      AS cnt
             FROM  "SolutionExpress"
             WHERE "createdBy" = ${user.id}
               AND ("commissionTotale" > 0 OR "commissionFixe" > 0)

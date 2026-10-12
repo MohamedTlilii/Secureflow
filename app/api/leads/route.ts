@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
     const qualifSysteme = sp.get('qualifSysteme') ?? '';
     const commission    = sp.get('commission') ?? '';
     const service       = sp.get('service') ?? '';
+    const partage       = sp.get('partage') ?? '';
+    const partageAvec   = (sp.get('partageAvec') ?? '').slice(0, 200);
     const limit         = Math.min(Math.max(Number(sp.get('limit') ?? PAGE_SIZE), 1), 5000);
     const offset        = Math.max(Number(sp.get('offset') ?? '0'), 0);
 
@@ -64,6 +66,10 @@ export async function GET(req: NextRequest) {
         ],
       });
     }
+
+    if (partage === 'oui') conditions.push({ NOT: { partageAvec: { equals: [] } } });
+    if (partage === 'non') conditions.push({ partageAvec: { equals: [] } });
+    if (partageAvec)       conditions.push({ partageAvec: { array_contains: [partageAvec] } });
 
     if (service) {
       conditions.push({ produits: { array_contains: [service] } } as Prisma.SolutionExpressWhereInput);

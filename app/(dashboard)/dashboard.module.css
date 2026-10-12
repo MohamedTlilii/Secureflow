@@ -238,7 +238,7 @@
 
 /* ── Commerce grid ── */
 .commerceGrid { display: grid; gap: 10px; }
-.commerceGridDesktop { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.commerceGridDesktop { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .commerceGridMobile  { grid-template-columns: 1fr; }
 
 .commerceItem {
@@ -250,7 +250,7 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
-.commerceLabel { flex: 1; font-size: 13px; color: #fff; line-height: 1.3; }
+.commerceLabel { flex: 1; min-width: 0; font-size: 13px; color: #fff; line-height: 1.3; overflow-wrap: anywhere; }
 .commerceCount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
 
 /* ── Leads récents ── */

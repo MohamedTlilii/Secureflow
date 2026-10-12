@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { groupPondere, POIDS_SQL } from '@/lib/partage';
 
 export async function GET(req: NextRequest) {
   const anneeParam = new URL(req.url).searchParams.get('annee') ?? 'tout';
@@ -16,11 +17,7 @@ export async function GET(req: NextRequest) {
       : {};
 
     const [statusGroups, yearsRaw] = await Promise.all([
-      prisma.solutionExpress.groupBy({
-        by: ['status'],
-        where: { createdBy: user.id, ...yearWhere },
-        _count: { _all: true },
-      }),
+      groupPondere({ createdBy: user.id, ...yearWhere }, ['status']),
       prisma.$queryRaw<{ yr: number }[]>(Prisma.sql`
         SELECT DISTINCT EXTRACT(YEAR FROM "dateVente")::int AS yr
         FROM   "SolutionExpress"

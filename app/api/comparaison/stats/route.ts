@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { poidsLead } from '@/lib/partage';
 
 interface Metrics {
   gained: number; paid: number; pending: number; installe: number; annulee: number;
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
           createdBy: user.id,
           dateVente: { gte: new Date(prevYear, 0, 1), lt: new Date(currYear + 1, 0, 1) },
         },
-        select: { status: true, commissionTotale: true, commissionPayee: true, dateVente: true },
+        select: { status: true, commissionTotale: true, commissionPayee: true, dateVente: true, partageAvec: true },
       }),
       /* Borne gauche de navigation — 1 ligne depuis l'index */
       prisma.$queryRaw<{ yr: number }[]>(Prisma.sql`
@@ -68,25 +69,26 @@ export async function GET(req: NextRequest) {
       const mo        = f.dateVente.getMonth();
       const comm      = f.commissionTotale;
       const isAnnulee = f.status === 'installation_annulee';
+      const w         = poidsLead(f.partageAvec);
 
       if (yr === currYear) {
-        accCurr.total++;
-        if (isAnnulee) { accCurr.annulee++; continue; }
+        accCurr.total += w;
+        if (isAnnulee) { accCurr.annulee += w; continue; }
         monthly[mo].curr += comm;
         accCurr.gained   += comm;
         if (f.commissionPayee) accCurr.paid += comm;
-        if (f.status === 'installe') accCurr.installe++;
+        if (f.status === 'installe') accCurr.installe += w;
         if (comm > 0) {
           if (comm > accCurr.commMax) accCurr.commMax = comm;
           if (comm < accCurr.commMin) accCurr.commMin = comm;
         }
       } else if (yr === prevYear) {
-        accPrev.total++;
-        if (isAnnulee) { accPrev.annulee++; continue; }
+        accPrev.total += w;
+        if (isAnnulee) { accPrev.annulee += w; continue; }
         monthly[mo].prev += comm;
         accPrev.gained   += comm;
         if (f.commissionPayee) accPrev.paid += comm;
-        if (f.status === 'installe') accPrev.installe++;
+        if (f.status === 'installe') accPrev.installe += w;
         if (comm > 0) {
           if (comm > accPrev.commMax) accPrev.commMax = comm;
           if (comm < accPrev.commMin) accPrev.commMin = comm;

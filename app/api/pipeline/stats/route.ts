@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { groupPondere, POIDS_SQL } from '@/lib/partage';
 
 const STAGES = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'] as const;
 
@@ -59,12 +60,8 @@ export async function GET(req: NextRequest) {
           GROUP  BY p.produit ORDER BY cnt DESC`;
 
     const [statusGroups, clientGroups, prodRaw, yearsRaw] = await Promise.all([
-      prisma.solutionExpress.groupBy({
-        by: ['status'], where: base, _count: { _all: true },
-      }),
-      prisma.solutionExpress.groupBy({
-        by: ['typeClient'], where: base, _count: { _all: true },
-      }),
+      groupPondere(base, ['status']),
+      groupPondere(base, ['typeClient']),
       prisma.$queryRaw<{ produit: string; cnt: bigint }[]>(serviceQuery),
       prisma.$queryRaw<{ yr: number }[]>(Prisma.sql`
         SELECT DISTINCT EXTRACT(YEAR FROM "dateVente")::int AS yr

@@ -30,7 +30,7 @@ function Row({ label, value, color, isMobile }: {
     <div style={{display:'flex',flexDirection:'column',padding:isMobile?'5px 7px':'9px 12px',borderRadius:8,background:`${color}08`,border:`1px solid ${color}25`,gap:1}}>
       <span style={{fontSize:isMobile?9:11,color:'#fff',fontWeight:600,lineHeight:1.2}}>{label}</span>
       <span style={{fontSize:isMobile?11:13,fontWeight:800,color,lineHeight:1}}>
-        {typeof value === 'number' ? value.toFixed(0) : value}
+        {typeof value === 'number' ? (Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)) : value}
       </span>
     </div>
   );
@@ -254,7 +254,7 @@ export default function ComparaisonPage() {
                       <AnimatedNumber value={curr} decimals={0} color={color} suffix={suffix}/>
                     </div>
                     <div style={{paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)',fontSize:11,color:'#fff',fontWeight:600}}>
-                      {prevYear} : <span style={{color:prev>0?color:'#fff',fontWeight:700}}>{prev.toFixed(0)}{suffix}</span>
+                      {prevYear} : <span style={{color:prev>0?color:'#fff',fontWeight:700}}>{suffix === '' && !Number.isInteger(prev) ? prev.toFixed(1) : prev.toFixed(0)}{suffix}</span>
                     </div>
                   </div>
                 </div>

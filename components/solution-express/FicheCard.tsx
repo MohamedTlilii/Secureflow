@@ -162,6 +162,11 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
               {leadLabel}
             </span>
           )}
+          {(fiche.partageAvec || []).length > 0 && (
+            <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(56,189,248,0.14)', border:'1px solid rgba(56,189,248,0.35)', color:'#38bdf8', borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:700 }}>
+              🤝 Partagé avec {(fiche.partageAvec || []).join(', ')}
+            </span>
+          )}
         </div>
 
         {/* Motif annulation */}

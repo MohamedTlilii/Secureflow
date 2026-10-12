@@ -64,7 +64,7 @@ export default function PipelinePage() {
     setLoading(true);
     try {
       const [f, s] = await Promise.all([
-        api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params: { limit: 200 } }),
+        api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params: { limit: 1000 } }),
         getCachedSettings(),
       ]);
       setItems(f.data.fiches ?? []);
@@ -260,6 +260,7 @@ export default function PipelinePage() {
                   if (!b.dateVente) return -1;
                   return new Date(b.dateVente).getTime()-new Date(a.dateVente).getTime();
                 });
+              const colWeight = colItems.reduce((n,f)=>n+((f.partageAvec?.length ?? 0)>0?0.5:1),0);
               const isOver = over===stage.key;
 
               return (
@@ -276,13 +277,13 @@ export default function PipelinePage() {
                       <span style={{fontSize:11,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:0.6}}>{stage.label}</span>
                     </div>
                     <span style={{fontSize:12,fontWeight:800,background:colItems.length>0?`${stage.color}18`:'rgba(255,255,255,0.04)',color:colItems.length>0?stage.color:'#fff',borderRadius:20,padding:'2px 10px',border:`1px solid ${colItems.length>0?stage.color+'30':'rgba(255,255,255,0.08)'}`}}>
-                      {colItems.length}
+                      {Number.isInteger(colWeight)?colWeight:colWeight.toFixed(1)}
                     </span>
                   </div>
 
                   {/* Mini barre remplissage */}
                   <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',marginBottom:10}}>
-                    <div style={{height:'100%',borderRadius:2,background:stage.color,width:`${total>0?Math.round((colItems.length/total)*100):0}%`,transition:'width 1s ease'}}/>
+                    <div style={{height:'100%',borderRadius:2,background:stage.color,width:`${total>0?Math.round((colWeight/total)*100):0}%`,transition:'width 1s ease'}}/>
                   </div>
 
                   {/* Cards */}

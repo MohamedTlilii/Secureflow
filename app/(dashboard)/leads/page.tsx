@@ -23,10 +23,12 @@ type SortKey   = 'date_desc' | 'date_asc' | 'urgency_desc' | 'commission_desc' |
 interface Filters {
   status: string; typeClient: string; leadType: string; ville: string;
   typeCommerce: string; commission: string; service: string; qualifSysteme: string;
+  partage: string; partageAvec: string;
 }
 const EMPTY_FILTERS: Filters = {
   status: '', typeClient: '', leadType: '', ville: '',
   typeCommerce: '', commission: '', service: '', qualifSysteme: '',
+  partage: '', partageAvec: '',
 };
 const PAGE_SIZE = 30;
 const SECTION_COLORS = [
@@ -107,6 +109,8 @@ export default function SolutionExpressPage() {
         qualifSysteme: filters.qualifSysteme,
         commission:    filters.commission,
         service:       filters.service,
+        partage:       filters.partage,
+        partageAvec:   filters.partageAvec,
         limit: PAGE_SIZE,
         offset,
       };
@@ -183,6 +187,7 @@ export default function SolutionExpressPage() {
       dateVente:              fiche.dateVente?.slice(0,10)              ?? '',
       datePaiementCommission: fiche.datePaiementCommission?.slice(0,10) ?? '',
       notes: fiche.notes ?? [],
+      partageAvec: fiche.partageAvec ?? [],
     });
     setModal('edit');
   }, []);
@@ -437,6 +442,8 @@ export default function SolutionExpressPage() {
                   <Sel val={filters.typeCommerce}  onChange={v => setFilters(p => ({...p, typeCommerce:v}))}  opts={settings.typeCommerce.map(t => ({value:t.key,label:t.label}))} placeholder="Commerce"/>
                   <Sel val={filters.qualifSysteme} onChange={v => setFilters(p => ({...p, qualifSysteme:v}))} opts={settings.qualificationSysteme.map(t => ({value:t.key,label:t.label}))} placeholder="Système actuel"/>
                   <Sel val={filters.commission}    onChange={v => setFilters(p => ({...p, commission:v}))}    opts={[{value:'payee',label:'✓ Payée'},{value:'en_attente',label:'⏳ En attente'},{value:'avec',label:'Avec commission'},{value:'annulee',label:'✕ Annulée'}]} placeholder="Commission"/>
+                  <Sel val={filters.partage}       onChange={v => setFilters(p => ({...p, partage:v}))}       opts={[{value:'oui',label:'🤝 Partagés'},{value:'non',label:'Non partagés'}]} placeholder="Partage"/>
+                  <Sel val={filters.partageAvec}   onChange={v => setFilters(p => ({...p, partageAvec:v}))}   opts={(settings.agents||[]).map(a => { const n = typeof a === 'string' ? (a as string) : a.nom; return {value:n,label:n}; })} placeholder="Partagé avec"/>
                   <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)}
                     style={{ padding:'7px 12px', borderRadius:9, fontSize:12, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', cursor:'pointer' }}>
                     <option value="date_desc">Plus récent</option>

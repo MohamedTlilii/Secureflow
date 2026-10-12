@@ -268,6 +268,14 @@ export default function UltraFiche({
             </InfoBlock>
           </div>
 
+          {(fiche.partageAvec || []).length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(56,189,248,0.14)', border:'1px solid rgba(56,189,248,0.35)', color:'#38bdf8', borderRadius:8, padding:'5px 12px', fontSize:12, fontWeight:700 }}>
+                🤝 Vente partagée avec {(fiche.partageAvec || []).join(', ')}
+              </span>
+            </div>
+          )}
+
           {/* Commission */}
           {(fiche.commissionTotale > 0 || fiche.commissionFixe > 0) && (
             <div style={{ background: 'rgba(18,183,106,0.06)', border: '1px solid rgba(18,183,106,0.18)', borderRadius: 14, padding: '14px 18px' }}>

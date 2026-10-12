@@ -13,6 +13,7 @@ import { invalidateSettingsCache } from '@/lib/settings-cache';
 import type { Settings as SettingsType, Service } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import useIsMobile from '@/hooks/useIsMobile';
+import SexeIcon from '@/components/SexeIcon';
 import CosmosBackground from '@/components/CosmosBackground';
 
 const CURRENCY = 'TND';
@@ -41,6 +42,7 @@ const TABS = [
   { id:'services',         label:'Services',            Icon:Shield,      color:'#6366f1' },
   { id:'objectifAnnuel',   label:'Objectif annuel',     Icon:TrendingUp,  color:'#12b76a' },
   { id:'motifsAnnulation', label:"Motifs d'annulation", Icon:AlertCircle, color:'#ef4444' },
+  { id:'agents',           label:'Partage Avec',              Icon:UserCircle2, color:'#38bdf8' },
   { id:'commissionDefaut', label:'Commission défaut',   Icon:CreditCard,  color:'#12b76a' },
 ];
 
@@ -127,6 +129,52 @@ function SimpleSection({ items, color, placeholder, onAdd, onRemove }: {
       <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
         {items.length === 0 && <span style={{ color:'#fff', fontSize:12, fontStyle:'italic' }}>Aucune entrée — ajoutez-en une ci-dessus</span>}
         {items.map(v => <Tag key={v} label={v} color={color} onRemove={() => onRemove(items.indexOf(v))}/>)}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AgentsSection (Partage Avec) ─────────────────── */
+function AgentsSection({ items, color, onAdd, onRemove, onToggleSexe }: {
+  items:{nom:string;sexe:'homme'|'femme'}[]; color:string;
+  onAdd:(a:{nom:string;sexe:'homme'|'femme'})=>void; onRemove:(i:number)=>void; onToggleSexe:(i:number)=>void;
+}) {
+  const [val, setVal]   = useState('');
+  const [sexe, setSexe] = useState<'homme'|'femme'>('homme');
+  const add = () => {
+    const nom = val.trim();
+    if (!nom) return;
+    if (items.some(it => normalize(it.nom) === normalize(nom))) { toast.error('Déjà dans la liste'); return; }
+    onAdd({ nom, sexe }); setVal('');
+  };
+  const sexBtn = (s:'homme'|'femme') => (
+    <button type="button" onClick={() => setSexe(s)}
+      title={s==='femme' ? 'Femme' : 'Homme'} style={{ padding:'6px 10px', borderRadius:10, cursor:'pointer', display:'flex', alignItems:'center', border:`1px solid ${sexe===s ? color : 'rgba(255,255,255,0.12)'}`, background: sexe===s ? `${color}25` : 'rgba(255,255,255,0.05)' }}><SexeIcon sexe={s}/></button>
+  );
+  return (
+    <div>
+      <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
+        <input value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => e.key==='Enter' && add()} placeholder="Prénom et nom. Ex: Ahmed Ben Ali"
+          style={{ flex:1, minWidth:180, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'#fff', fontSize:13, outline:'none' }}/>
+        {sexBtn('homme')}{sexBtn('femme')}
+        <button onClick={add} className="params-add-btn"
+          style={{ '--c': color, '--c30': color+'30', display:'flex', alignItems:'center', gap:6, padding:'9px 16px', borderRadius:10, border:`1px solid ${color}44`, background:`${color}18`, color, fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' } as CSSProperties}>
+          <Plus size={13}/> Ajouter
+        </button>
+      </div>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+        {items.length === 0 && <span style={{ color:'#fff', fontSize:12, fontStyle:'italic' }}>Aucune entrée — ajoutez-en une ci-dessus</span>}
+        {items.map((a, i) => (
+          <div key={a.nom} className="params-tag"
+            style={{ '--c22': color+'22', '--c66': color+'66', display:'inline-flex', alignItems:'center', gap:6, padding:'5px 10px 5px 8px', borderRadius:20, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', fontSize:12, fontWeight:500, color:'#e0e0f0' } as CSSProperties}>
+            <button type="button" title="Changer homme / femme" onClick={() => onToggleSexe(i)}
+              style={{ background:'none', border:'none', cursor:'pointer', padding:0, display:'flex' }}><SexeIcon sexe={a.sexe} size={20}/></button>
+            {a.nom}
+            <button className="params-tag-x" onClick={() => onRemove(i)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, display:'flex', alignItems:'center', color:'rgba(255,255,255,0.4)' }}>
+              <X size={11}/>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -768,6 +816,17 @@ export default function ParametresPage() {
           {activeTab === 'motifsAnnulation' && (
             <SimpleSection items={settings.motifsAnnulation||[]} color={tab.color} placeholder="Ex: Prix trop élevé, Concurrent..."
               onAdd={v => addSimple('motifsAnnulation', v)} onRemove={i => removeSimple('motifsAnnulation', i)}/>
+          )}
+          {activeTab === 'agents' && (
+            <AgentsSection
+              items={(settings.agents||[]).map(a => typeof a === 'string' ? { nom: a as string, sexe: 'homme' as const } : a)}
+              color={tab.color}
+              onAdd={a => upd('agents', [...(settings.agents||[]), a])}
+              onRemove={i => upd('agents', (settings.agents||[]).filter((_, j) => j !== i))}
+              onToggleSexe={i => upd('agents', (settings.agents||[]).map((a, j) => {
+                const ag = typeof a === 'string' ? { nom: a as string, sexe: 'homme' as const } : a;
+                return j === i ? { ...ag, sexe: ag.sexe === 'femme' ? 'homme' as const : 'femme' as const } : ag;
+              }))}/>
           )}
           {activeTab === 'commissionDefaut' && (
             <div style={{ display:'flex', flexDirection:'column', gap:20 }}>

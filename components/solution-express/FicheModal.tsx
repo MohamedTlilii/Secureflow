@@ -30,6 +30,7 @@ export type FormState = {
   commissionTotale: number;   commissionPayee: boolean;
   dateVente: string;          datePaiementCommission: string;
   notes: string[];
+  partageAvec: string[];
 };
 
 export const EMPTY_FORM: FormState = {
@@ -47,6 +48,7 @@ export const EMPTY_FORM: FormState = {
   commissionTotale: 0, commissionPayee: false,
   dateVente: '', datePaiementCommission: '',
   notes: [],
+  partageAvec: [],
 };
 
 /* ─── Styles ─── */
@@ -354,7 +356,18 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                 </div>
               </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+<div>
+                <label style={lbl}>Vente partagée avec</label>
+                <select value={(form.partageAvec || [])[0] ?? ''} onChange={e => set('partageAvec', e.target.value ? [e.target.value] : [])} style={{ ...inp, cursor: 'pointer' }}>
+                  <option value="">— Aucun —</option>
+                  {(settings.agents || []).map(a0 => {
+                    const nom = typeof a0 === 'string' ? (a0 as string) : a0.nom;
+                    return <option key={nom} value={nom}>{nom}</option>;
+                  })}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Date de vente</label>
                   <DatePicker value={form.dateVente} onChange={v => set('dateVente', v)} placeholder="Choisir une date…" />
