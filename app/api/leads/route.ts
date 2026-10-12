@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
     if (annee !== 'tout') {
       const yr = Number(annee);
       if (!Number.isNaN(yr) && yr > 2000 && yr < 2100) {
-        conditions.push({ dateVente: { gte: new Date(yr, 0, 1), lt: new Date(yr + 1, 0, 1) } });
+        const gte = new Date(yr, 0, 1), lt = new Date(yr + 1, 0, 1);
+        conditions.push({ OR: [{ dateVente: { gte, lt } }, { dateVente: null, createdAt: { gte, lt } }] });
       }
     }
 

@@ -28,20 +28,27 @@ function finalizeAcc(a: Acc): Metrics {
 
 export async function GET(req: NextRequest) {
   const sp       = new URL(req.url).searchParams;
-  const raw      = parseInt(sp.get('annee') ?? '', 10);
-  const currYear = Number.isNaN(raw) ? new Date().getFullYear() : raw;
-  const prevYear = currYear - 1;
+  /* anneeB = année comparée, anneeA = année de référence. Compat : `annee` seul → annee vs annee-1. */
+  const rawB     = parseInt(sp.get('anneeB') ?? sp.get('annee') ?? '', 10);
+  const currYear = Number.isNaN(rawB) ? new Date().getFullYear() : rawB;
+  const rawA     = parseInt(sp.get('anneeA') ?? '', 10);
+  const prevYear = Number.isNaN(rawA) ? currYear - 1 : rawA;
 
   try {
     const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
 
     const [rows, minYearRaw] = await Promise.all([
-      /* Fenêtre 2 ans seulement — index dateVente → O(log N) */
+      /* Seulement les 2 années comparées — index dateVente */
       prisma.solutionExpress.findMany({
         where: {
           createdBy: user.id,
-          dateVente: { gte: new Date(prevYear, 0, 1), lt: new Date(currYear + 1, 0, 1) },
+          OR: prevYear === currYear
+            ? [{ dateVente: { gte: new Date(currYear, 0, 1), lt: new Date(currYear + 1, 0, 1) } }]
+            : [
+                { dateVente: { gte: new Date(prevYear, 0, 1), lt: new Date(prevYear + 1, 0, 1) } },
+                { dateVente: { gte: new Date(currYear, 0, 1), lt: new Date(currYear + 1, 0, 1) } },
+              ],
         },
         select: { status: true, commissionTotale: true, commissionPayee: true, dateVente: true, partageAvec: true },
       }),
@@ -71,27 +78,21 @@ export async function GET(req: NextRequest) {
       const isAnnulee = f.status === 'installation_annulee';
       const w         = poidsLead(f.partageAvec);
 
-      if (yr === currYear) {
-        accCurr.total += w;
-        if (isAnnulee) { accCurr.annulee += w; continue; }
-        monthly[mo].curr += comm;
-        accCurr.gained   += comm;
-        if (f.commissionPayee) accCurr.paid += comm;
-        if (f.status === 'installe') accCurr.installe += w;
+      /* Une fiche compte pour chaque année demandée (A = B possible) */
+      const targets: [Acc, 'curr' | 'prev'][] = [];
+      if (yr === currYear) targets.push([accCurr, 'curr']);
+      if (yr === prevYear) targets.push([accPrev, 'prev']);
+
+      for (const [acc, key] of targets) {
+        acc.total += w;
+        if (isAnnulee) { acc.annulee += w; continue; }
+        monthly[mo][key] += comm;
+        acc.gained       += comm;
+        if (f.commissionPayee) acc.paid += comm;
+        if (f.status === 'installe') acc.installe += w;
         if (comm > 0) {
-          if (comm > accCurr.commMax) accCurr.commMax = comm;
-          if (comm < accCurr.commMin) accCurr.commMin = comm;
-        }
-      } else if (yr === prevYear) {
-        accPrev.total += w;
-        if (isAnnulee) { accPrev.annulee += w; continue; }
-        monthly[mo].prev += comm;
-        accPrev.gained   += comm;
-        if (f.commissionPayee) accPrev.paid += comm;
-        if (f.status === 'installe') accPrev.installe += w;
-        if (comm > 0) {
-          if (comm > accPrev.commMax) accPrev.commMax = comm;
-          if (comm < accPrev.commMin) accPrev.commMin = comm;
+          if (comm > acc.commMax) acc.commMax = comm;
+          if (comm < acc.commMin) acc.commMin = comm;
         }
       }
     }

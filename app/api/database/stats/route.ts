@@ -6,12 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ message: 'Non autorisé' }, { status: 401 });
-    const [seFiches, users, essences, essenceAgg] = await Promise.all([
-      prisma.solutionExpress.count({ where: { createdBy: user.id } }),
-      prisma.user.count(),
-      prisma.essence.count(),
-      prisma.essence.aggregate({ _sum: { montantAttendu: true }, where: { recu: true, annee: new Date().getFullYear() } }),
-    ]);
+    const users = await prisma.user.count();
 
     let storageMB = 0;
     try {
@@ -25,11 +20,7 @@ export async function GET(req: NextRequest) {
 
     const storageLimit = Number(process.env.STORAGE_LIMIT_MB ?? 500);
     return NextResponse.json({
-      totalDocs: seFiches + users + essences,
-      solutionExpress: seFiches,
       users,
-      essences,
-      essenceRecu: parseFloat((essenceAgg._sum.montantAttendu ?? 0).toFixed(2)),
       storageMB,
       storageLimit,
       storagePercent: Math.round((storageMB / storageLimit) * 100),

@@ -184,7 +184,6 @@ function AgentsSection({ items, color, onAdd, onRemove, onToggleSexe }: {
 function KeyLabelSection({ items, color, placeholder, onAdd, onRemove }: {
   items:{key:string;label:string}[]; color:string; placeholder:string;
   onAdd:(item:{key:string;label:string})=>void; onRemove:(i:number)=>void;
-  getItemColor?:(it:{key:string;label:string})=>string;
 }) {
   const [val, setVal] = useState('');
   const ref = useRef<HTMLInputElement>(null);
@@ -733,7 +732,7 @@ export default function ParametresPage() {
         {/* ── Tabs ── */}
         <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#a78bfa30,#6366f115)', marginBottom:16 }}>
         <div style={{ background:'rgba(2,8,16,0.97)', backdropFilter:'blur(20px)', borderRadius:17, overflow:'hidden' }}>
-          <div style={{ display:'flex', overflowX:'auto', padding:'6px 8px', gap:4, scrollbarWidth:'none' }}>
+          <div style={{ display:'flex', flexWrap:'wrap', padding:'6px 8px', gap:4 }}>
             {TABS.map(t => {
               const active = activeTab === t.id;
               const TIcon  = t.Icon;

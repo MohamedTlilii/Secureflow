@@ -6,9 +6,12 @@ import type { SolutionExpress } from '@/types';
 interface CommissionBadgeProps {
   fiche: SolutionExpress;
   onToggle: (fiche: SolutionExpress) => void;
+  compact?: boolean;
 }
 
-export default function CommissionBadge({ fiche, onToggle }: CommissionBadgeProps) {
+export default function CommissionBadge({ fiche, onToggle, compact }: CommissionBadgeProps) {
+  const pad = compact ? '4px 9px' : '7px 13px';
+  const fs  = compact ? 11 : 12;
   const total   = fiche.commissionTotale || 0;
   const payee   = fiche.commissionPayee;
   const annulee = fiche.status === 'installation_annulee';
@@ -20,10 +23,10 @@ export default function CommissionBadge({ fiche, onToggle }: CommissionBadgeProp
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 7,
         background: 'rgba(190,18,60,0.08)', border: '1px solid rgba(190,18,60,0.25)',
-        borderRadius: 10, padding: '7px 13px', userSelect: 'none',
+        borderRadius: 10, padding: pad, userSelect: 'none',
       }}>
         <Wallet size={13} color="#be123c" />
-        <span style={{ fontSize: 12, fontWeight: 800, color: '#be123c' }}>{total.toFixed(2)} TND</span>
+        <span style={{ fontSize: fs, fontWeight: 800, color: '#be123c' }}>{total.toFixed(2)} TND</span>
         <span style={{ fontSize: 10, fontWeight: 700, color: '#be123c', opacity: 0.85 }}>✕ Annulée</span>
       </div>
     );
@@ -40,13 +43,13 @@ export default function CommissionBadge({ fiche, onToggle }: CommissionBadgeProp
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 7,
         background: bgCss, border: `1px solid ${bdrCss}`,
-        borderRadius: 10, padding: '7px 13px', cursor: 'pointer',
+        borderRadius: 10, padding: pad, cursor: 'pointer',
         transition: 'all 0.2s ease', userSelect: 'none',
         animation: !payee ? 'commPulse 2.8s ease-in-out infinite' : 'none',
       }}
     >
       <Wallet size={13} color={color} />
-      <span style={{ fontSize: 12, fontWeight: 800, color }}>{total.toFixed(2)} TND</span>
+      <span style={{ fontSize: fs, fontWeight: 800, color }}>{total.toFixed(2)} TND</span>
       <span style={{ fontSize: 10, fontWeight: 700, color, opacity: 0.85 }}>
         {payee ? '✓ Payée' : '⏳'}
       </span>

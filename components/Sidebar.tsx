@@ -34,13 +34,24 @@ function fmtDebut(d: Date): string {
 }
 
 function anciennete(d: Date): { label: string; suffix: string } {
-  const now  = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (diff < 30)  return { label: `${diff} jour${diff > 1 ? 's' : ''}`, suffix: "d'activité" };
-  if (diff < 365) return { label: `${Math.floor(diff / 30)} mois`,       suffix: "d'activité" };
-  let y = now.getFullYear() - d.getFullYear();
-  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) y--;
-  return { label: `${y} an${y > 1 ? 's' : ''}`, suffix: 'dans le poste' };
+  const now = new Date();
+  const jours = Math.max(0, Math.floor((now.getTime() - d.getTime()) / 86400000));
+  if (jours < 30) return { label: `${jours} jour${jours > 1 ? 's' : ''}`, suffix: "d'activité" };
+
+  /* années + mois entiers, puis les jours restants */
+  let total = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) total--;
+  const anchor = new Date(d.getFullYear(), d.getMonth() + total, d.getDate());
+  const j = Math.floor((now.getTime() - anchor.getTime()) / 86400000);
+  const y = Math.floor(total / 12);
+  const m = total % 12;
+
+  const parts: string[] = [];
+  if (y > 0) parts.push(`${y} an${y > 1 ? 's' : ''}`);
+  if (m > 0) parts.push(`${m} mois`);
+  if (j > 0) parts.push(`${j} jour${j > 1 ? 's' : ''}`);
+  const label = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} et ${parts[parts.length - 1]}` : parts[0];
+  return { label, suffix: y > 0 ? 'dans le poste' : "d'activité" };
 }
 
 interface ProfileStats { totalPaye: number; enAttente: number; annee: number; }
@@ -272,7 +283,7 @@ function ProfilePanel({ user, stats, onClose, onLogout }: {
               <Calendar size={14} color="#818cf8"/>
             </div>
             <div>
-              <div style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+              <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
               <div style={{ fontSize:12, color:'#fff', fontWeight:700, marginTop:2 }}>{fmtDebut(debutDate)}</div>
               {anc && <div style={{ fontSize:10.5, color:'#fff', marginTop:1 }}>{anc.label} {anc.suffix}</div>}
             </div>

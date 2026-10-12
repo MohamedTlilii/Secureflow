@@ -20,6 +20,8 @@ const LEAD_PALETTE = [
 
 const PIPE_COLOR = STATUS_COLOR;
 
+const LINE: React.CSSProperties = { height:1, background:'rgba(255,255,255,0.06)', margin:'0 0 10px' };
+
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   wifi: Wifi, smartphone: Smartphone, tv: Tv, camera: Camera, receipt: Receipt,
   phone: Phone, monitor: Monitor, printer: Printer, creditcard: CreditCard,
@@ -68,7 +70,7 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
   const clientName = [fiche.prenom, fiche.nom].filter(Boolean).join(' ') || '—';
   const initials   = ([fiche.prenom?.[0], fiche.nom?.[0]].filter(Boolean).join('') || (fiche.entreprise?.[0] ?? '?')).toUpperCase();
   const displayName = fiche.typeClient === 'b2c' ? clientName : (fiche.entreprise || clientName);
-  const fmtDate    = (d?: string | null) => d ? new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : null;
+  const fmtDate    = (d?: string | null) => d ? new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : null;
 
   const activeSvcs = settings.services.filter(sv => (fiche.produits as string[]).includes(sv.id));
 
@@ -91,9 +93,6 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
   const leadColor = LEAD_PALETTE[leadIdx >= 0 ? leadIdx % LEAD_PALETTE.length : 6];
   const leadLabel = settings.typeLead.find(t => t.key === fiche.leadType)?.label ?? fiche.leadType;
 
-
-  /* ── Dernière note ── */
-  const lastNote = fiche.notes?.length ? fiche.notes[fiche.notes.length - 1] : null;
 
   return (
     <div
@@ -137,37 +136,34 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
             <div style={{ fontWeight:800, fontSize:14, color:'#fff', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
               {displayName}
             </div>
-            {fiche.entreprise && fiche.typeClient === 'b2b' && clientName !== '—' && (
-              <div style={{ fontSize:11, color:'#fff', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                {clientName}
-              </div>
-            )}
             <div style={{ fontSize:11, color:'#fff', marginTop:2 }}>
               {fiche.typeClient==='b2b' ? '🏢 B2B' : '🏠 B2C'}
               {settings.typeCommerce.find(t=>t.key===fiche.typeCommerce)?.label
                 ? ` · ${settings.typeCommerce.find(t=>t.key===fiche.typeCommerce)!.label}`
                 : ''}
             </div>
+            {fiche.entreprise && fiche.typeClient === 'b2b' && clientName !== '—' && (
+              <div style={{ fontSize:11, color:'#fff', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                {clientName}
+              </div>
+            )}
           </div>
-          {fiche.urgencyScore > 0 && <MiniScoreRing score={fiche.urgencyScore} size={34}/>}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
+            <span style={{ background:`${statusColor}18`, border:`1px solid ${statusColor}30`, color:statusColor, borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800, whiteSpace:'nowrap' }}>
+              {STATUS_LABEL[fiche.status]}
+            </span>
+          </div>
         </div>
 
-        {/* ── Badges statut + lead ── */}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom: fiche.status==='installation_annulee' && fiche.motifAnnulation ? 4 : 10 }}>
-          <span style={{ background:`${statusColor}18`, border:`1px solid ${statusColor}30`, color:statusColor, borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:800 }}>
-            {STATUS_LABEL[fiche.status]}
-          </span>
+        {/* ── Badges lead + partage ── */}
+        {(leadLabel || fiche.urgencyScore > 0) && <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:5, marginBottom: fiche.status==='installation_annulee' && fiche.motifAnnulation ? 4 : 10 }}>
           {leadLabel && (
             <span style={{ background:`${leadColor}16`, border:`1px solid ${leadColor}28`, color:leadColor, borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:700 }}>
               {leadLabel}
             </span>
           )}
-          {(fiche.partageAvec || []).length > 0 && (
-            <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(56,189,248,0.14)', border:'1px solid rgba(56,189,248,0.35)', color:'#38bdf8', borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:700 }}>
-              🤝 Partagé avec {(fiche.partageAvec || []).join(', ')}
-            </span>
-          )}
-        </div>
+          {fiche.urgencyScore > 0 && <span style={{ marginLeft:'auto' }}><MiniScoreRing score={fiche.urgencyScore} size={34}/></span>}
+        </div>}
 
         {/* Motif annulation */}
         {fiche.status === 'installation_annulee' && fiche.motifAnnulation && (
@@ -176,84 +172,60 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
           </div>
         )}
 
-        {/* ── Services (chips) ── */}
-        {activeSvcs.length > 0 && (
-          <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:8 }}>
-            {activeSvcs.map(sv => (
-              <span key={sv.id} style={{ display:'inline-flex', alignItems:'center', gap:4, background:`${sv.color}16`, border:`1px solid ${sv.color}30`, color:sv.color, fontSize:10, fontWeight:700, borderRadius:7, padding:'3px 8px' }}>
-                <SvcIcon icon={sv.icon} size={9} color={sv.color}/>{sv.label}
+        <div style={LINE}/>
+
+        {/* ── Contact (2 colonnes) ── */}
+        {(fiche.telephone || fiche.ville || fiche.email) && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 10px', marginBottom:10, paddingBottom:10, borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+            {fiche.telephone && (
+              <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700, color:'#fff', minWidth:0 }}>
+                <Phone size={10}/> {fiche.telephone}
               </span>
-            ))}
+            )}
+            {fiche.ville && (
+              <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#fff', minWidth:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                <MapPin size={10} style={{ flexShrink:0 }}/> {fiche.ville}
+              </span>
+            )}
+            {fiche.email && (
+              <span style={{ gridColumn:'1 / -1', display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                <Mail size={10} style={{ flexShrink:0 }}/> {fiche.email}
+              </span>
+            )}
           </div>
         )}
 
-        {/* ── Fournisseurs actuel → proposé ── */}
-        {activeSvcs.map(sv => {
-          const act = getLabelAct(sv.id);
-          const pro = getLabelPro(sv.id);
-          if (!act && !pro) return null;
-          return (
-            <div key={sv.id} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3 }}>
-              <SvcIcon icon={sv.icon} size={9} color={sv.color}/>
-              {act && <span style={{ fontSize:11, color:'#fff' }}>{act}</span>}
-              {act && pro && <span style={{ fontSize:11, color:sv.color, fontWeight:700 }}>→ {pro}</span>}
-              {!act && pro && <span style={{ fontSize:11, color:sv.color, fontWeight:700 }}>→ {pro}</span>}
-            </div>
-          );
-        })}
-
-
         {/* ── Qualification ── */}
         {fiche.qualificationSysteme && (
-          <div style={{ fontSize:11, color:'#fff', marginBottom:7, background:'rgba(255,255,255,0.04)', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
+          <div style={{ fontSize:11, color:'#fff', marginBottom:8, background:'rgba(255,255,255,0.04)', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
             🔒 {settings.qualificationSysteme.find(q=>q.key===fiche.qualificationSysteme)?.label ?? (fiche.qualificationSysteme === 'inconnu' ? 'Inconnu' : fiche.qualificationSysteme)}
           </div>
         )}
 
-        {/* ── Résumé ── */}
-        {fiche.summary && (
-          <p style={{ fontSize:11, color:'#fff', lineHeight:1.5, marginBottom:8, marginTop:4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', borderLeft:`2px solid ${leadColor}`, paddingLeft:8, background:`${leadColor}06`, borderRadius:'0 6px 6px 0', padding:'5px 5px 5px 9px' }}>
-            {fiche.summary}
-          </p>
-        )}
+        {fiche.qualificationSysteme && <div style={LINE}/>}
 
-        {/* ── Dernière note ── */}
-        {lastNote && (
-          <div style={{ fontSize:11, color:'#fff', marginBottom:8, background:'rgba(255,255,255,0.03)', padding:'5px 9px', borderRadius:7, borderLeft:'2px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
-            💬 {lastNote}
+        {/* ── Services + fournisseurs (un bloc par service) ── */}
+        {activeSvcs.length > 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:5, marginBottom:10 }}>
+            {activeSvcs.map(sv => {
+              const act = getLabelAct(sv.id);
+              const pro = getLabelPro(sv.id);
+              return (
+                <div key={sv.id} style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:6 }}>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:`${sv.color}16`, border:`1px solid ${sv.color}30`, color:sv.color, fontSize:10, fontWeight:700, borderRadius:7, padding:'3px 8px' }}>
+                    <SvcIcon icon={sv.icon} size={9} color={sv.color}/>{sv.label}
+                  </span>
+                  {act && <span style={{ fontSize:11, color:'#fff' }}>{act}</span>}
+                  {pro && <span style={{ fontSize:11, color:sv.color, fontWeight:700 }}>→ {pro}</span>}
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* ── Contact ── */}
-        <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8, marginTop:4 }}>
-          {fiche.telephone && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#fff' }}>
-              <Phone size={10}/> {fiche.telephone}
-            </span>
-          )}
-          {fiche.email && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              <Mail size={10}/> {fiche.email}
-            </span>
-          )}
-          {fiche.ville && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#fff' }}>
-              <MapPin size={10}/> {fiche.ville}
-            </span>
-          )}
-          {fiche.typeClient === 'b2b' && clientName !== '—' && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
-              <User size={10}/> {clientName}
-            </span>
-          )}
-          {fiche.dateVente && (
-            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#fff' }}>
-              <Calendar size={10}/> {fmtDate(fiche.dateVente)}
-            </span>
-          )}
-        </div>
+        {activeSvcs.length > 0 && <div style={LINE}/>}
 
-        {/* ── Appels de service ── */}
+        {/* ── Pied : appels de service + commission ── */}
         {(fiche.appelsService || []).length > 0 && (() => {
           const aps = fiche.appelsService!;
           const impayes = aps.filter(a => !a.paye).length;
@@ -264,16 +236,28 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
             </div>
           );
         })()}
+        {(fiche.appelsService || []).length > 0 && <div style={LINE}/>}
 
-        {/* ── Commission badge ── */}
-        <CommissionBadge fiche={fiche} onToggle={onTogglePaiement}/>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
+          {(fiche.partageAvec || []).length > 0 && (
+            <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(56,189,248,0.14)', border:'1px solid rgba(56,189,248,0.35)', color:'#38bdf8', borderRadius:7, padding:'3px 9px', fontSize:10, fontWeight:700 }}>
+              🤝 Partagé avec {(fiche.partageAvec || []).join(', ')}
+            </span>
+          )}
+          <span style={{ marginLeft:'auto' }}><CommissionBadge fiche={fiche} onToggle={onTogglePaiement} compact/></span>
+        </div>
       </div>
 
       {/* ── Actions bar ── */}
       <div
         onClick={e => e.stopPropagation()}
-        style={{ display:'flex', justifyContent:'flex-end', gap:6, padding:'9px 14px', borderTop:'1px solid rgba(255,255,255,0.05)', opacity: isMobile || hovered ? 1 : 0.35, transition:'opacity 0.2s' }}
+        style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, padding:'9px 14px', borderTop:'1px solid rgba(255,255,255,0.05)', opacity: isMobile || hovered ? 1 : 0.6, transition:'opacity 0.2s' }}
       >
+        {fiche.dateVente && (
+          <span style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#12b76a', fontWeight:700, whiteSpace:'nowrap' }}>
+            <Calendar size={10}/> Date de vente : {fmtDate(fiche.dateVente)}
+          </span>
+        )}
         <button onClick={() => onEdit(fiche)}
           style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, background:'rgba(59,108,248,0.1)', border:'1px solid rgba(59,108,248,0.25)', color:'#3b6cf8', fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(59,108,248,0.2)'; }}

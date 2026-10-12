@@ -64,14 +64,14 @@ export default function PipelinePage() {
     setLoading(true);
     try {
       const [f, s] = await Promise.all([
-        api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params: { limit: 1000 } }),
+        api.get<{ fiches: SolutionExpress[]; total: number }>('/api/leads', { params: { limit: 5000, annee } }),
         getCachedSettings(),
       ]);
       setItems(f.data.fiches ?? []);
       setSettings(s ?? DEFAULT_SETTINGS);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur chargement')); }
     finally { setLoading(false); }
-  }, []);
+  }, [annee]);
 
   /* ── fetch stats ── */
   const fetchStats = useCallback(async () => {
@@ -95,6 +95,10 @@ export default function PipelinePage() {
   const svcMap = useMemo(() =>
     Object.fromEntries(settings.services.map(s=>[s.id,{label:s.label,color:s.color}])),
     [settings.services]);
+
+  const commerceLbl = useMemo(() =>
+    Object.fromEntries(settings.typeCommerce.map(t=>[t.key,t.label])) as Record<string,string>,
+    [settings.typeCommerce]);
 
   const leadLbl = useMemo(() =>
     Object.fromEntries(settings.typeLead.map(t=>[t.key,t.label])),
@@ -314,74 +318,27 @@ export default function PipelinePage() {
                             onClick={()=>{ if(!dragId) setViewFiche(f); }}
                             style={{background:'rgba(4,10,24,0.97)',border:`1px solid ${stage.color}25`,borderLeft:`3px solid ${stage.color}`,borderRadius:12,padding:'12px 12px 10px',cursor:'grab',transition:'all 0.2s',opacity:isDragging?0.4:1,transform:isDragging?'scale(0.96)':'scale(1)',animation:`fadeSlideUp 0.3s ${Math.min(i*0.05,0.4)}s ease both`,boxShadow:`0 2px 12px rgba(0,0,0,0.2)`}}>
 
-                            {/* Avatar + nom */}
-                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-                              <div style={{width:32,height:32,borderRadius:9,background:`${avColor}20`,border:`1px solid ${avColor}40`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,fontWeight:800,color:avColor}}>
-                                {ini(f)}
+                            {/* Commerce + propriétaire + secteur */}
+                            <div style={{marginBottom:8,display:'flex',flexDirection:'column',gap:3}}>
+                              <div style={{fontSize:13,fontWeight:700,color:'#fff',lineHeight:1.3,wordBreak:'break-word'}}>
+                                {f.entreprise&&<span style={{fontSize:11,fontWeight:600}}>Commerce : </span>}{dName(f)}
                               </div>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{display:'flex',alignItems:'center',gap:5}}>
-                                  <div style={{fontSize:13,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',color:'#fff',flex:1,minWidth:0}}>
-                                    {dName(f)}
-                                  </div>
-                                  {f.typeClient&&(
-                                    <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:20,flexShrink:0,background:f.typeClient==='b2b'?'rgba(59,108,248,0.15)':'rgba(18,183,106,0.15)',color:f.typeClient==='b2b'?'#3b6cf8':'#12b76a',border:`1px solid ${f.typeClient==='b2b'?'rgba(59,108,248,0.3)':'rgba(18,183,106,0.3)'}`}}>
-                                      {f.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}
-                                    </span>
-                                  )}
+                              {(f.prenom||f.nom)&&(
+                                <div style={{fontSize:11,color:'#fff'}}>
+                                  Propriétaire : {`${f.prenom||''} ${f.nom||''}`.trim()}
                                 </div>
-                                {(f.prenom||f.nom)&&f.entreprise&&(
-                                  <div style={{fontSize:11,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
-                                    {`${f.prenom||''} ${f.nom||''}`.trim()}
-                                  </div>
-                                )}
-                              </div>
+                              )}
+                              {f.typeClient&&(
+                                <div style={{fontSize:11,color:'#fff'}}>
+                                  {f.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}{f.leadType&&(leadLbl[f.leadType]||f.leadType)?` · ${leadLbl[f.leadType]||f.leadType}`:''}
+                                </div>
+                              )}
+                              {commerceLbl[f.typeCommerce]&&(
+                                <div style={{fontSize:11,color:stage.color,fontWeight:700}}>
+                                  Secteur : {commerceLbl[f.typeCommerce]}
+                                </div>
+                              )}
                             </div>
-
-                            {/* Ville */}
-                            {f.ville&&(
-                              <div style={{fontSize:11,color:'#fff',marginBottom:7,display:'flex',alignItems:'center',gap:4}}>
-                                <MapPin size={9}/> {f.ville}
-                              </div>
-                            )}
-
-                            {/* Lead type */}
-                            {f.leadType&&(
-                              <div style={{marginBottom:7}}>
-                                <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'rgba(167,100,248,0.12)',color:'#a764f8',border:'1px solid rgba(167,100,248,0.25)'}}>
-                                  🎯 {leadLbl[f.leadType]||f.leadType}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Produits */}
-                            {(f.produits as string[]).length>0&&(
-                              <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:7}}>
-                                {(f.produits as string[]).slice(0,3).map(code=>{
-                                  const svc=svcMap[code];
-                                  if(!svc) return null;
-                                  return <span key={code} style={{fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:20,background:`${svc.color}15`,color:svc.color,border:`1px solid ${svc.color}30`}}>{svc.label}</span>;
-                                })}
-                              </div>
-                            )}
-
-                            {/* Urgence */}
-                            {(f.urgencyScore||0)>0&&(
-                              <div style={{marginBottom:7}}>
-                                <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,background:f.urgencyScore>=7?'rgba(240,68,56,0.1)':'rgba(247,144,9,0.1)',color:f.urgencyScore>=7?'#f04438':'#f79009',border:`1px solid ${f.urgencyScore>=7?'rgba(240,68,56,0.2)':'rgba(247,144,9,0.2)'}`}}>
-                                  ⚡ {f.urgencyScore}/10
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Commission */}
-                            {(f.commissionTotale||0)>0&&(
-                              <div style={{marginBottom:stage.key!=='installe'&&stage.key!=='installation_annulee'?8:0}}>
-                                <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(18,183,106,0.12)',color:'#12b76a',border:'1px solid rgba(18,183,106,0.25)'}}>
-                                  💰 {f.commissionTotale} TND
-                                </span>
-                              </div>
-                            )}
 
                             {/* Motif annulation */}
                             {stage.key==='installation_annulee'&&f.motifAnnulation&&(

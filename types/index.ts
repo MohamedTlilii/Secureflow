@@ -131,11 +131,7 @@ export interface EssenceMois {
 }
 
 export interface DbStats {
-  totalDocs: number;
-  solutionExpress: number;
   users: number;
-  essences: number;
-  essenceRecu: number;
   storageMB: number;
   storageLimit: number;
   storagePercent: number;

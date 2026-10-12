@@ -18,6 +18,7 @@ import { DEFAULT_SETTINGS, MOIS_LABELS } from '@/types';
 /* ─── constantes module-level ───────────────────────────────────── */
 const COMP_PART_COLORS = ['#12b76a','#3b6cf8','#61DAFB','#a78bfa','#34d399'];
 const CURRENT_YEAR     = new Date().getFullYear();
+const MIN_YEAR         = 2025; // début de l'activité : pas d'année avant
 
 const bestMonthStr = (idx: number, val: number) =>
   idx >= 0 && val > 0 ? `${MOIS_LABELS[idx]} · ${val.toFixed(0)} TND` : '—';
@@ -67,7 +68,8 @@ export default function ComparaisonPage() {
 
   const [settings,     setSettings]     = useState<Settings>(DEFAULT_SETTINGS);
   const [loading,      setLoading]      = useState(true);
-  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [anneeA,       setAnneeA]       = useState(CURRENT_YEAR - 1);
+  const [anneeB,       setAnneeB]       = useState(CURRENT_YEAR);
   const [compStats,    setCompStats]    = useState<CompStats | null>(null);
 
   const ctrlRef = useRef<AbortController | null>(null);
@@ -86,7 +88,7 @@ export default function ComparaisonPage() {
     setLoading(true);
     try {
       const { data } = await api.get<CompStats>('/api/comparaison/stats', {
-        params: { annee: selectedYear },
+        params: { anneeA, anneeB },
         signal: ctrl.signal,
       });
       setCompStats(data);
@@ -94,7 +96,7 @@ export default function ComparaisonPage() {
       if ((e as { name?: string }).name === 'CanceledError') { canceled = true; return; }
       toast.error(apiErrMsg(e, 'Erreur chargement'));
     } finally { if (!canceled) setLoading(false); }
-  }, [selectedYear]);
+  }, [anneeA, anneeB]);
 
   useEffect(() => {
     fetchStats();
@@ -107,11 +109,12 @@ export default function ComparaisonPage() {
   }, [fetchStats]);
 
   /* ── valeurs dérivées ── */
-  const currYear    = selectedYear;
-  const prevYear    = selectedYear - 1;
+  const currYear    = anneeB;
+  const prevYear    = anneeA;
   const mCurr       = compStats?.metricsA ?? EMPTY_METRICS;
   const mPrev       = compStats?.metricsB ?? EMPTY_METRICS;
-  const minYear     = compStats?.minYear ?? CURRENT_YEAR;
+  const minYear     = MIN_YEAR;
+  const yearOptions = Array.from({ length: Math.max(CURRENT_YEAR, anneeA, anneeB) - MIN_YEAR + 1 }, (_, i) => MIN_YEAR + i);
   const globalScore = compStats?.globalScore ?? null;
   const hasPrevData = mPrev.total > 0;
   const hasCurrData = mCurr.total > 0;
@@ -171,37 +174,37 @@ export default function ComparaisonPage() {
 
               {/* Navigateur années */}
               <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0,flexWrap:'wrap'}}>
-                <button onClick={()=>setSelectedYear(y=>y-1)} disabled={selectedYear<=minYear}
-                  style={{width:36,height:36,borderRadius:10,border:`1px solid ${selectedYear<=minYear?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'}`,background:'transparent',color:selectedYear<=minYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)',cursor:selectedYear<=minYear?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.18s'}}
-                  onMouseEnter={e=>{if(selectedYear>minYear){e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color='#fff';}}}
-                  onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=selectedYear<=minYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)';}}>
+                <button onClick={()=>{setAnneeA(y=>y-1);setAnneeB(y=>y-1);}} disabled={Math.min(anneeA,anneeB)<=minYear}
+                  style={{width:36,height:36,borderRadius:10,border:`1px solid ${Math.min(anneeA,anneeB)<=minYear?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'}`,background:'transparent',color:Math.min(anneeA,anneeB)<=minYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)',cursor:Math.min(anneeA,anneeB)<=minYear?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.18s'}}
+                  onMouseEnter={e=>{if(Math.min(anneeA,anneeB)>minYear){e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color='#fff';}}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=Math.min(anneeA,anneeB)<=minYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)';}}>
                   <ChevronLeft size={16}/>
                 </button>
 
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(59,108,248,0.12)',border:'1px solid rgba(59,108,248,0.3)',textAlign:'center',minWidth:72}}>
                     <div style={{fontSize:9,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Précédent</div>
-                    <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#3b6cf8',lineHeight:1}}>{prevYear}</div>
+                    <select value={anneeA} onChange={e=>setAnneeA(Number(e.target.value))} style={{appearance:'none',background:'transparent',border:'none',outline:'none',cursor:'pointer',fontSize:isMobile?17:20,fontWeight:900,color:'#3b6cf8',lineHeight:1,textAlign:'center',textAlignLast:'center'}}>{yearOptions.map(y=><option key={y} value={y} style={{color:'#000'}}>{y}</option>)}</select>
                   </div>
                   <div style={{fontSize:13,color:'#fff',fontWeight:700}}>vs</div>
                   <div style={{padding:'7px 15px',borderRadius:12,background:'rgba(18,183,106,0.12)',border:'1px solid rgba(18,183,106,0.3)',textAlign:'center',minWidth:72}}>
                     <div style={{fontSize:9,color:'#fff',fontWeight:700,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Actuel</div>
-                    <div style={{fontSize:isMobile?17:20,fontWeight:900,color:'#12b76a',lineHeight:1}}>{currYear}</div>
-                    {selectedYear===CURRENT_YEAR&&(
+                    <select value={anneeB} onChange={e=>setAnneeB(Number(e.target.value))} style={{appearance:'none',background:'transparent',border:'none',outline:'none',cursor:'pointer',fontSize:isMobile?17:20,fontWeight:900,color:'#12b76a',lineHeight:1,textAlign:'center',textAlignLast:'center'}}>{yearOptions.map(y=><option key={y} value={y} style={{color:'#000'}}>{y}</option>)}</select>
+                    {anneeB===CURRENT_YEAR&&(
                       <div style={{fontSize:8,color:'#12b76a',fontWeight:700,marginTop:4,letterSpacing:0.3,opacity:0.8}}>En cours</div>
                     )}
                   </div>
                 </div>
 
-                <button onClick={()=>setSelectedYear(y=>y+1)} disabled={selectedYear>=CURRENT_YEAR}
-                  style={{width:36,height:36,borderRadius:10,border:`1px solid ${selectedYear>=CURRENT_YEAR?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'}`,background:'transparent',color:selectedYear>=CURRENT_YEAR?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)',cursor:selectedYear>=CURRENT_YEAR?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.18s'}}
-                  onMouseEnter={e=>{if(selectedYear<CURRENT_YEAR){e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color='#fff';}}}
-                  onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=selectedYear>=CURRENT_YEAR?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)';}}>
+                <button onClick={()=>{setAnneeA(y=>y+1);setAnneeB(y=>y+1);}} disabled={Math.max(anneeA,anneeB)>=CURRENT_YEAR}
+                  style={{width:36,height:36,borderRadius:10,border:`1px solid ${Math.max(anneeA,anneeB)>=CURRENT_YEAR?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'}`,background:'transparent',color:Math.max(anneeA,anneeB)>=CURRENT_YEAR?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)',cursor:Math.max(anneeA,anneeB)>=CURRENT_YEAR?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.18s'}}
+                  onMouseEnter={e=>{if(Math.max(anneeA,anneeB)<CURRENT_YEAR){e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color='#fff';}}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=Math.max(anneeA,anneeB)>=CURRENT_YEAR?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)';}}>
                   <ChevronRight size={16}/>
                 </button>
 
-                {selectedYear!==CURRENT_YEAR&&(
-                  <button onClick={()=>setSelectedYear(CURRENT_YEAR)}
+                {(anneeB!==CURRENT_YEAR||anneeA!==CURRENT_YEAR-1)&&(
+                  <button onClick={()=>{setAnneeA(CURRENT_YEAR-1);setAnneeB(CURRENT_YEAR);}}
                     style={{padding:'6px 12px',borderRadius:9,border:'1px solid rgba(247,144,9,0.35)',background:'rgba(247,144,9,0.1)',color:'#f79009',cursor:'pointer',fontSize:11,fontWeight:700,transition:'all 0.18s',whiteSpace:'nowrap'}}
                     onMouseEnter={e=>e.currentTarget.style.background='rgba(247,144,9,0.2)'}
                     onMouseLeave={e=>e.currentTarget.style.background='rgba(247,144,9,0.1)'}>
@@ -223,7 +226,7 @@ export default function ComparaisonPage() {
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:'#f79009'}}>Première année de référence</div>
                 <div style={{fontSize:12,color:'#fff',marginTop:2}}>
-                  Aucune donnée pour {prevYear}. La comparaison complète sera disponible en {currYear+1}.
+                  Aucune donnée pour {prevYear}.
                 </div>
               </div>
             </div>
@@ -314,7 +317,7 @@ export default function ComparaisonPage() {
                       {globalScore===null?'—':`${globalScore>0?'+':''}${globalScore}%`}
                     </div>
                     <div style={{fontSize:13,color:'#fff',fontWeight:700}}>
-                      {globalScore===null?'Aucune donnée de référence':globalScore>20?'Excellente année !':globalScore>0?'Bonne progression':globalScore===0?'Stable par rapport à l\'année précédente':'En dessous de l\'année précédente'}
+                      {globalScore===null?'Aucune donnée de référence':globalScore>20?'Excellente année !':globalScore>0?'Bonne progression':globalScore===0?`Stable par rapport à ${prevYear}`:`En dessous de ${prevYear}`}
                     </div>
                     <div style={{marginTop:16,fontSize:12,color:'#fff'}}>
                       de croissance en commissions entre {prevYear} et {currYear}
