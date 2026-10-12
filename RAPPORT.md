@@ -646,3 +646,9 @@ Un lead peut être partagé avec un agent. Un lead partagé compte **0,5** au li
 - **Filtres de la page Leads** regroupés en lignes : Lead / Paiement / Partage / Service + tri.
 - **Index GIN** `idx_se_produits_gin` : `prisma db push` le supprime (absent du schéma). Après chaque `db push`, relancer `npx tsx scripts/apply-gin-index.ts`.
 
+### Page Base de données : sauvegarde, export Excel et filtres
+- **Bouton « Sauvegarde »** : télécharge `sauvegarde-secureflow-AAAA-MM-JJ.json` (tous les leads, tous les champs). À faire régulièrement : Supabase gratuit n'a pas de sauvegarde automatique.
+- **Bouton « Excel »** : génère un `.xlsx` mis en forme (`lib/exportExcel.ts`, bibliothèque `exceljs` chargée à la demande) avec titre, en-têtes colorées, statuts en couleur, filtres, ligne de total et une feuille « Résumé ». Le fichier reflète l'état de la base au moment du clic.
+- **Filtres ajoutés** (sous la barre d'en-tête) : Partage, Partagé avec, Appel de service. Ils se combinent avec les filtres existants.
+- **PDF** : affiche la vente partagée et les appels de service.
+

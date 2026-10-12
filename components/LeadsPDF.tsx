@@ -159,6 +159,10 @@ export function buildLeadsDoc(leads: SolutionExpress[], label: string) {
           <Row label="Commission totale" value={l.commissionTotale > 0 ? `${l.commissionTotale} TND` : null} />
           <Row label="Statut paiement"   value={l.commissionTotale > 0 ? (l.commissionPayee ? 'Payée' : 'En attente') : null} />
           <Row label="Date paiement"     value={fmt(l.datePaiementCommission)} />
+          <Row label="Vente partagée avec" value={(l.partageAvec || []).join(', ') || null} />
+          {(l.appelsService || []).map((a, i) => (
+            <Row key={a.id} label={`Appel de service ${i + 1}`} value={`${a.paye ? 'Payé' : 'Pas payé'}${a.description ? ' - ' + a.description : ''}`} />
+          ))}
 
           {/* ── Infos système ── */}
           <Text style={S.section}>Informations système</Text>

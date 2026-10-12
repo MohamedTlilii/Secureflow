@@ -55,6 +55,7 @@ export default function DatabasePage() {
   const [selected,    setSelected]    = useState<SolutionExpress | null>(null);
   const [filters, setFilters] = useState({
     prenom: '', nom: '', email: '', telephone: '', entreprise: '', ville: '', typeClient: '', status: '',
+    partage: '', partageAvec: '', appelService: '',
   });
   const [pdfLoading,   setPdfLoading]  = useState(false);
   const [confirmItem,  setConfirmItem] = useState<SolutionExpress | null>(null);
@@ -154,7 +155,14 @@ export default function DatabasePage() {
       (!filters.entreprise || (item.entreprise || '').toLowerCase().includes(entrepriseQ)) &&
       (!filters.ville      || item.ville      === filters.ville) &&
       (!filters.typeClient || item.typeClient === filters.typeClient) &&
-      (!filters.status     || item.status     === filters.status)
+      (!filters.status     || item.status     === filters.status) &&
+      (!filters.partage || (filters.partage === 'oui' ? (item.partageAvec || []).length > 0 : (item.partageAvec || []).length === 0)) &&
+      (!filters.partageAvec || (item.partageAvec || []).includes(filters.partageAvec)) &&
+      (!filters.appelService || (() => {
+        const aps = item.appelsService || [];
+        if (aps.length === 0) return false;
+        return filters.appelService === 'non_paye' ? aps.some(a => !a.paye) : aps.every(a => a.paye);
+      })())
     ).sort((a, b) => {
       if (!a.dateVente && !b.dateVente) return 0;
       if (!a.dateVente) return 1;
@@ -167,12 +175,45 @@ export default function DatabasePage() {
 
   const hasFilters   = useMemo(() => Object.values(filters).some(Boolean), [filters]);
   const clearFilters = useCallback(() =>
-    setFilters({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', ville: '', typeClient: '', status: '' }),
+    setFilters({ prenom: '', nom: '', email: '', telephone: '', entreprise: '', ville: '', typeClient: '', status: '', partage: '', partageAvec: '', appelService: '' }),
   []);
 
   const todayLabel = useMemo(() =>
     new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
   []);
+
+  /* ── Export / sauvegarde (tous les leads, sans les filtres) ── */
+  const download = (blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+  const dateTag = () => new Date().toISOString().slice(0, 10);
+
+  const exportJSON = () => {
+    if (leads.length === 0) return toast.error('Aucun lead à exporter');
+    const data = { exporteLe: new Date().toISOString(), nombreLeads: leads.length, leads };
+    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `sauvegarde-secureflow-${dateTag()}.json`);
+    toast.success(`Sauvegarde téléchargée (${leads.length} leads)`);
+  };
+
+  const [excelLoading, setExcelLoading] = useState(false);
+  const exportExcel = async () => {
+    if (leads.length === 0) return toast.error('Aucun lead à exporter');
+    setExcelLoading(true);
+    try {
+      const { exportLeadsExcel } = await import('@/lib/exportExcel');
+      await exportLeadsExcel(leads, settings);
+      toast.success(`Fichier Excel téléchargé (${leads.length} leads)`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur génération Excel');
+    } finally {
+      setExcelLoading(false);
+    }
+  };
 
   /* ── PDF ── */
   const handlePDF = async (openInTab: boolean) => {
@@ -371,6 +412,14 @@ export default function DatabasePage() {
                     ✕ Effacer filtres
                   </button>
                 )}
+                <button onClick={exportJSON} title="Télécharge une copie complète de tous vos leads (sauvegarde)"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#f79009', background: 'rgba(247,144,9,0.08)', border: '1px solid rgba(247,144,9,0.25)', borderRadius: 20, padding: '4px 12px', cursor: 'pointer' }}>
+                  <HardDrive size={12}/>Sauvegarde
+                </button>
+                <button onClick={exportExcel} disabled={excelLoading} title="Télécharge tous vos leads dans un fichier Excel mis en forme"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#06b6d4', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', borderRadius: 20, padding: '4px 12px', cursor: excelLoading ? 'wait' : 'pointer', opacity: excelLoading ? 0.6 : 1 }}>
+                  <FileDown size={12}/>{excelLoading ? 'Génération…' : 'Excel'}
+                </button>
                 <button onClick={() => handlePDF(false)} disabled={pdfLoading} className="db-pdf-dl"
                   style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#12b76a', background: 'rgba(18,183,106,0.08)', border: '1px solid rgba(18,183,106,0.2)', borderRadius: 20, padding: '4px 13px', cursor: pdfLoading ? 'wait' : 'pointer', opacity: pdfLoading ? 0.6 : 1, transition: 'background 0.15s' }}>
                   <FileDown size={12}/>{pdfLoading ? 'Génération…' : 'Télécharger PDF'}
@@ -380,6 +429,24 @@ export default function DatabasePage() {
                   <ExternalLink size={12}/>Voir PDF
                 </button>
               </div>
+            </div>
+
+            {/* ── Filtres : partage + appels de service ── */}
+            <div style={{ padding: isMobile ? '10px 12px' : '10px 20px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <select className="db-sel" style={{ ...inpSt, width: 'auto', minWidth: 150, cursor: 'pointer' }} value={filters.partage} onChange={e => setF('partage', e.target.value)}>
+                <option value="">Partage : tous</option>
+                <option value="oui">🤝 Partagés</option>
+                <option value="non">Non partagés</option>
+              </select>
+              <select className="db-sel" style={{ ...inpSt, width: 'auto', minWidth: 170, cursor: 'pointer' }} value={filters.partageAvec} onChange={e => setF('partageAvec', e.target.value)}>
+                <option value="">Partagé avec : tous</option>
+                {(settings.agents || []).map(a => { const n = typeof a === 'string' ? (a as string) : a.nom; return <option key={n} value={n}>{n}</option>; })}
+              </select>
+              <select className="db-sel" style={{ ...inpSt, width: 'auto', minWidth: 170, cursor: 'pointer' }} value={filters.appelService} onChange={e => setF('appelService', e.target.value)}>
+                <option value="">Appel de service : tous</option>
+                <option value="paye">📞 Payé</option>
+                <option value="non_paye">📞 Non payé</option>
+              </select>
             </div>
 
             {/* ── MOBILE : filtres rapides + cards ── */}
