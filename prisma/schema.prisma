@@ -40,6 +40,7 @@ model SolutionExpress {
   qualificationSysteme   String    @default("inconnu")
   produits               Json      @default("[]")
   partageAvec            Json      @default("[]")
+  appelsService          Json      @default("[]")
   fournisseurs           Json      @default("{}")
   status                 String    @default("new")
   motifAnnulation        String    @default("")

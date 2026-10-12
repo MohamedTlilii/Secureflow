@@ -253,6 +253,18 @@ export default function FicheCard({ fiche, settings, index, onOpen, onEdit, onDe
           )}
         </div>
 
+        {/* ── Appels de service ── */}
+        {(fiche.appelsService || []).length > 0 && (() => {
+          const aps = fiche.appelsService!;
+          const impayes = aps.filter(a => !a.paye).length;
+          const c = impayes > 0 ? '#f79009' : '#12b76a';
+          return (
+            <div style={{ fontSize:11, fontWeight:700, color:c, marginBottom:8, padding:'3px 8px', borderRadius:6, background:`${c}14`, border:`1px solid ${c}33`, display:'inline-block' }}>
+              📞 {aps.length} appel{aps.length > 1 ? 's' : ''} de service · {impayes > 0 ? `${impayes} non payé${impayes > 1 ? 's' : ''}` : 'payé' + (aps.length > 1 ? 's' : '')}
+            </div>
+          );
+        })()}
+
         {/* ── Commission badge ── */}
         <CommissionBadge fiche={fiche} onToggle={onTogglePaiement}/>
       </div>

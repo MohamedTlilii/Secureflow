@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { VALID_STATUTS } from '@/types';
-import { ALLOWED_LEAD_FIELDS } from '@/lib/leads-config';
+import { ALLOWED_LEAD_FIELDS, cleanAppelsService } from '@/lib/leads-config';
 import { calcCommissionTotale } from '@/lib/commission';
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -20,9 +20,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ message: 'Statut invalide' }, { status: 400 });
     }
 
+    if ('dateVente' in body && (!body.dateVente || Number.isNaN(new Date(body.dateVente).getTime()))) {
+      return NextResponse.json({ message: 'La date de vente est obligatoire' }, { status: 400 });
+    }
+
     const updateFields: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED_LEAD_FIELDS.has(k)) updateFields[k] = v;
+    }
+    if (body.appelsService !== undefined) {
+      const clean = cleanAppelsService(body.appelsService);
+      if (!clean) return NextResponse.json({ message: 'Appels de service invalides' }, { status: 400 });
+      updateFields.appelsService = clean;
     }
 
     if (updateFields.commissionFixe !== undefined || updateFields.commissionExtra !== undefined) {

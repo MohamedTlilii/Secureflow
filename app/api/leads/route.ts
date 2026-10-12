@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { VALID_STATUTS } from '@/types';
-import { ALLOWED_LEAD_FIELDS } from '@/lib/leads-config';
+import { ALLOWED_LEAD_FIELDS, cleanAppelsService } from '@/lib/leads-config';
 import { calcCommissionTotale } from '@/lib/commission';
 
 const PAGE_SIZE = 30;
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const commission    = sp.get('commission') ?? '';
     const service       = sp.get('service') ?? '';
     const partage       = sp.get('partage') ?? '';
+    const appelService  = sp.get('appelService') ?? '';
     const partageAvec   = (sp.get('partageAvec') ?? '').slice(0, 200);
     const limit         = Math.min(Math.max(Number(sp.get('limit') ?? PAGE_SIZE), 1), 5000);
     const offset        = Math.max(Number(sp.get('offset') ?? '0'), 0);
@@ -70,6 +71,14 @@ export async function GET(req: NextRequest) {
     if (partage === 'oui') conditions.push({ NOT: { partageAvec: { equals: [] } } });
     if (partage === 'non') conditions.push({ partageAvec: { equals: [] } });
     if (partageAvec)       conditions.push({ partageAvec: { array_contains: [partageAvec] } });
+
+    if (appelService === 'avec')     conditions.push({ NOT: { appelsService: { equals: [] } } });
+    if (appelService === 'sans')     conditions.push({ appelsService: { equals: [] } });
+    if (appelService === 'non_paye') conditions.push({ appelsService: { array_contains: [{ paye: false }] } });
+    if (appelService === 'paye') {
+      conditions.push({ NOT: { appelsService: { equals: [] } } });
+      conditions.push({ NOT: { appelsService: { array_contains: [{ paye: false }] } } });
+    }
 
     if (service) {
       conditions.push({ produits: { array_contains: [service] } } as Prisma.SolutionExpressWhereInput);
@@ -127,11 +136,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Type client invalide' }, { status: 400 });
     }
 
+    if (!body.dateVente || Number.isNaN(new Date(body.dateVente).getTime())) {
+      return NextResponse.json({ message: 'La date de vente est obligatoire' }, { status: 400 });
+    }
+
+    let appelsService: ReturnType<typeof cleanAppelsService> = [];
+    if (body.appelsService !== undefined) {
+      appelsService = cleanAppelsService(body.appelsService);
+      if (!appelsService) return NextResponse.json({ message: 'Appels de service invalides' }, { status: 400 });
+    }
+
     const data: Record<string, unknown> = { createdBy: user.id };
     for (const [k, v] of Object.entries(body)) {
       if (ALLOWED_LEAD_FIELDS.has(k)) data[k] = v;
     }
 
+    data.appelsService = appelsService;
     data.commissionTotale = calcCommissionTotale(data.commissionFixe, data.commissionExtra);
 
     const fiche = await prisma.solutionExpress.create({ data: data as any });

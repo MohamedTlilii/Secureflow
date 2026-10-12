@@ -39,16 +39,21 @@ interface UltraFicheProps {
   onTogglePaiement: (fiche: SolutionExpress) => void;
   onAddNote:    (fiche: SolutionExpress, note: string) => Promise<void>;
   onDeleteNote: (fiche: SolutionExpress, idx: number) => Promise<void>;
+  onToggleAppel?: (fiche: SolutionExpress, appelId: string) => void;
+  onUpdateAppel?: (fiche: SolutionExpress, appelId: string, description: string) => Promise<void>;
   readOnly?: boolean;
 }
 
 export default function UltraFiche({
   fiche, settings, onClose, onEdit, onDelete,
-  onChangeStatus, onTogglePaiement, onAddNote, onDeleteNote,
+  onChangeStatus, onTogglePaiement, onAddNote, onDeleteNote, onToggleAppel, onUpdateAppel,
   readOnly = false,
 }: UltraFicheProps) {
   const isMobile = useIsMobile();
   const [noteText,   setNoteText]   = useState('');
+  const [editAppelId,   setEditAppelId]   = useState<string | null>(null);
+  const [editAppelText, setEditAppelText] = useState('');
+  const [savingAppel,   setSavingAppel]   = useState(false);
   const [noteLoading, setNoteLoading] = useState(false);
 
   const color       = PIPE_COLOR[fiche.status];
@@ -273,6 +278,56 @@ export default function UltraFiche({
               <span style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(56,189,248,0.14)', border:'1px solid rgba(56,189,248,0.35)', color:'#38bdf8', borderRadius:8, padding:'5px 12px', fontSize:12, fontWeight:700 }}>
                 🤝 Vente partagée avec {(fiche.partageAvec || []).join(', ')}
               </span>
+            </div>
+          )}
+
+          {(fiche.appelsService || []).length > 0 && (
+            <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 1, textTransform: 'uppercase' }}>Appels de service</div>
+              {fiche.appelsService!.map(a => (
+                <div key={a.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {(() => {
+                    const clickable = !readOnly && !!onToggleAppel;
+                    return (
+                      <span role={clickable ? 'button' : undefined} title={clickable ? (a.paye ? 'Cliquer pour marquer Pas payé' : 'Cliquer pour marquer Payé') : undefined}
+                        onClick={clickable ? () => onToggleAppel!(fiche, a.id) : undefined}
+                        style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap', color: a.paye ? '#12b76a' : '#f79009', background: a.paye ? 'rgba(18,183,106,0.14)' : 'rgba(247,144,9,0.14)', cursor: clickable ? 'pointer' : 'default', userSelect: 'none', border: clickable ? `1px solid ${a.paye ? '#12b76a' : '#f79009'}55` : '1px solid transparent' }}>
+                        {a.paye ? 'Payé' : 'Pas payé'}
+                      </span>
+                    );
+                  })()}
+                  {editAppelId === a.id ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <textarea value={editAppelText} onChange={e => setEditAppelText(e.target.value)} rows={4} maxLength={2000} autoFocus
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 12, lineHeight: 1.6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(167,139,250,0.4)', color: '#fff', outline: 'none', resize: 'vertical' }} />
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <button type="button" onClick={() => setEditAppelId(null)}
+                          style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#8b8b9e' }}>Annuler</button>
+                        <button type="button" disabled={savingAppel}
+                          onClick={async () => {
+                            setSavingAppel(true);
+                            try { await onUpdateAppel!(fiche, a.id, editAppelText); setEditAppelId(null); }
+                            finally { setSavingAppel(false); }
+                          }}
+                          style={{ padding: '5px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: '#a78bfa', border: 'none', color: '#fff', opacity: savingAppel ? 0.6 : 1 }}>
+                          {savingAppel ? 'Sauvegarde…' : 'Enregistrer'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span style={{ flex: 1, fontSize: 12, color: '#d0d0f0', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{a.description || '—'}</span>
+                      {!readOnly && onUpdateAppel && (
+                        <button type="button" title="Modifier la description"
+                          onClick={() => { setEditAppelId(a.id); setEditAppelText(a.description); }}
+                          style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 7, color: '#a78bfa', cursor: 'pointer', padding: '4px 7px', display: 'flex', flexShrink: 0 }}>
+                          <Edit2 size={11} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

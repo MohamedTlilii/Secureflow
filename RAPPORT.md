@@ -634,3 +634,15 @@ Un lead peut être partagé avec un agent. Un lead partagé compte **0,5** au li
 - Le bloc « Produits » a été retiré du Dashboard (le calcul serveur existe encore dans `/api/dashboard/stats`).
 - Le Pipeline charge jusqu'à 1000 leads (au lieu de 200).
 - Cases B2B/B2C du Dashboard plus larges, avec retour à la ligne des noms longs.
+
+### Appels de service et date de vente obligatoire
+- `SolutionExpress.appelsService` (Json, défaut `[]`) : liste de `{ id, description, paye }`. Aucun montant, aucun calcul : c'est un suivi payé / pas payé avec une description (max 2000 caractères).
+- **Fiche lead → onglet Commission** : ajout, modification et suppression des appels. **Détails du lead (page Leads)** : clic sur « Pas payé / Payé » pour basculer, ✏️ pour modifier la description. Les autres pages affichent les détails en lecture seule.
+- **Carte du lead** : étiquette « 📞 N appels de service · X non payés ».
+- **Filtre Leads « Appel de service »** : Payé (tous les appels payés) / Non payé (au moins un impayé).
+- Validation serveur : `cleanAppelsService` (`lib/leads-config.ts`) refuse tout format invalide (400).
+- **Date de vente obligatoire** : refusée côté fiche et côté serveur (création sans date, ou effacement de la date).
+- **Page Leads** : les 4 compteurs du haut se rafraîchissent après chaque création, modification, suppression ou changement de statut.
+- **Filtres de la page Leads** regroupés en lignes : Lead / Paiement / Partage / Service + tri.
+- **Index GIN** `idx_se_produits_gin` : `prisma db push` le supprime (absent du schéma). Après chaque `db push`, relancer `npx tsx scripts/apply-gin-index.ts`.
+

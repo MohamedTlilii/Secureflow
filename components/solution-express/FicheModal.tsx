@@ -6,7 +6,7 @@ import {
   Monitor, Printer, CreditCard, Zap, Globe, Headphones, Lock, Home, Car,
   Music, Server, Cloud, Wrench, Bell, Key, Package, Laptop, Tablet, Video,
 } from 'lucide-react';
-import type { Settings, StatusFiche } from '@/types';
+import type { Settings, StatusFiche, AppelService } from '@/types';
 import { VALID_STATUTS, STATUS_LABEL } from '@/types';
 import useIsMobile from '@/hooks/useIsMobile';
 import DatePicker from './DatePicker';
@@ -31,6 +31,7 @@ export type FormState = {
   dateVente: string;          datePaiementCommission: string;
   notes: string[];
   partageAvec: string[];
+  appelsService: AppelService[];
 };
 
 export const EMPTY_FORM: FormState = {
@@ -49,6 +50,7 @@ export const EMPTY_FORM: FormState = {
   dateVente: '', datePaiementCommission: '',
   notes: [],
   partageAvec: [],
+  appelsService: [],
 };
 
 /* ─── Styles ─── */
@@ -369,7 +371,7 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
 
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={lbl}>Date de vente</label>
+                  <label style={lbl}>Date de vente *</label>
                   <DatePicker value={form.dateVente} onChange={v => set('dateVente', v)} placeholder="Choisir une date…" />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}>
@@ -384,6 +386,31 @@ export default function FicheModal({ mode, form, setForm, settings, saving, onSa
                     <DatePicker value={form.datePaiementCommission} onChange={v => set('datePaiementCommission', v)} placeholder="Date de paiement…" />
                   </div>
                 )}
+              </div>
+
+              {/* Appels de service (sans calcul) */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 14 }}>
+                <label style={lbl}>Appels de service</label>
+                {(form.appelsService || []).map((a, i) => (
+                  <div key={a.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 10 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', paddingTop: 9, color: a.paye ? '#12b76a' : '#f79009' }}>
+                      <input type="checkbox" checked={a.paye} style={{ accentColor: '#12b76a', width: 16, height: 16 }}
+                        onChange={e => set('appelsService', form.appelsService.map((x, j) => j === i ? { ...x, paye: e.target.checked } : x))} />
+                      {a.paye ? 'Payé' : 'Pas payé'}
+                    </label>
+                    <textarea value={a.description} rows={4} placeholder="Description de l'appel de service…" maxLength={2000} style={{ ...inp, flex: 1, minHeight: 90, resize: 'vertical', lineHeight: 1.6 }}
+                      onChange={e => set('appelsService', form.appelsService.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                    <button type="button" title="Supprimer" onClick={() => set('appelsService', form.appelsService.filter((_, j) => j !== i))}
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, color: '#ef4444', cursor: 'pointer', padding: '7px 9px', display: 'flex' }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button"
+                  onClick={() => set('appelsService', [...(form.appelsService || []), { id: Math.random().toString(36).slice(2, 10), description: '', paye: false }])}
+                  style={{ padding: '8px 14px', borderRadius: 9, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  + Ajouter un appel de service
+                </button>
               </div>
             </div>
           )}

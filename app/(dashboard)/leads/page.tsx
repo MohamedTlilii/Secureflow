@@ -23,12 +23,12 @@ type SortKey   = 'date_desc' | 'date_asc' | 'urgency_desc' | 'commission_desc' |
 interface Filters {
   status: string; typeClient: string; leadType: string; ville: string;
   typeCommerce: string; commission: string; service: string; qualifSysteme: string;
-  partage: string; partageAvec: string;
+  partage: string; partageAvec: string; appelService: string;
 }
 const EMPTY_FILTERS: Filters = {
   status: '', typeClient: '', leadType: '', ville: '',
   typeCommerce: '', commission: '', service: '', qualifSysteme: '',
-  partage: '', partageAvec: '',
+  partage: '', partageAvec: '', appelService: '',
 };
 const PAGE_SIZE = 30;
 const SECTION_COLORS = [
@@ -111,6 +111,7 @@ export default function SolutionExpressPage() {
         service:       filters.service,
         partage:       filters.partage,
         partageAvec:   filters.partageAvec,
+        appelService:  filters.appelService,
         limit: PAGE_SIZE,
         offset,
       };
@@ -156,6 +157,8 @@ export default function SolutionExpressPage() {
   }, []);
 
   /* ── Stats depuis le backend ── */
+  const [statsTick, setStatsTick] = useState(0);
+  const refreshStats = useCallback(() => setStatsTick(t => t + 1), []);
   const [leadsStats, setLeadsStats] = useState({ totalFiches:0, totalInstalle:0, totalAnnule:0, totalPipeline:0, annees:[] as number[] });
   useEffect(() => {
     const ctrl = new AbortController();
@@ -163,7 +166,7 @@ export default function SolutionExpressPage() {
       .then(r => { if (r.data) setLeadsStats(r.data); })
       .catch(e => { if ((e as { code?: string })?.code !== 'ERR_CANCELED') { /* non-bloquant */ } });
     return () => ctrl.abort();
-  }, [annee]);
+  }, [annee, statsTick]);
 
   /* ── Modals ── */
   const todayLabel = useMemo(() =>
@@ -188,11 +191,13 @@ export default function SolutionExpressPage() {
       datePaiementCommission: fiche.datePaiementCommission?.slice(0,10) ?? '',
       notes: fiche.notes ?? [],
       partageAvec: fiche.partageAvec ?? [],
+      appelsService: fiche.appelsService ?? [],
     });
     setModal('edit');
   }, []);
 
   const handleSave = async () => {
+    if (!form.dateVente) { toast.error('La date de vente est obligatoire'); return; }
     setSaving(true);
     try {
       const { commissionTotale: _ct, ...rest } = form;
@@ -207,11 +212,13 @@ export default function SolutionExpressPage() {
         setFiches(prev => prev.map(f => f.id === editing.id ? updated : f));
         setSelected(s => s?.id === editing.id ? updated : s);
         toast.success('Fiche modifiée');
+        refreshStats();
       } else {
         const { data: created } = await api.post<SolutionExpress>('/api/leads', payload);
         setFiches(prev => [created, ...prev]);
         setTotal(t => t + 1);
         toast.success('Fiche créée !');
+        refreshStats();
       }
       setModal(null);
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur sauvegarde')); }
@@ -230,6 +237,7 @@ export default function SolutionExpressPage() {
       setTotal(t => Math.max(t - 1, 0));
       setSelected(s => s?.id === deleteTarget ? null : s);
       toast.success('Fiche supprimée');
+      refreshStats();
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur suppression')); }
     finally { setDeleteTarget(null); }
   };
@@ -251,18 +259,48 @@ export default function SolutionExpressPage() {
     } finally { toggleRef.current.delete(fiche.id); }
   }, []);
 
+  const toggleAppel = useCallback(async (fiche: SolutionExpress, appelId: string) => {
+    const key = fiche.id + ':' + appelId;
+    if (toggleRef.current.has(key)) return;
+    toggleRef.current.add(key);
+    const updated = (fiche.appelsService ?? []).map(a => a.id === appelId ? { ...a, paye: !a.paye } : a);
+    const optimistic = { ...fiche, appelsService: updated };
+    setFiches(prev => prev.map(f => f.id === fiche.id ? optimistic : f));
+    setSelected(s => s?.id === fiche.id ? optimistic : s);
+    try {
+      await api.put(`/api/leads/${fiche.id}`, { appelsService: updated });
+    } catch (e) {
+      toast.error(apiErrMsg(e, 'Erreur appel de service'));
+      setFiches(prev => prev.map(f => f.id === fiche.id ? fiche : f));
+      setSelected(s => s?.id === fiche.id ? fiche : s);
+    } finally { toggleRef.current.delete(key); }
+  }, []);
+
+  const updateAppel = useCallback(async (fiche: SolutionExpress, appelId: string, description: string) => {
+    const updated = (fiche.appelsService ?? []).map(a => a.id === appelId ? { ...a, description } : a);
+    try {
+      await api.put(`/api/leads/${fiche.id}`, { appelsService: updated });
+      setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, appelsService: updated } : f));
+      setSelected(s => s?.id === fiche.id ? { ...s, appelsService: updated } : s);
+      toast.success('Appel de service modifié');
+    } catch (e) {
+      toast.error(apiErrMsg(e, 'Erreur modification'));
+      throw e;
+    }
+  }, []);
+
   const changeStatus = useCallback((fiche: SolutionExpress, newStatus: StatusFiche) => {
     if (newStatus === 'installation_annulee') { setMotifPending({ fiche }); setMotifChoice(''); return; }
     setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: newStatus } : f));
     setSelected(s => s?.id === fiche.id ? { ...s, status: newStatus } : s);
     api.put(`/api/leads/${fiche.id}`, { status: newStatus })
-      .then(() => toast.success('Statut mis à jour'))
+      .then(() => { toast.success('Statut mis à jour'); refreshStats(); })
       .catch(e => {
         toast.error(apiErrMsg(e, 'Erreur statut'));
         setFiches(prev => prev.map(f => f.id === fiche.id ? fiche : f));
         setSelected(s => s?.id === fiche.id ? fiche : s);
       });
-  }, []);
+  }, [refreshStats]);
 
   const confirmAnnulation = async () => {
     if (!motifPending || !motifChoice) return;
@@ -272,6 +310,7 @@ export default function SolutionExpressPage() {
       setFiches(prev => prev.map(f => f.id === fiche.id ? { ...f, status: 'installation_annulee' as StatusFiche, motifAnnulation: motifChoice } : f));
       setSelected(s => s?.id === fiche.id ? { ...s, status: 'installation_annulee' as StatusFiche, motifAnnulation: motifChoice } : s);
       toast.success('Annulation confirmée');
+      refreshStats();
     } catch (e) { toast.error(apiErrMsg(e, 'Erreur annulation')); }
     finally { setMotifPending(null); }
   };
@@ -434,38 +473,51 @@ export default function SolutionExpressPage() {
 
             {showFilt && (
               <div style={{ animation:'fadeSlideUp 0.2s ease both' }}>
-                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-                  <Sel val={filters.status}       onChange={v => setFilters(p => ({...p, status:v}))}       opts={VALID_STATUTS.map(s => ({ value:s, label:STATUS_LABEL[s] }))} placeholder="Statut"/>
-                  <Sel val={filters.typeClient}   onChange={v => setFilters(p => ({...p, typeClient:v}))}   opts={[{value:'b2b',label:'🏢 B2B'},{value:'b2c',label:'🏠 B2C'}]} placeholder="B2B / B2C"/>
-                  <Sel val={filters.leadType}     onChange={v => setFilters(p => ({...p, leadType:v}))}     opts={settings.typeLead.map(t => ({value:t.key,label:t.label}))} placeholder="Type lead"/>
-                  <Sel val={filters.ville}        onChange={v => setFilters(p => ({...p, ville:v}))}        opts={villesDispos.map(v => ({value:v,label:v}))} placeholder="Ville"/>
-                  <Sel val={filters.typeCommerce}  onChange={v => setFilters(p => ({...p, typeCommerce:v}))}  opts={settings.typeCommerce.map(t => ({value:t.key,label:t.label}))} placeholder="Commerce"/>
-                  <Sel val={filters.qualifSysteme} onChange={v => setFilters(p => ({...p, qualifSysteme:v}))} opts={settings.qualificationSysteme.map(t => ({value:t.key,label:t.label}))} placeholder="Système actuel"/>
-                  <Sel val={filters.commission}    onChange={v => setFilters(p => ({...p, commission:v}))}    opts={[{value:'payee',label:'✓ Payée'},{value:'en_attente',label:'⏳ En attente'},{value:'avec',label:'Avec commission'},{value:'annulee',label:'✕ Annulée'}]} placeholder="Commission"/>
-                  <Sel val={filters.partage}       onChange={v => setFilters(p => ({...p, partage:v}))}       opts={[{value:'oui',label:'🤝 Partagés'},{value:'non',label:'Non partagés'}]} placeholder="Partage"/>
-                  <Sel val={filters.partageAvec}   onChange={v => setFilters(p => ({...p, partageAvec:v}))}   opts={(settings.agents||[]).map(a => { const n = typeof a === 'string' ? (a as string) : a.nom; return {value:n,label:n}; })} placeholder="Partagé avec"/>
-                  <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)}
-                    style={{ padding:'7px 12px', borderRadius:9, fontSize:12, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', cursor:'pointer' }}>
-                    <option value="date_desc">Plus récent</option>
-                    <option value="date_asc">Plus ancien</option>
-                    <option value="urgency_desc">Urgence ↓</option>
-                    <option value="commission_desc">Commission ↓</option>
-                    <option value="entreprise">A → Z</option>
-                    <option value="status">Statut</option>
-                  </select>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                  <span style={{ width:78, fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Lead</span>
+                    <Sel val={filters.status}       onChange={v => setFilters(p => ({...p, status:v}))}       opts={VALID_STATUTS.map(s => ({ value:s, label:STATUS_LABEL[s] }))} placeholder="Statut"/>
+                    <Sel val={filters.typeClient}   onChange={v => setFilters(p => ({...p, typeClient:v}))}   opts={[{value:'b2b',label:'🏢 B2B'},{value:'b2c',label:'🏠 B2C'}]} placeholder="B2B / B2C"/>
+                    <Sel val={filters.leadType}     onChange={v => setFilters(p => ({...p, leadType:v}))}     opts={settings.typeLead.map(t => ({value:t.key,label:t.label}))} placeholder="Type lead"/>
+                    <Sel val={filters.ville}        onChange={v => setFilters(p => ({...p, ville:v}))}        opts={villesDispos.map(v => ({value:v,label:v}))} placeholder="Ville"/>
+                    <Sel val={filters.typeCommerce}  onChange={v => setFilters(p => ({...p, typeCommerce:v}))}  opts={settings.typeCommerce.map(t => ({value:t.key,label:t.label}))} placeholder="Commerce"/>
+                    <Sel val={filters.qualifSysteme} onChange={v => setFilters(p => ({...p, qualifSysteme:v}))} opts={settings.qualificationSysteme.map(t => ({value:t.key,label:t.label}))} placeholder="Système actuel"/>
                 </div>
-                {/* Pills services */}
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
-                  <span style={{ fontSize:10, color:'#fff', fontWeight:700, textTransform:'uppercase' }}>Service :</span>
-                  {settings.services.map(sv => (
-                    <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
-                      style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
-                        border:`1px solid ${filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.12)'}`,
-                        background: filters.service===sv.id ? `${sv.color}22` : 'transparent',
-                        color: filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.5)' }}>
-                      {sv.label}
-                    </button>
-                  ))}
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                  <span style={{ width:78, fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Paiement</span>
+                    <Sel val={filters.commission}    onChange={v => setFilters(p => ({...p, commission:v}))}    opts={[{value:'payee',label:'✓ Payée'},{value:'en_attente',label:'⏳ En attente'},{value:'avec',label:'Avec commission'},{value:'annulee',label:'✕ Annulée'}]} placeholder="Commission"/>
+                    <Sel val={filters.appelService}  onChange={v => setFilters(p => ({...p, appelService:v}))}  opts={[{value:'paye',label:'📞 Payé'},{value:'non_paye',label:'📞 Non payé'}]} placeholder="Appel de service"/>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                  <span style={{ width:78, fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Partage</span>
+                    <Sel val={filters.partage}       onChange={v => setFilters(p => ({...p, partage:v}))}       opts={[{value:'oui',label:'🤝 Partagés'},{value:'non',label:'Non partagés'}]} placeholder="Partage"/>
+                    <Sel val={filters.partageAvec}   onChange={v => setFilters(p => ({...p, partageAvec:v}))}   opts={(settings.agents||[]).map(a => { const n = typeof a === 'string' ? (a as string) : a.nom; return {value:n,label:n}; })} placeholder="Partagé avec"/>
+                </div>
+                {/* Services + tri */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                  <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+                    <span style={{ width:78, fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Service</span>
+  {settings.services.map(sv => (
+                      <button key={sv.id} onClick={() => setFilters(p => ({...p, service: p.service===sv.id ? '' : sv.id}))}
+                        style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
+                          border:`1px solid ${filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.12)'}`,
+                          background: filters.service===sv.id ? `${sv.color}22` : 'transparent',
+                          color: filters.service===sv.id ? sv.color : 'rgba(255,255,255,0.5)' }}>
+                        {sv.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Trier</span>
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)}
+                      style={{ padding:'7px 12px', borderRadius:9, fontSize:12, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)', color:'#fff', outline:'none', cursor:'pointer' }}>
+                      <option value="date_desc">Plus récent</option>
+                      <option value="date_asc">Plus ancien</option>
+                      <option value="urgency_desc">Urgence ↓</option>
+                      <option value="commission_desc">Commission ↓</option>
+                      <option value="entreprise">A → Z</option>
+                      <option value="status">Statut</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
@@ -597,6 +649,8 @@ export default function SolutionExpressPage() {
           onDelete={handleDelete}
           onChangeStatus={changeStatus}
           onTogglePaiement={togglePaiement}
+          onToggleAppel={toggleAppel}
+          onUpdateAppel={updateAppel}
           onAddNote={addNote}
           onDeleteNote={deleteNote}
         />

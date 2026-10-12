@@ -66,6 +66,7 @@ export interface SolutionExpress {
   summary: string;
   notes: string[];
   partageAvec?: string[];
+  appelsService?: AppelService[];
   montantContrat: number;
   commissionFixe: number;
   commissionExtra: number;
@@ -89,6 +90,12 @@ export interface Service {
   icon: string;
   actuel: ServiceFournisseur[];
   propose: ServiceFournisseur[];
+}
+
+export interface AppelService {
+  id: string;
+  description: string;
+  paye: boolean;
 }
 
 export interface Agent {
