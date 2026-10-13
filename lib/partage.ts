@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 /** Un lead partagé avec un agent compte 0,5 ; sinon 1. */
-export const POIDS_PARTAGE = 0.5;
+const POIDS_PARTAGE = 0.5;
 
 export function poidsLead(partageAvec: unknown): number {
   return Array.isArray(partageAvec) && partageAvec.length > 0 ? POIDS_PARTAGE : 1;

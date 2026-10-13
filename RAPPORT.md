@@ -1,654 +1,365 @@
-# Rapport Technique — SecureFlow CRM
+# SecureFlow CRM — Rapport simple et complet
 
-> **Projet personnel** — CRM développé par Mohamed Tlili, agent commercial Solution Express (Québec)
-> **Date du rapport** : Juillet 2026
+> Projet personnel de Mohamed Tlili, agent commercial **Solution Express** (Québec).
+> Ce document explique tout le projet **simplement**, page par page.
 
 ---
 
 ## Sommaire
 
-1. [Description générale](#1-description-générale)
-2. [Stack technique](#2-stack-technique)
-3. [Architecture du projet](#3-architecture-du-projet)
-4. [Base de données](#4-base-de-données)
-5. [Authentification et sécurité](#5-authentification-et-sécurité)
-6. [Pages — description complète](#6-pages--description-complète)
-7. [API Routes](#7-api-routes)
-8. [Composants partagés](#8-composants-partagés)
-9. [Librairies utilitaires](#9-librairies-utilitaires)
-10. [État global du code](#10-état-global-du-code)
-11. [Vente partagée](#11-vente-partagée)
+1. [C'est quoi SecureFlow ?](#1-cest-quoi-secureflow-)
+2. [Technologies utilisées](#2-technologies-utilisées)
+3. [Organisation des dossiers](#3-organisation-des-dossiers)
+4. [Comment ça marche (le chemin d'une action)](#4-comment-ça-marche)
+5. [Base de données (4 tables)](#5-base-de-données)
+6. [Connexion et sécurité](#6-connexion-et-sécurité)
+7. [Les pages, une par une](#7-les-pages-une-par-une)
+8. [Les API (le serveur)](#8-les-api-le-serveur)
+9. [Les composants](#9-les-composants)
+10. [Les fichiers utilitaires (lib)](#10-les-fichiers-utilitaires-lib)
+11. [Règles importantes du métier](#11-règles-importantes-du-métier)
+12. [Lancer le projet](#12-lancer-le-projet)
 
 ---
 
-## 1. Description générale
+## 1. C'est quoi SecureFlow ?
 
-SecureFlow CRM est une application web personnelle de gestion de leads commerciaux. Elle permet à un agent commercial de :
+Une application web pour **gérer mes clients potentiels (leads)** et **mes commissions**.
 
-- Créer, modifier et suivre des fiches prospects (leads)
-- Visualiser les performances via un tableau de bord avec statistiques
-- Gérer un pipeline commercial par statuts
-- Suivre les commissions gagnées et payées
-- Comparer les performances entre années
-- Gérer les remboursements d'essence mensuels
-- Consulter et exporter toute la base de données
-- Configurer l'application (villes, produits, types de commerce, profil)
+Je vends des services (Alarme, Internet, Mobile, etc.). Pour chaque client je crée une **fiche**. L'app me permet de :
 
-L'application est **mono-utilisateur** : chaque donnée est liée à l'utilisateur connecté via `createdBy`.
+- créer / modifier / supprimer des fiches clients ;
+- suivre où en est chaque client (nouveau → contacté → soumission → installation → installé ou annulé) ;
+- voir combien de **commission** j'ai gagnée, payée, ou en attente ;
+- comparer deux années ;
+- suivre mon **indemnité carburant** mois par mois ;
+- exporter toute ma base (JSON, Excel, PDF) ;
+- tout configurer (villes, services, objectifs…) dans **Paramètres**.
 
----
-
-## 2. Stack technique
-
-| Couche | Technologie | Rôle |
-|---|---|---|
-| Framework | Next.js 14 (App Router) | Routing, SSR, API routes |
-| Langage | TypeScript | Typage statique sur tout le projet |
-| Base de données | PostgreSQL (Supabase) | Stockage principal |
-| ORM | Prisma 5 | Accès DB typé, migrations, schéma |
-| Auth | JWT (JOSE) + bcryptjs | Tokens signés, mots de passe hashés |
-| HTTP client | Axios | Appels API côté client |
-| UI icons | Lucide React | Icônes SVG |
-| Graphes | Recharts | Graphiques bar (dashboard, commissions) |
-| Toast | React Hot Toast | Notifications utilisateur |
-| CSS | Tailwind (base) + Inline styles + CSS Modules (dashboard) | Styles |
-| Hébergement DB | Supabase (AWS eu-north-1) | PostgreSQL managé |
+L'app est **pour une seule personne** : chaque fiche est liée à l'utilisateur qui l'a créée (`createdBy`). Il n'y a pas d'inscription : le compte est créé à la main dans la base.
 
 ---
 
-## 3. Architecture du projet
+## 2. Technologies utilisées
+
+| Outil | À quoi ça sert (simple) |
+|---|---|
+| **Next.js 14** | Le framework : les pages ET le serveur dans le même projet |
+| **React 18 + TypeScript** | Construire les écrans, avec vérification des types |
+| **PostgreSQL** (hébergé sur Supabase) | La base de données où tout est stocké |
+| **Prisma** | Parler à la base de données facilement |
+| **jose** | Créer et vérifier le « badge » de connexion (JWT) |
+| **bcryptjs** | Cacher les mots de passe (hash) |
+| **Axios** | Envoyer des requêtes de l'écran vers le serveur |
+| **Recharts** | Les graphiques |
+| **Lucide React** | Les icônes |
+| **react-hot-toast** | Les petits messages (« Sauvegardé ! ») |
+| **date-fns** | Gérer les dates |
+| **exceljs** | Fabriquer le fichier Excel |
+| **@react-pdf/renderer** | Fabriquer le PDF |
+| **Tailwind CSS** | Un peu de style (le reste est du style direct dans les fichiers) |
+
+---
+
+## 3. Organisation des dossiers
 
 ```
-Portfolio-QC/
+Secureflow/
 ├── app/
-│   ├── (auth)/
-│   │   └── login/page.tsx          ← Page de connexion
-│   ├── (dashboard)/
-│   │   ├── layout.tsx              ← Layout protégé (auth check)
-│   │   ├── page.tsx                ← Dashboard principal
-│   │   ├── leads/page.tsx          ← Gestion des leads
-│   │   ├── pipeline/page.tsx       ← Vue pipeline Kanban
-│   │   ├── commissions/page.tsx    ← Suivi des commissions
-│   │   ├── comparaison/page.tsx    ← Comparaison inter-années
-│   │   ├── essence/page.tsx        ← Remboursements essence
-│   │   ├── database/page.tsx       ← Vue base de données
-│   │   └── parametres/page.tsx     ← Configuration
-│   ├── api/
-│   │   ├── auth/login/route.ts     ← POST login
-│   │   ├── auth/me/route.ts        ← GET profil connecté
-│   │   ├── leads/route.ts          ← GET + POST leads
-│   │   ├── leads/[id]/route.ts     ← PUT + DELETE lead
-│   │   ├── leads/stats/route.ts    ← GET statistiques leads
-│   │   ├── dashboard/stats/route.ts← GET stats dashboard
-│   │   ├── pipeline/stats/route.ts ← GET stats pipeline
-│   │   ├── commissions/stats/route.ts ← GET stats commissions
-│   │   ├── comparaison/stats/route.ts ← GET comparaison années
-│   │   ├── database/stats/route.ts ← GET vue base de données
-│   │   ├── essence/route.ts        ← GET + POST essence
-│   │   ├── essence/[id]/route.ts   ← PUT essence
-│   │   ├── settings/route.ts       ← GET + PUT paramètres
-│   │   └── profile/route.ts        ← PUT profil
-│   ├── globals.css                 ← Styles globaux + keyframes
-│   └── layout.tsx                  ← Layout racine (AuthProvider, fonts)
-├── components/
-│   ├── dashboard/                  ← Sous-composants dashboard
-│   ├── solution-express/           ← FicheCard, FicheModal, UltraFiche
-│   ├── Sidebar.tsx                 ← Navigation latérale
-│   ├── CosmosBackground.tsx        ← Fond animé étoiles/particules
-│   └── AnimatedNumber.tsx          ← Compteur animé
-├── context/
-│   └── AuthContext.tsx             ← Contexte global d'authentification
-├── hooks/
-│   └── useIsMobile.ts              ← Détection mobile responsive
-├── lib/
-│   ├── api.ts                      ← Instance Axios + intercepteurs
-│   ├── auth.ts                     ← signToken + getCurrentUser
-│   ├── commission.ts               ← Calcul commission totale
-│   ├── leads-config.ts             ← Whitelist des champs autorisés
-│   ├── prisma.ts                   ← Instance Prisma (singleton)
-│   └── settings-cache.ts           ← Cache mémoire 5 min pour les settings
-├── prisma/
-│   └── schema.prisma               ← Schéma base de données
-├── types/
-│   └── index.ts                    ← Tous les types TypeScript + constantes
-└── middleware.ts                   ← Vérification JWT sur toutes les routes /api
+│   ├── (auth)/login/page.tsx        → page de connexion
+│   ├── (dashboard)/                 → toutes les pages après connexion
+│   │   ├── layout.tsx               → cadre commun (menu à gauche + protection)
+│   │   ├── page.tsx                 → Dashboard
+│   │   ├── leads/page.tsx           → Leads
+│   │   ├── pipeline/page.tsx        → Pipeline
+│   │   ├── commissions/page.tsx     → Commissions
+│   │   ├── comparaison/page.tsx     → Comparaison
+│   │   ├── essence/page.tsx         → Indemnité carburant
+│   │   ├── database/page.tsx        → Base de données
+│   │   └── parametres/page.tsx      → Paramètres
+│   ├── api/                         → le serveur (voir section 8)
+│   ├── layout.tsx / globals.css     → base de toute l'app
+├── components/                      → morceaux d'écran réutilisables
+├── context/AuthContext.tsx          → « qui est connecté ? »
+├── hooks/useIsMobile.ts             → détecte si on est sur téléphone
+├── lib/                             → petites fonctions utilitaires
+├── prisma/schema.prisma             → la structure de la base de données
+├── scripts/apply-gin-index.ts       → script à lancer une fois (index de vitesse)
+├── types/index.ts                   → les types + les réglages par défaut
+└── middleware.ts                    → le gardien des API
 ```
 
 ---
 
-## 4. Base de données
+## 4. Comment ça marche
 
-### Modèles Prisma
+Exemple : je change le statut d'une fiche dans **Leads**.
 
-#### `User`
-Stocke les utilisateurs de l'application.
+1. L'écran appelle `api.put('/api/leads/ID', { status: 'installe' })` (Axios).
+2. `lib/api.ts` ajoute automatiquement mon **token** (badge) dans la requête.
+3. `middleware.ts` (le gardien) vérifie le token. Pas de token ou faux token → refusé (401).
+4. La route `app/api/leads/[id]/route.ts` vérifie que **la fiche m'appartient**, nettoie les champs, recalcule la commission.
+5. Prisma enregistre dans PostgreSQL.
+6. L'écran se met à jour.
 
-| Champ | Type | Description |
-|---|---|---|
-| id | String (cuid) | Identifiant unique |
-| name | String | Nom affiché |
-| email | String (unique) | Adresse email (login) |
-| password | String | Hash bcrypt du mot de passe |
-| role | String | Rôle (par défaut : "agent") |
-| avatar | String? | URL de l'avatar |
-| dateDebut | DateTime? | Date de début d'activité |
-| createdAt | DateTime | Date de création |
-
-#### `SolutionExpress`
-Table centrale — stocke tous les leads commerciaux.
-
-| Champ | Type | Description |
-|---|---|---|
-| id | String (cuid) | Identifiant unique |
-| entreprise | String | Nom de l'entreprise |
-| typeCommerce | String | Type de commerce (restaurant, bureau, etc.) |
-| typeClient | String | B2B ou B2C |
-| prenom / nom | String | Contact |
-| telephone / email | String | Coordonnées |
-| ville | String | Ville du client |
-| adresse | String | Adresse physique |
-| leadType | String | Source du lead (référence, appel froid, etc.) |
-| produits | Json (array) | Liste des produits d'intérêt (alarme, internet, etc.) |
-| fournisseurs | Json (objet) | Fournisseurs actuels et proposés par produit |
-| status | String | Statut : new → contacted → proposal → installation_en_cours → installe / installation_annulee |
-| motifAnnulation | String | Raison d'annulation si annulé |
-| urgencyScore | Int | Score d'urgence (0–10) |
-| summary | String | Résumé libre |
-| notes | Json (array) | Notes textuelles chronologiques |
-| montantContrat | Float | Valeur du contrat |
-| commissionFixe | Float | Commission fixe |
-| commissionExtra | Float | Commission bonus |
-| commissionTotale | Float | Total commission (fixe + extra) |
-| commissionPayee | Boolean | Commission reçue ou non |
-| dateVente | DateTime? | Date de la vente/installation |
-| datePaiementCommission | DateTime? | Date de réception de la commission |
-| createdBy | String | Référence vers User.id |
-| createdAt / updatedAt | DateTime | Timestamps automatiques |
-
-**Index définis :**
-- `status`, `ville`, `createdAt DESC`
-- `createdBy` (filtrage par utilisateur)
-- `dateVente`
-- `(createdBy, dateVente)` — composite pour les filtres par période
-- `(createdBy, createdAt DESC)` — composite pour les listes triées
-- Index GIN sur `produits` (JSONB) — pour les recherches par produit
-
-#### `Settings`
-Un seul enregistrement global (`id = "global"`) qui stocke toute la configuration de l'application.
-
-| Champ | Description |
-|---|---|
-| villes | Liste des villes disponibles |
-| typeCommerce | Types de commerce (clé + label) |
-| typeLead | Sources de lead (clé + label) |
-| qualificationSysteme | Systèmes existants (ADT, Bell, etc.) |
-| services | Catalogue produits avec couleur, icône, fournisseurs |
-| motifsAnnulation | Raisons d'annulation disponibles |
-| objectifAnnuel | Objectif de commissions par année |
-| commissionFixeDefaut | Valeur par défaut commission fixe |
-| commissionExtraDefaut | Valeur par défaut commission extra |
-| produitsAvecQualification | Produits qui déclenchent une question de qualification |
-
-#### `Essence`
-Suivi mensuel des remboursements d'essence.
-
-| Champ | Description |
-|---|---|
-| annee / mois | Période concernée (unique ensemble) |
-| joursOuvres | Nombre de jours travaillés |
-| montantParJour | Taux journalier |
-| montantAttendu | Total calculé (joursOuvres × montantParJour) |
-| recu | Booléen — remboursement reçu ou non |
-| dateReception | Date de réception |
-| note | Note libre |
+Les pages font toutes pareil : elles chargent les **réglages** (`/api/settings`) + leurs **données** (`/api/.../stats`), puis affichent.
 
 ---
 
-## 5. Authentification et sécurité
+## 5. Base de données
 
-### Flux d'authentification
+Fichier : `prisma/schema.prisma`. **4 tables** :
+
+### `User` — l'utilisateur
+`name`, `email` (unique), `password` (hashé), `role`, `avatar` (un emoji), `dateDebut` (date de début d'activité, sert à « Actif depuis » et à l'anniversaire).
+
+### `SolutionExpress` — la fiche client (la table principale)
+| Groupe | Champs |
+|---|---|
+| Identité | `prenom`, `nom`, `telephone`, `email`, `sexe` |
+| Entreprise | `entreprise`, `typeCommerce`, `typeClient` (b2b ou b2c), `adresse`, `ancienneAdresse`, `ville` |
+| Origine | `leadType`, `sourceText`, `sourceUrl` |
+| Produits | `produits` (liste), `fournisseurs` (actuel/proposé par service), `qualificationSysteme` (système actuel du client) |
+| Suivi | `status`, `urgencyScore` (0 à 10), `summary` (résumé), `notes` (liste), `motifAnnulation` |
+| Partage | `partageAvec` (liste de noms d'agents) |
+| Appels de service | `appelsService` (liste : description + payé oui/non) |
+| Argent | `montantContrat`, `commissionFixe`, `commissionExtra`, `commissionTotale` (= fixe + extra), `commissionPayee` |
+| Dates | `dateVente` (**obligatoire**), `datePaiementCommission`, `createdAt`, `updatedAt` |
+| Lien | `createdBy` → l'utilisateur propriétaire |
+
+Des **index** existent pour que les recherches restent rapides (statut, ville, dateVente, etc.).
+
+### `Settings` — les réglages (une seule ligne, id = `global`)
+`villes`, `typeCommerce`, `typeLead`, `qualificationSysteme`, `services`, `motifsAnnulation`, `agents`, `objectifAnnuel`, `commissionFixeDefaut`, `commissionExtraDefaut`, `produitsAvecQualification`.
+Tout ça se modifie dans la page **Paramètres**. Si la ligne n'existe pas encore, l'app utilise `DEFAULT_SETTINGS` (dans `types/index.ts`).
+
+### `Essence` — le carburant
+Une ligne par mois : `annee`, `mois`, `joursOuvres`, `montantParJour`, `montantAttendu`, `recu` (oui/non), `dateReception`, `note`. Un seul enregistrement par (année, mois).
+
+---
+
+## 6. Connexion et sécurité
+
+- **Login** : email + mot de passe → le serveur compare avec bcrypt → il renvoie un **token JWT** valable **7 jours**.
+- Le token est gardé dans le navigateur (`localStorage`, clé `sf_token`).
+- `lib/api.ts` l'ajoute à chaque requête. Si le serveur répond 401, le token est supprimé.
+- **`middleware.ts`** protège toutes les routes `/api/...` (sauf login et register). Il lit le token et met l'id de l'utilisateur dans l'en-tête `x-user-id`.
+- **`getCurrentUser()`** (`lib/auth.ts`) lit cet id et retrouve l'utilisateur.
+- **Chaque requête filtre par `createdBy = mon id`** → je ne vois que mes propres fiches. Modifier ou supprimer la fiche d'un autre → erreur 403.
+- Les pages sont protégées dans le **layout** : si pas connecté → redirection vers `/login`.
+- Seuls certains champs d'une fiche sont acceptés par l'API (liste blanche `ALLOWED_LEAD_FIELDS`) → impossible d'écraser `createdBy` par exemple.
+- Variable obligatoire : `JWT_SECRET` (sinon l'app refuse de démarrer).
+
+---
+
+## 7. Les pages, une par une
+
+Le **menu à gauche** (Sidebar) donne accès aux 8 pages. Presque toutes ont un filtre **année** (et parfois **mois**).
+
+### 7.1 Connexion — `/login`
+- Écran avec fond animé, champ email + mot de passe, bouton « Accéder ».
+- Si c'est bon : token sauvegardé, redirection vers le Dashboard.
+- Erreur : message rouge (« Email ou mot de passe incorrect »).
+
+### 7.2 Dashboard — `/`
+**But : la vue d'ensemble.**
+- Filtre **année** et **mois**.
+- **Carte Total leads** + anneaux de score (Total, Installé, En cours, Annulé, Payé).
+- **6 cartes de statut** : Nouveau, Contacté, Soumissions, Installation en cours, Installés, Annulées (cliquer ouvre les Leads filtrés).
+- **Graphique d'évolution** dans le temps (par mois ou par jour).
+- **Villes** et **types de lead** les plus fréquents.
+- **Commerces** B2B et B2C (répartition).
+- **Leads récents**.
+- Bouton « Réessayer » si le chargement échoue.
+- Données : `GET /api/dashboard/stats`.
+
+### 7.3 Leads — `/leads`
+**But : la liste de travail principale. C'est là qu'on crée et gère les fiches.**
+- 4 compteurs en haut : Total, En cours, Installés, Annulés.
+- **Recherche** (entreprise, nom, téléphone, email, ville, résumé).
+- **Filtres groupés** : statut, B2B/B2C, type de lead, ville, type de commerce, système actuel, **paiement** (commission payée / en attente / avec commission / annulée, appel de service payé / non payé / avec / sans), **partage** (partagés / non partagés / partagé avec quelqu'un), **service** (Alarme, Internet…).
+- **Tri** : plus récent, plus ancien, urgence, commission, entreprise, statut.
+- Les fiches sont **regroupées par année / mois**, et chargées par pages de 30 (« charger plus »).
+- Sur chaque fiche on peut : **changer le statut** (si « Annulé » → on demande le **motif**), **cocher commission payée**, ajouter / supprimer des **notes**, gérer les **appels de service**, **modifier**, **supprimer** (avec confirmation).
+- Le bouton « + » ouvre la fiche vide (**FicheModal**) avec les commissions par défaut des Paramètres déjà remplies.
+- Données : `GET/POST /api/leads`, `PUT/DELETE /api/leads/[id]`, `GET /api/leads/stats`.
+
+### 7.4 Pipeline — `/pipeline`
+**But : voir les clients par étape (comme un tableau Kanban).**
+- 6 colonnes : Nouveau, Contacté, Soumission, Installation en cours, Installé, Annulée.
+- Chaque colonne montre ses fiches ; on peut **changer l'étape** d'une fiche.
+- Passer en « Annulée » ouvre une fenêtre pour choisir le **motif**.
+- Filtres : année, mois, commission (payée / non payée / annulée).
+- Affiche aussi : total, B2B/B2C, taux de **conversion** (installés ÷ total), répartition par service.
+- Données : `GET /api/pipeline/stats` + `GET /api/leads`.
+
+### 7.5 Commissions — `/commissions`
+**But : l'argent.**
+- Cartes : **Total gagné**, **Payé**, **En attente**, **Annulé**, plus la commission **maximum** et **minimum**.
+- **Objectif annuel** (défini dans Paramètres) avec pourcentage atteint.
+- **Graphique** : par année (si « Toutes les années »), sinon par vente. Couleurs : bleu = payée, orange = en attente, rouge = annulée.
+- **Filtre** : tout / payée / non payée / annulée.
+- **Historique** paginé des commissions avec détail Fixe / Extra, bouton pour marquer **payée**, et un **résumé** de la fiche.
+- Données : `GET /api/commissions/stats`.
+
+### 7.6 Comparaison — `/comparaison`
+**But : comparer deux années.**
+- On choisit l'année A et l'année B (flèches pour naviguer).
+- Lignes comparées : commissions gagnées, payées, en attente, installations réalisées, annulées, plus la commission max/min et le **taux de paiement**.
+- **Meilleur mois** de chaque année.
+- **Score global** : % de progression (ex : +25 %). Si l'année précédente est à 0 → 100 %.
+- « Première année de référence » s'il n'y a pas d'année avant.
+- Données : `GET /api/comparaison/stats`.
+
+### 7.7 Indemnité Carburant — `/essence`
+**But : suivre le remboursement d'essence reçu chaque mois.**
+- Un tableau avec les **12 mois** de l'année choisie.
+- Pour chaque mois : montant attendu (modifiable), case **« Reçu »** (met la date de réception), et une **note** (fenêtre de texte).
+- Totaux : **En attente**, **Total reçu**, **Total de l'année**.
+- Bouton pour **préparer l'année suivante** (crée les 12 mois vides).
+- Pour l'année en cours, les mois jusqu'à aujourd'hui sont créés automatiquement.
+- Données : `GET /api/essence`, `PUT /api/essence/[id]`, `POST /api/essence/prepare-next`.
+
+### 7.8 Base de données — `/database`
+**But : tout voir en tableau + exporter + sauvegarder.**
+- Carte **Stockage PostgreSQL** (espace utilisé / limite, 500 Mo par défaut) et compteurs (leads, utilisateurs).
+- Gros **tableau** de tous les leads avec **filtres par colonne** (prénom, nom, email, téléphone, entreprise, ville, statut) + filtres **partage** et **appel de service**.
+- Boutons :
+  - **Sauvegarde** → télécharge un fichier **JSON** complet ;
+  - **Excel** → fichier Excel mis en forme (`lib/exportExcel.ts`) ;
+  - **Télécharger PDF** / **Voir PDF** → document PDF (`components/LeadsPDF.tsx`).
+- Pour chaque ligne : **voir la fiche** (ouvre UltraFiche) ou **supprimer**.
+- Données : `GET /api/leads` (jusqu'à 5000), `GET /api/database/stats`.
+
+### 7.9 Paramètres — `/parametres`
+**But : configurer toute l'app.** 10 onglets :
+
+| Onglet | Ce qu'on y fait | Utilisé où |
+|---|---|---|
+| **Profil** | Nom, rôle, email, date de début, avatar (emoji), nouveau mot de passe (6 caractères minimum) | Menu à gauche, anniversaire |
+| **Villes** | Liste des villes | Choix de ville dans les fiches + filtres |
+| **Commerce** | Types de commerce | Fiches, Pipeline, Dashboard |
+| **Lead** | Types de lead (référence, appel à froid…) | Fiches, filtres, Dashboard |
+| **Qualification** | Systèmes actuels du client (ADT, Bell…) | Fiches, filtres |
+| **Services** | Les services vendus : nom, couleur, **icône**, fournisseurs « actuel » et « proposé » | Fiches, Pipeline, filtres |
+| **Objectif annuel** | Un objectif en TND par année | Page Commissions |
+| **Motifs d'annulation** | Raisons possibles d'une annulation | Annulation d'une fiche |
+| **Partage Avec** | Liste des agents (nom + homme/femme) | Vente partagée, filtres |
+| **Commission défaut** | Commission fixe et extra pré-remplies pour toute nouvelle fiche | Création de fiche |
+
+- Un bouton **Sauvegarder** envoie tout à `PUT /api/settings`. Les réglages sont gardés en mémoire 5 minutes (`settings-cache`) puis le cache est vidé après sauvegarde.
+- Le profil se sauvegarde à part avec `PUT /api/profile`.
+
+> Vérifié : **tous les réglages sont bien utilisés** par au moins une page.
+
+---
+
+## 8. Les API (le serveur)
+
+Toutes demandent un token, sauf login.
+
+| Route | Méthode | Ce qu'elle fait |
+|---|---|---|
+| `/api/auth/login` | POST | Vérifie email + mot de passe, renvoie le token |
+| `/api/auth/me` | GET | Renvoie l'utilisateur connecté |
+| `/api/leads` | GET | Liste filtrée / triée / paginée (max 5000) |
+| `/api/leads` | POST | Crée une fiche (date de vente obligatoire) |
+| `/api/leads/[id]` | PUT | Modifie une fiche, recalcule la commission totale |
+| `/api/leads/[id]` | DELETE | Supprime une fiche |
+| `/api/leads/stats` | GET | Totaux pour les compteurs des Leads |
+| `/api/dashboard/stats` | GET | Tout le Dashboard |
+| `/api/pipeline/stats` | GET | Compteurs par étape, B2B/B2C, conversion, services |
+| `/api/commissions/stats` | GET | Gagné/payé/attente/annulé, graphique, historique |
+| `/api/comparaison/stats` | GET | Comparaison de deux années |
+| `/api/essence` | GET | Les 12 mois d'une année (crée ceux qui manquent) |
+| `/api/essence/[id]` | PUT | Modifie montant, « reçu », note |
+| `/api/essence/prepare-next` | POST | Crée l'année suivante |
+| `/api/settings` | GET / PUT | Lire / sauvegarder les réglages |
+| `/api/profile` | PUT | Modifier mon profil / mot de passe |
+| `/api/profile/stats` | GET | Total payé et en attente de l'année (menu à gauche) |
+| `/api/database/stats` | GET | Nb d'utilisateurs + taille de la base |
+
+---
+
+## 9. Les composants
+
+### Général (`components/`)
+| Fichier | Rôle |
+|---|---|
+| `Sidebar.tsx` | Menu à gauche : 8 pages, profil (panneau avec « Actif depuis », payé, en attente), déconnexion, fenêtre **anniversaire** |
+| `CosmosBackground.tsx` | Fond animé (étoiles) de la page login |
+| `AnimatedNumber.tsx` | Nombre qui « compte » jusqu'à sa valeur |
+| `LogoIcon.tsx` | Le logo |
+| `SexeIcon.tsx` | Icône homme / femme |
+| `LeadsPDF.tsx` | Construit le PDF de la page Base de données |
+
+### Dashboard (`components/dashboard/`)
+`TotalLeadsCard`, `StatusCards`, `EvolutionChart`, `CitiesAndLeadTypes`, `CommerceSection`, `RecentLeads`, `ScoreRing`, `ProgressBar` — chacun est un bloc visuel du Dashboard.
+
+### Fiches (`components/solution-express/`)
+| Fichier | Rôle |
+|---|---|
+| `FicheCard.tsx` | La carte d'une fiche dans la liste Leads |
+| `FicheModal.tsx` | Le formulaire de création / modification d'une fiche |
+| `UltraFiche.tsx` | La fiche complète en lecture (avec la ligne d'avancement) |
+| `CommissionBadge.tsx` | Pastille de commission (payée / en attente / annulée) |
+| `MiniScoreRing.tsx` | Petit anneau du score d'urgence |
+| `DatePicker.tsx` | Le choix de date |
+
+### Autres
+- `context/AuthContext.tsx` : garde l'utilisateur connecté (`login`, `logout`, `refreshUser`).
+- `hooks/useIsMobile.ts` : dit si l'écran est petit.
+
+---
+
+## 10. Les fichiers utilitaires (lib)
+
+| Fichier | Rôle |
+|---|---|
+| `api.ts` | Axios + ajout du token + message d'erreur |
+| `auth.ts` | Créer le token (7 jours), retrouver l'utilisateur connecté |
+| `prisma.ts` | Connexion unique à la base |
+| `commission.ts` | `commissionTotale = fixe + extra` |
+| `partage.ts` | Règle de la **vente partagée** (voir section 11) |
+| `leads-config.ts` | Champs autorisés d'une fiche + nettoyage des appels de service |
+| `settings-cache.ts` | Garde les réglages 5 min en mémoire |
+| `exportExcel.ts` | Génère le fichier Excel |
+
+---
+
+## 11. Règles importantes du métier
+
+- **Statuts** : Nouveau → Contacté → Soumission → Installation en cours → Installé, ou Annulé.
+- **Commission totale** = commission fixe + commission extra (recalculée par le serveur).
+- **Une commission annulée** n'est pas comptée dans « gagné ».
+- **Date de vente obligatoire** à la création d'une fiche. Les stats par année utilisent la `dateVente` (à défaut, la date de création pour Leads/Pipeline/Database).
+- **Vente partagée** : si une fiche est partagée avec un agent (`partageAvec` non vide), elle compte **0,5** au lieu de **1** dans tous les compteurs (total, installés, annulés…). Les montants de commission restent entiers.
+- **Appels de service** : petites lignes (description + payé oui/non) sur la fiche, pour suivre les interventions après la vente.
+- **Qualification** : le champ « système actuel » n'apparaît que si un des services choisis fait partie de `produitsAvecQualification` (ex : alarme).
+- **Taux de conversion** = installés ÷ total.
+- **Monnaie** : TND.
+
+---
+
+## 12. Lancer le projet
+
+Variables d'environnement nécessaires (`.env`) :
+
+| Variable | Rôle |
+|---|---|
+| `DATABASE_URL` | Connexion à PostgreSQL |
+| `DIRECT_URL` | Connexion directe (pour Prisma) |
+| `JWT_SECRET` | Clé secrète des tokens (**obligatoire**) |
+| `STORAGE_LIMIT_MB` | Limite affichée du stockage (500 par défaut) |
+
+Commandes :
 
 ```
-[Navigateur]
-    │
-    ├─ POST /api/auth/login {email, password}
-    │        ↓
-    │   middleware.ts → route publique, laisse passer
-    │        ↓
-    │   login/route.ts → vérifie email + bcrypt.compare(password, hash)
-    │        ↓
-    │   signToken(user.id) → JWT signé HS256, expiry 7 jours
-    │        ↓
-    ├─ localStorage.setItem('sf_token', token)
-    │
-    ├─ Toute requête API suivante :
-    │   Authorization: Bearer <token>
-    │        ↓
-    │   middleware.ts → jwtVerify(token, secret)
-    │        ↓ (si valide)
-    │   headers['x-user-id'] = payload.id
-    │        ↓
-    │   API route → getCurrentUser(req) → lit x-user-id → findUnique(user)
-    │        ↓
-    │   Toutes les requêtes DB filtrent par { createdBy: user.id }
+npm install          # installer
+npm run dev          # lancer en développement
+npm run build        # construire (fait prisma generate puis next build)
+npm start            # lancer en production
 ```
 
-### Protection des pages
-
-Le layout `(dashboard)/layout.tsx` vérifie la présence d'un utilisateur connecté via `AuthContext`. Si aucun utilisateur n'est trouvé après chargement, redirection automatique vers `/login`.
-
-Au démarrage, `AuthContext` appelle `/api/auth/me` pour valider le token stocké. Si le token est invalide ou expiré, il est supprimé du localStorage.
-
-### Points de sécurité
-
-| Aspect | Implémentation |
-|---|---|
-| Mots de passe | Hash bcrypt (jamais stocké en clair) |
-| Tokens | JWT HS256, expiry 7 jours, signé avec `JWT_SECRET` |
-| Isolation données | Chaque requête DB filtre par `createdBy: user.id` |
-| Injection SQL | Impossible — Prisma utilise des requêtes paramétrées |
-| Champs autorisés | `ALLOWED_LEAD_FIELDS` whitelist sur tous les PUT/POST leads |
-| Validation entrées | Status, typeClient, annee, mois validés avant usage |
-| Ownership | DELETE/PUT vérifient `existing.createdBy === user.id` (403 sinon) |
-| XSS | Aucun `dangerouslySetInnerHTML` — tout le texte passe par JSX |
-
----
-
-## 6. Pages — description complète
-
----
-
-### Page Login (`/login`)
-
-**Fichier :** `app/(auth)/login/page.tsx`
-
-**Description :** Page de connexion à l'application. Interface visuelle avec fond animé, logo animé et formulaire email/mot de passe.
-
-**Fonctionnement :**
-1. L'utilisateur saisit email + mot de passe
-2. Appel `POST /api/auth/login`
-3. En cas de succès : token stocké dans localStorage, redirection vers le dashboard
-4. En cas d'erreur : message d'erreur affiché
-
-**Fonctionnalités :**
-- Affichage/masquage du mot de passe
-- Gestion état de chargement (bouton désactivé pendant la requête)
-- Fond animé avec éléments visuels (logo pulsé, scan lines)
-
----
-
-### Layout Dashboard (`(dashboard)/layout.tsx`)
-
-**Fichier :** `app/(dashboard)/layout.tsx`
-
-**Description :** Layout partagé par toutes les pages du dashboard. Il enveloppe chaque page avec la sidebar de navigation et vérifie l'authentification.
-
-**Fonctionnement :**
-- Si `loading = true` → affiche un spinner
-- Si `user = null` après chargement → redirection vers `/login`
-- Sinon → affiche `<Sidebar>` + `<main>{children}</main>`
-
----
-
-### Dashboard (`/`)
-
-**Fichier :** `app/(dashboard)/page.tsx`
-
-**Description :** Page d'accueil. Vue synthétique de toutes les performances commerciales avec graphiques, statistiques et leads récents.
-
-**Données affichées :**
-- **Taux d'installation** : pourcentage de leads installés avec barre de progression
-- **4 ScoreRings** : anneaux animés pour Soumission, En cours, Installé, Annulée
-- **Graphe d'évolution** : bar chart mensuel ou annuel (filtrable : Total / Installé / En cours / Annulé / Payé)
-- **Total leads** : compteur global + répartition B2B / B2C
-- **6 cartes statuts** : Nouveau, Contacté, Soumissions, Installation en cours, Installés, Annulées
-- **Produits d'intérêt** : services les plus demandés avec barres de progression
-- **Types de leads** : répartition par source (référence, appel froid, digital, etc.)
-- **Villes** : top 20 villes avec classement
-- **Commerce B2B / B2C** : types de commerce séparément
-- **Leads récents** : 6 dernières fiches avec statut, ville, date, badge B2B/B2C
-
-**Filtres disponibles :**
-- Année (toutes les années ou année spécifique)
-- Mois (disponible uniquement si une année est sélectionnée)
-
-**Sous-composants :** `EvolutionChart`, `TotalLeadsCard`, `StatusCards`, `ProductsSection`, `CitiesAndLeadTypes`, `CommerceSection`, `RecentLeads`, `ScoreRing`, `AnimatedNumber`
-
----
-
-### Leads (`/leads`)
-
-**Fichier :** `app/(dashboard)/leads/page.tsx`
-
-**Description :** Page principale de gestion des fiches leads. C'est le cœur opérationnel de l'application.
-
-**Affichage :**
-- Leads groupés par mois (si une année est sélectionnée) ou par année
-- Chaque groupe affiche : label période, nombre de fiches, total commissions
-- Pagination "Afficher plus" (30 leads par page, offset progressif)
-- Protection double-clic : bouton désactivé pendant le chargement pour éviter les doublons
-
-**Filtres disponibles (8 simultanés) :**
-- Statut (Nouveau, Contacté, Soumission, En cours, Installé, Annulé)
-- B2B / B2C
-- Type de lead (source)
-- Ville
-- Type de commerce
-- Système de qualification actuel
-- Commission (payée / en attente / avec commission / annulée)
-- Service/produit (pills interactives)
-
-**Recherche :**
-- Barre de recherche full-text avec debounce 300ms
-- Sur : entreprise, prénom, nom, téléphone, email, ville, résumé
-
-**Tri :** Plus récent / Plus ancien / Urgence / Commission / Alphabétique / Statut
-
-**Actions :**
-- **Ouvrir** → UltraFiche (vue détail)
-- **Modifier** → FicheModal (formulaire complet)
-- **Supprimer** → confirmation puis suppression
-- **Toggle commission payée** → mise à jour optimiste avec rollback
-- **Changement de statut** → si "Annulée" : modal choix du motif obligatoire
-
-**Statistiques en haut :** Total, En cours, Installés, Annulés
-
----
-
-### Pipeline (`/pipeline`)
-
-**Fichier :** `app/(dashboard)/pipeline/page.tsx`
-
-**Description :** Vue Kanban des leads organisés par statut commercial.
-
-**Fonctionnement :**
-- 6 colonnes : Nouveau → Contacté → Soumission → Installation en cours → Installé → Annulée
-- Chaque colonne affiche le nombre de leads et le total des commissions
-- Les leads sont représentés par des cartes avec initiales, nom, ville, date
-- Clic sur une carte → UltraFiche
-
-**Filtres :** Année (années réelles uniquement, sans option "Toutes les années"), mois, service/produit
-
-**Statistiques :** Total, B2B, B2C, Installés, Annulées, En cours, Soumissions, Taux d'installation, répartition par service
-
----
-
-### Commissions (`/commissions`)
-
-**Fichier :** `app/(dashboard)/commissions/page.tsx`
-
-**Description :** Tableau de bord financier dédié aux commissions.
-
-**Données affichées :**
-- Commission totale gagnée, payée, en attente, annulée
-- Objectif annuel et pourcentage d'atteinte
-- Maximum et minimum par lead
-- Graphe mensuel (bar chart cliquable)
-- Historique détaillé par lead avec toggle "payée"
-
-**Filtres :** Année / mois, tout / payé / non payé / annulé
-
-**Cache intelligent :** Les données par mois sont mises en cache via `useRef` pour éviter des appels API répétés lors de la navigation entre mois.
-
-**Protection double-clic :** Bouton "Afficher plus" désactivé pendant le chargement pour éviter les doublons dans l'historique.
-
----
-
-### Comparaison (`/comparaison`)
-
-**Fichier :** `app/(dashboard)/comparaison/page.tsx`
-
-**Description :** Comparaison des performances entre deux années différentes.
-
-**Fonctionnement :**
-- Sélection de deux années (Année A vs Année B)
-- Navigation mois par mois ou vue annuelle complète
-- Deux colonnes côte à côte avec code couleur (quelle année est meilleure)
-
-**Métriques comparées :** Commissions gagnées / payées / en attente, leads installés / annulés, commission max/min, taux de paiement, total leads
-
----
-
-### Essence (`/essence`)
-
-**Fichier :** `app/(dashboard)/essence/page.tsx`
-
-**Description :** Suivi des remboursements d'essence mensuels.
-
-**Fonctionnement :**
-- Vue en grille de tous les mois d'une année
-- Navigation par année (boutons précédent/suivant)
-- Chaque mois affiche : jours ouvrés, montant attendu, statut reçu/en attente, date de réception, note
-
-**Actions :**
-- Toggle "Reçu" depuis la grille
-- Édition inline des jours ouvrés
-- Ajout/modification de note via modal
-- "Préparer prochain mois" : création automatique si inexistant
-
-**Statistiques :** Total attendu, total reçu, en attente, mois reçus
-
----
-
-### Base de données (`/database`)
-
-**Fichier :** `app/(dashboard)/database/page.tsx`
-
-**Description :** Vue administrative complète de la base de données.
-
-**Fonctionnalités :**
-- Tableau de tous les leads avec filtres dans les en-têtes (entreprise, ville, statut, mois)
-- Pagination "Afficher plus" (30 leads à la fois, côté client via slice)
-- Les filtres fonctionnent sur toutes les données en mémoire — pas de perte au changement de filtre
-- Clic sur une ligne → UltraFiche
-- Suppression avec confirmation
-- **Export PDF** de toutes les fiches (composant `LeadsPDF`)
-
-**Statistiques DB :** Nombre de fiches, utilisateurs, entrées essence, espace utilisé / limite
-
----
-
-### Paramètres (`/parametres`)
-
-**Fichier :** `app/(dashboard)/parametres/page.tsx`
-
-**Description :** Centre de configuration complet organisé en onglets.
-
-| Onglet | Description |
-|---|---|
-| **Profil** | Nom, email, mot de passe, avatar, date de début |
-| **Villes** | Liste des villes dans les formulaires |
-| **Commerce** | Types de commerce B2B/B2C |
-| **Lead** | Sources de lead (référence, appel froid, digital, etc.) |
-| **Qualification** | Systèmes existants (ADT, Bell, Vidéotron, etc.) |
-| **Services** | Catalogue de produits avec couleur, icône, fournisseurs |
-| **Commissions** | Valeurs par défaut (fixe et extra) |
-| **Objectifs** | Objectif annuel de commissions par année |
-| **Annulations** | Motifs d'annulation disponibles |
-
-**Fonctionnement :**
-- Flag `dirty` pour détecter les modifications non sauvegardées
-- `sortedJSON` pour comparer les états et détecter les vrais changements
-- À la sauvegarde : invalidation du cache settings → toutes les pages rechargent les nouvelles valeurs
-
----
-
-## 7. API Routes
-
-### Authentification
-
-| Route | Méthode | Description |
-|---|---|---|
-| `/api/auth/login` | POST | Connexion — vérifie email/password, retourne JWT + user |
-| `/api/auth/me` | GET | Retourne l'utilisateur connecté depuis le token |
-| `/api/auth/register` | POST | Création d'un nouveau compte |
-
-### Leads
-
-| Route | Méthode | Description |
-|---|---|---|
-| `/api/leads` | GET | Liste paginée avec filtres, recherche et tri |
-| `/api/leads` | POST | Création d'un nouveau lead |
-| `/api/leads/[id]` | PUT | Modification d'un lead (whitelist des champs) |
-| `/api/leads/[id]` | DELETE | Suppression d'un lead (ownership vérifié) |
-| `/api/leads/stats` | GET | Totaux : totalFiches, installés, annulés, pipeline |
-
-### Dashboard & Statistiques
-
-| Route | Méthode | Description |
-|---|---|---|
-| `/api/dashboard/stats` | GET | Toutes les statistiques du dashboard (requêtes parallèles) |
-| `/api/pipeline/stats` | GET | Données pipeline par statut |
-| `/api/commissions/stats` | GET | Données financières des commissions |
-| `/api/comparaison/stats` | GET | Données pour la comparaison inter-années |
-| `/api/database/stats` | GET | Vue complète DB + statistiques de stockage |
-
-### Essence, Profil & Settings
-
-| Route | Méthode | Description |
-|---|---|---|
-| `/api/essence` | GET | Liste des entrées essence par année |
-| `/api/essence` | POST | Création d'une entrée essence |
-| `/api/essence/[id]` | PUT | Modification (jours, montant, reçu, note) |
-| `/api/profile` | PUT | Mise à jour du profil (nom, email, avatar, password) |
-| `/api/profile/stats` | GET | Statistiques du profil |
-| `/api/settings` | GET | Récupération des paramètres globaux |
-| `/api/settings` | PUT | Sauvegarde des paramètres |
-
----
-
-## 8. Composants partagés
-
-### `Sidebar`
-Navigation latérale avec icônes et labels. Mode compact (icônes seules) ou étendu (icônes + labels). Liens : Dashboard, Leads, Pipeline, Commissions, Comparaison, Essence, Base de données, Paramètres, Déconnexion.
-
-### `CosmosBackground`
-Fond décoratif animé. Génère 60 étoiles clignotantes et 18 particules montantes colorées. Positions et vitesses aléatoires générées une fois au mount. Animations CSS dans `globals.css`.
-
-### `AnimatedNumber`
-Affichage numérique avec animation de transition entre deux valeurs. Utilise `requestAnimationFrame` avec easing cubique. Supporte décimales et suffixe.
-
-### `FicheCard`
-Carte compacte d'un lead. Affiche : avatar (initiales), nom/entreprise, ville, statut, badge B2B/B2C, commission, boutons d'action rapides.
-
-### `FicheModal`
-Modal de création et modification d'un lead. Formulaire complet avec tous les champs organisés en sections scrollables.
-
-### `UltraFiche`
-Vue détail complète d'un lead. Affiche toutes les informations, change le statut, ajoute/supprime des notes, modifie, supprime. Interface visuelle avec code couleur par statut.
-
-### Composants Dashboard (`components/dashboard/`)
-
-| Composant | Description |
-|---|---|
-| `ScoreRing` | Anneau SVG animé avec valeur centrale (animation stroke-dasharray) |
-| `ProgressBar` | Barre de progression colorée |
-| `TotalLeadsCard` | Carte "Total leads" avec B2B/B2C |
-| `StatusCards` | Grille des 6 cartes de statuts avec hover |
-| `EvolutionChart` | Graphe bar Recharts avec filtres |
-| `ProductsSection` | Liste des produits avec barres de progression |
-| `CitiesAndLeadTypes` | Grille 2 colonnes : villes + types de leads |
-| `CommerceSection` | Sections B2B et B2C commerces |
-| `RecentLeads` | Liste des 6 derniers leads |
-
----
-
-## 9. Librairies utilitaires
-
-### `lib/api.ts`
-Instance Axios avec :
-- Intercepteur request : injection automatique du JWT depuis localStorage
-- Intercepteur response : suppression du token si réponse 401
-- `apiErrMsg()` : extraction du message d'erreur depuis la réponse API
-
-### `lib/auth.ts`
-- `signToken(userId)` : JWT signé HS256, valable 7 jours
-- `getCurrentUser(req)` : lit le header `x-user-id` injecté par le middleware et retourne l'utilisateur DB
-
-### `lib/commission.ts`
-- `calcCommissionTotale(fixe, extra)` : calcule le total — centralisé pour garantir la cohérence partout
-
-### `lib/leads-config.ts`
-- `ALLOWED_LEAD_FIELDS` : `Set<string>` des champs autorisés en PUT/POST. Bloque toute tentative d'injecter `createdBy`, `id`, etc.
-
-### `lib/prisma.ts`
-Singleton PrismaClient. Évite les connexions multiples en développement avec Next.js Fast Refresh.
-
-### `lib/settings-cache.ts`
-Cache mémoire côté client avec TTL 5 minutes. Évite des appels API répétés à chaque changement de page. `invalidateSettingsCache()` force un rechargement lors de la sauvegarde.
-
-### `hooks/useIsMobile.ts`
-Détecte si l'écran est mobile (< 768px). Pattern isomorphique `useLayoutEffect` / `useEffect`. Debounce 80ms sur le resize.
-
----
-
-## 10. État global du code
-
-### Points forts
-
-- **Sécurité cohérente** : middleware JWT → isolation données par `createdBy` → whitelist champs — chaîne sans faille majeure
-- **Gestion des requêtes** : AbortController sur toutes les pages, debounce sur la recherche, annulation propre au démontage
-- **Optimistic updates** : page Leads — mise à jour immédiate de l'UI avec rollback si l'API échoue
-- **Pagination serveur** : les leads ne sont jamais tous chargés en mémoire — scalable
-- **Dashboard refactorisé** : 9 sous-composants isolés, CSS module, keyframes locaux, handlers stables via `useCallback`
-- **Index DB** : composites `(createdBy, dateVente)` et `(createdBy, createdAt)` + index GIN JSONB sur produits
-- **Settings cache** : module-level singleton, TTL 5 min, invalidation manuelle
-
-### Points à améliorer
-
-- **Cohérence du style** : seul le Dashboard utilise un CSS module — les autres pages utilisent 100% inline styles
-- **Composants monolithiques** : Leads (~650 lignes), Commissions, Pipeline mériteraient la même décomposition que le Dashboard
-- **Rate limiting** : aucune limite de tentatives sur la route `/api/auth/login`
-- **Protection serveur des pages** : middleware protège uniquement les routes `/api/*`, pas les pages Next.js
-- **Register ouvert** : `/api/auth/register` est accessible sans authentification
-
-### Note globale : **6.5 / 10**
-
-Le projet est fonctionnel et sécurisé dans ses fondamentaux. Il démontre une maîtrise solide des patterns modernes React/Next.js (AbortController, optimistic updates, pagination serveur, CSS modules, memo/useCallback). La principale marge d'amélioration est la cohérence : le dashboard a été porté à un niveau professionnel, mais les autres pages restent dans leur état d'origine. Une refactorisation progressive des pages restantes amènerait le projet à **8/10**.
-
----
-
-## 11. Vente partagée
-
-Un lead peut être partagé avec un agent. Un lead partagé compte **0,5** au lieu de 1 dans tous les compteurs de leads. Les montants en TND ne changent pas.
-
-### Données
-- `SolutionExpress.partageAvec` (Json, défaut `[]`) : liste des noms d'agents (en pratique 0 ou 1 nom).
-- `Settings.agents` (Json, défaut `[]`) : liste `{ nom, sexe: 'homme' | 'femme' }`, gérée dans Paramètres → onglet « Partage Avec ».
-
-### Interface
-- **Paramètres → Partage Avec** : ajout, suppression d'agents et choix homme/femme (clic sur l'icône pour changer).
-- **Fiche lead → onglet Commission** : liste déroulante « Vente partagée avec » (un agent ou « Aucun »).
-- **Carte du lead et fenêtre de détails** : étiquette « 🤝 Partagé avec … ».
-- **Page Leads** : filtres « Partage » (Partagés / Non partagés) et « Partagé avec » (un agent).
-
-### Règle de calcul (un seul endroit : `lib/partage.ts`)
-- `poidsLead(partageAvec)` : 0,5 si la liste n'est pas vide, sinon 1.
-- `POIDS_SQL` : même règle en SQL, à utiliser à la place de `COUNT(*)`.
-- `groupPondere(where, by)` : remplace `prisma.groupBy` avec un `_count._all` pondéré.
-- Appliqué à : Dashboard (statuts, B2B/B2C, évolution), Pipeline (compteurs et badges des colonnes), Leads (compteurs), Comparaison, Commissions (nombres de commissions).
-- Non appliqué : répartitions par ville, type de lead, commerce (comptent 1 par lead) ; pagination de l'historique ; page Profil (montants uniquement).
-- Les compteurs affichent une décimale quand le nombre n'est pas entier (`AnimatedNumber`, page Comparaison, badges du Pipeline).
-
-### Autres changements liés
-- Le bloc « Produits » a été retiré du Dashboard (le calcul serveur existe encore dans `/api/dashboard/stats`).
-- Le Pipeline charge jusqu'à 1000 leads (au lieu de 200).
-- Cases B2B/B2C du Dashboard plus larges, avec retour à la ligne des noms longs.
-
-### Appels de service et date de vente obligatoire
-- `SolutionExpress.appelsService` (Json, défaut `[]`) : liste de `{ id, description, paye }`. Aucun montant, aucun calcul : c'est un suivi payé / pas payé avec une description (max 2000 caractères).
-- **Fiche lead → onglet Commission** : ajout, modification et suppression des appels. **Détails du lead (page Leads)** : clic sur « Pas payé / Payé » pour basculer, ✏️ pour modifier la description. Les autres pages affichent les détails en lecture seule.
-- **Carte du lead** : étiquette « 📞 N appels de service · X non payés ».
-- **Filtre Leads « Appel de service »** : Payé (tous les appels payés) / Non payé (au moins un impayé).
-- Validation serveur : `cleanAppelsService` (`lib/leads-config.ts`) refuse tout format invalide (400).
-- **Date de vente obligatoire** : refusée côté fiche et côté serveur (création sans date, ou effacement de la date).
-- **Page Leads** : les 4 compteurs du haut se rafraîchissent après chaque création, modification, suppression ou changement de statut.
-- **Filtres de la page Leads** regroupés en lignes : Lead / Paiement / Partage / Service + tri.
-- **Index GIN** `idx_se_produits_gin` : `prisma db push` le supprime (absent du schéma). Après chaque `db push`, relancer `npx tsx scripts/apply-gin-index.ts`.
-
-### Page Base de données : sauvegarde, export Excel et filtres
-- **Bouton « Sauvegarde »** : télécharge `sauvegarde-secureflow-AAAA-MM-JJ.json` (tous les leads, tous les champs). À faire régulièrement : Supabase gratuit n'a pas de sauvegarde automatique.
-- **Bouton « Excel »** : génère un `.xlsx` mis en forme (`lib/exportExcel.ts`, bibliothèque `exceljs` chargée à la demande) avec titre, en-têtes colorées, statuts en couleur, filtres, ligne de total et une feuille « Résumé ». Le fichier reflète l'état de la base au moment du clic.
-- **Filtres ajoutés** (sous la barre d'en-tête) : Partage, Partagé avec, Appel de service. Ils se combinent avec les filtres existants.
-- **PDF** : affiche la vente partagée et les appels de service.
-
+Script à lancer **une seule fois** pour accélérer les filtres par service :
+`npx tsx scripts/apply-gin-index.ts`

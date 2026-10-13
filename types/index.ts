@@ -81,7 +81,7 @@ export interface SolutionExpress {
 
 export interface TypeCommerceItem { key: string; label: string; }
 
-export interface ServiceFournisseur { key: string; label: string; }
+interface ServiceFournisseur { key: string; label: string; }
 
 export interface Service {
   id: string;

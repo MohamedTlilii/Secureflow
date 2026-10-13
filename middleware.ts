@@ -16,10 +16,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Routes API publiques — pas de token requis
-  if (
-    pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/auth/register')
-  ) {
+  if (pathname.startsWith('/api/auth/login')) {
     return NextResponse.next();
   }
 
